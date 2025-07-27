@@ -5,6 +5,10 @@
 .env.test.local
 .env.production.local
 
+# Backup folders
+.백업/
+백업/
+
 # Dependencies
 node_modules/
 npm-debug.log*
