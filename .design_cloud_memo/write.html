@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Memo - 메모 작성</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'media',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            start: '#87ceeb',
+                            end: '#4682b4',
+                            hover: {
+                                start: '#7bb8d9',
+                                end: '#3d6b9a'
+                            }
+                        },
+                        secondary: {
+                            start: '#f0f8ff',
+                            end: '#b0e0e6'
+                        },
+                        dark: {
+                            bg: '#1c1c1e',
+                            card: '#23232a',
+                            text: '#f4f4f5',
+                            point: '#0a84ff',
+                            border: '#6b7280',
+                            'bg-secondary': '#2c2c34',
+                            'text-secondary': '#a5b4fc',
+                            'text-muted': '#e5e7eb',
+                            'border-light': '#6b7280',
+                            'shadow': 'rgba(0,0,0,0.5)',
+                            'overlay': 'rgba(0,0,0,0.3)'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #87ceeb 0%, #4682b4 100%);
+            transition: all 0.2s ease;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #7bb8d9 0%, #3d6b9a 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn-secondary {
+            background: white;
+            border: 2px solid #87ceeb;
+            color: #4682b4;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: #87ceeb;
+            color: white;
+        }
+        
+        .memo-editor {
+            min-height: 400px;
+            resize: vertical;
+            transition: all 0.2s ease;
+        }
+        
+        .memo-editor:focus {
+            outline: none;
+            border-color: #87ceeb;
+            box-shadow: 0 0 0 3px rgba(135, 206, 235, 0.1);
+        }
+        
+        .template-selector {
+            transition: all 0.2s ease;
+        }
+        
+        .template-selector:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-secondary-start to-secondary-end dark:from-dark-bg dark:to-dark-bg-secondary">
+    <!-- 헤더 -->
+    <header class="bg-white dark:bg-dark-card shadow-sm border-b border-gray-200 dark:border-dark-border">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-gradient-to-br from-primary-start to-primary-end rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <span class="text-xl font-bold text-gray-900 dark:text-dark-text">새 메모</span>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <button class="btn-secondary font-medium py-2 px-4 rounded-lg flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                            <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                        </svg>
+                        <span>상용구</span>
+                    </button>
+                    
+                    <button class="btn-primary text-white font-medium py-2 px-4 rounded-lg flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                        <span>저장</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 메인 컨텐츠 -->
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- 상용구 선택기 -->
+        <div class="mb-6">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-dark-text">상용구 선택</h3>
+                <button class="text-sm text-blue-600 dark:text-primary-start hover:text-blue-800 dark:hover:text-primary-end">
+                    상용구 관리
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div class="template-selector bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-dark-border p-3 cursor-pointer fade-in">
+                    <h4 class="font-medium text-gray-900 dark:text-dark-text mb-1">인사말</h4>
+                    <p class="text-sm text-gray-600 dark:text-dark-text-muted line-clamp-2">안녕하세요! 오늘도 좋은 하루 되세요.</p>
+                </div>
+                
+                <div class="template-selector bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-dark-border p-3 cursor-pointer fade-in">
+                    <h4 class="font-medium text-gray-900 dark:text-dark-text mb-1">회의록</h4>
+                    <p class="text-sm text-gray-600 dark:text-dark-text-muted line-clamp-2">회의 일시: [날짜] [시간] 참석자: [참석자 목록]</p>
+                </div>
+                
+                <div class="template-selector bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-dark-border p-3 cursor-pointer fade-in">
+                    <h4 class="font-medium text-gray-900 dark:text-dark-text mb-1">이메일 서명</h4>
+                    <p class="text-sm text-gray-600 dark:text-dark-text-muted line-clamp-2">Best regards, [이름] [직책] | [회사명]</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 메모 작성 폼 -->
+        <div class="bg-white dark:bg-dark-card rounded-lg shadow-light dark:shadow-dark border border-gray-200 dark:border-dark-border p-6">
+            <!-- 제목 입력 -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-dark-text mb-2">
+                    제목
+                </label>
+                <input
+                    type="text"
+                    placeholder="메모 제목을 입력하세요..."
+                    class="w-full px-4 py-2 border border-gray-300 dark:border-dark-border rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-start focus:border-transparent bg-white dark:bg-dark-card text-gray-900 dark:text-dark-text"
+                />
+            </div>
+
+            <!-- 카테고리 선택 -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-dark-text mb-2">
+                    카테고리
+                </label>
+                <select class="w-full px-4 py-2 border border-gray-300 dark:border-dark-border rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-start focus:border-transparent bg-white dark:bg-dark-card text-gray-900 dark:text-dark-text">
+                    <option value="임시">임시</option>
+                    <option value="기억">기억</option>
+                    <option value="중요">중요</option>
+                    <option value="업무">업무</option>
+                    <option value="개인">개인</option>
+                </select>
+            </div>
+
+            <!-- 내용 입력 -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-dark-text mb-2">
+                    내용
+                </label>
+                <textarea
+                    placeholder="메모 내용을 입력하세요..."
+                    class="memo-editor w-full px-4 py-3 border border-gray-300 dark:border-dark-border rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-start focus:border-transparent bg-white dark:bg-dark-card text-gray-900 dark:text-dark-text"
+                    rows="12"
+                ></textarea>
+            </div>
+
+            <!-- 이미지 첨부 -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 dark:text-dark-text mb-2">
+                    이미지 첨부
+                </label>
+                <div class="border-2 border-dashed border-gray-300 dark:border-dark-border rounded-lg p-6 text-center">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <div class="mt-4">
+                        <button class="btn-secondary font-medium py-2 px-4 rounded-lg">
+                            이미지 선택
+                        </button>
+                        <p class="mt-2 text-sm text-gray-600 dark:text-dark-text-muted">
+                            또는 파일을 여기로 드래그하세요
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 액션 버튼들 -->
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <button class="text-gray-600 dark:text-dark-text-muted hover:text-gray-900 dark:hover:text-dark-text flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                        <span>임시저장</span>
+                    </button>
+                    
+                    <button class="text-gray-600 dark:text-dark-text-muted hover:text-gray-900 dark:hover:text-dark-text flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                            <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                        </svg>
+                        <span>상용구로 저장</span>
+                    </button>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <button class="text-gray-600 dark:text-dark-text-muted hover:text-gray-900 dark:hover:text-dark-text">
+                        취소
+                    </button>
+                    <button class="btn-primary text-white font-medium py-2 px-6 rounded-lg flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                        <span>저장</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 상용구 선택 기능
+        document.querySelectorAll('.template-selector').forEach(template => {
+            template.addEventListener('click', () => {
+                const title = template.querySelector('h4').textContent;
+                const content = template.querySelector('p').textContent;
+                
+                // 제목과 내용에 상용구 내용 삽입
+                document.querySelector('input[placeholder="메모 제목을 입력하세요..."]').value = title;
+                document.querySelector('textarea').value = content;
+                
+                // 선택된 상용구 하이라이트
+                document.querySelectorAll('.template-selector').forEach(t => {
+                    t.classList.remove('ring-2', 'ring-primary-start');
+                });
+                template.classList.add('ring-2', 'ring-primary-start');
+            });
+        });
+        
+        // 자동 저장 기능 (임시)
+        const textarea = document.querySelector('textarea');
+        const titleInput = document.querySelector('input[placeholder="메모 제목을 입력하세요..."]');
+        
+        let saveTimeout;
+        
+        function autoSave() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                console.log('자동 저장됨:', {
+                    title: titleInput.value,
+                    content: textarea.value
+                });
+            }, 2000);
+        }
+        
+        textarea.addEventListener('input', autoSave);
+        titleInput.addEventListener('input', autoSave);
+        
+        // 이미지 드래그 앤 드롭
+        const dropZone = document.querySelector('.border-dashed');
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-primary-start', 'bg-blue-50');
+        });
+        
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('border-primary-start', 'bg-blue-50');
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-primary-start', 'bg-blue-50');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                console.log('드롭된 파일:', files);
+                // 여기에 이미지 처리 로직 추가
+            }
+        });
+    </script>
+</body>
+</html> 

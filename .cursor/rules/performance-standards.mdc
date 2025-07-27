@@ -1,0 +1,144 @@
+# 성능 최적화 표준
+
+## 사용자 경험 목표
+- **메모 저장**: 10초 이내 완료
+- **액션 완료**: 3클릭 이내
+- **페이지 로딩**: 3초 이내
+- **이미지 업로드**: 2MB 이하 압축
+
+## 이미지 최적화
+### 압축 규칙
+- **최대 크기**: 2MB 이하
+- **포맷 우선순위**: WebP > JPG > PNG
+- **해상도 제한**: 1920x1080 이하
+- **품질 설정**: 80% (WebP), 85% (JPG)
+
+### 업로드 최적화
+```typescript
+// 이미지 압축 함수 예시
+const compressImage = async (file: File): Promise<File> => {
+  const maxSize = 2 * 1024 * 1024; // 2MB
+  const maxWidth = 1920;
+  const maxHeight = 1080;
+  
+  // 압축 로직 구현
+  return compressedFile;
+};
+```
+
+## 번들 최적화
+### 코드 분할
+```typescript
+// 페이지별 지연 로딩
+const MemoEditor = React.lazy(() => import('./pages/MemoEditor'));
+const MemoDetail = React.lazy(() => import('./pages/MemoDetail'));
+const Settings = React.lazy(() => import('./pages/Settings'));
+```
+
+### 트리 쉐이킹
+- 사용하지 않는 import 제거
+- 동적 import 활용
+- 번들 분석 도구 사용
+
+## 캐싱 전략
+### Firebase 캐싱
+- Firestore 오프라인 캐싱 활성화
+- 이미지 CDN 활용
+- 브라우저 캐시 설정
+
+### 메모리 캐싱
+```typescript
+// 메모 데이터 캐싱
+const useMemoCache = () => {
+  const [cache, setCache] = useState<Map<string, IMemo>>(new Map());
+  
+  const getMemo = useCallback((id: string) => {
+    return cache.get(id);
+  }, [cache]);
+  
+  const setMemo = useCallback((memo: IMemo) => {
+    setCache(prev => new Map(prev).set(memo.id, memo));
+  }, []);
+  
+  return { getMemo, setMemo };
+};
+```
+
+## 로딩 상태 관리
+### 스켈레톤 UI
+```typescript
+const MemoSkeleton = () => (
+  <div className="animate-pulse">
+    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+  </div>
+);
+```
+
+### 진행률 표시
+- 이미지 업로드 진행률
+- 데이터 동기화 상태
+- 네트워크 연결 상태
+
+## 네트워크 최적화
+### 오프라인 지원
+- Service Worker 구현
+- 오프라인 데이터 저장
+- 동기화 큐 관리
+
+### 재시도 로직
+```typescript
+const retryOperation = async (
+  operation: () => Promise<any>,
+  maxRetries: number = 3
+) => {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+    }
+  }
+};
+```
+
+## 메모리 관리
+### 메모리 누수 방지
+- useEffect cleanup 함수 구현
+- 이벤트 리스너 제거
+- 타이머 정리
+
+### 가상화 (대용량 리스트)
+```typescript
+// 무한 스크롤 구현
+const useInfiniteScroll = (callback: () => void) => {
+  const observer = useRef<IntersectionObserver>();
+  
+  const lastElementRef = useCallback((node: HTMLElement) => {
+    if (observer.current) observer.current.disconnect();
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) callback();
+    });
+    if (node) observer.current.observe(node);
+  }, [callback]);
+  
+  return lastElementRef;
+};
+```
+
+## 성능 모니터링
+### Lighthouse 점수
+- **성능**: 90+ 점수 목표
+- **접근성**: 95+ 점수 목표
+- **SEO**: 90+ 점수 목표
+- **모범 사례**: 95+ 점수 목표
+
+### 실시간 모니터링
+- 페이지 로딩 시간 측정
+- 사용자 인터랙션 지연 측정
+- 에러율 모니터링
+description:
+globs:
+alwaysApply: false
+---

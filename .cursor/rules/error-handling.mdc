@@ -1,0 +1,265 @@
+# 에러 처리 표준
+
+## 에러 타입 분류
+### 네트워크 에러
+- Firebase 연결 실패
+- API 요청 타임아웃
+- 인터넷 연결 끊김
+
+### 인증 에러
+- 로그인 만료
+- 권한 부족
+- 잘못된 토큰
+
+### 데이터 에러
+- 잘못된 데이터 형식
+- 필수 필드 누락
+- 중복 데이터
+
+### 사용자 에러
+- 잘못된 입력값
+- 파일 크기 초과
+- 지원하지 않는 파일 형식
+
+## 에러 처리 전략
+### 재시도 로직
+```typescript
+const retryWithBackoff = async <T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<T> => {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (attempt === maxRetries) {
+        throw error;
+      }
+      
+      const delay = baseDelay * Math.pow(2, attempt);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  throw new Error('최대 재시도 횟수 초과');
+};
+```
+
+### 에러 바운더리
+```typescript
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('에러 발생:', error, errorInfo);
+    // 에러 로깅 서비스에 전송
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="error-container">
+          <h2>문제가 발생했습니다</h2>
+          <p>페이지를 새로고침해 주세요.</p>
+          <button onClick={() => window.location.reload()}>
+            새로고침
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+```
+
+## 사용자 친화적 에러 메시지
+### 한국어 에러 메시지
+```typescript
+const getErrorMessage = (error: any): string => {
+  if (error.code === 'auth/user-not-found') {
+    return '등록되지 않은 사용자입니다.';
+  }
+  if (error.code === 'auth/wrong-password') {
+    return '비밀번호가 올바르지 않습니다.';
+  }
+  if (error.code === 'storage/unauthorized') {
+    return '파일 업로드 권한이 없습니다.';
+  }
+  if (error.code === 'storage/quota-exceeded') {
+    return '저장 공간이 부족합니다.';
+  }
+  
+  return '알 수 없는 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
+};
+```
+
+### 토스트 알림
+```typescript
+import { toast } from 'react-hot-toast';
+
+const showErrorToast = (error: any) => {
+  const message = getErrorMessage(error);
+  toast.error(message, {
+    duration: 5000,
+    position: 'top-right',
+  });
+};
+
+const showSuccessToast = (message: string) => {
+  toast.success(message, {
+    duration: 3000,
+    position: 'top-right',
+  });
+};
+```
+
+## Firebase 에러 처리
+### 인증 에러
+```typescript
+const handleAuthError = (error: any) => {
+  switch (error.code) {
+    case 'auth/popup-closed-by-user':
+      return '로그인 창이 닫혔습니다. 다시 시도해 주세요.';
+    case 'auth/popup-blocked':
+      return '팝업이 차단되었습니다. 팝업 차단을 해제해 주세요.';
+    case 'auth/network-request-failed':
+      return '네트워크 연결을 확인해 주세요.';
+    default:
+      return '로그인 중 오류가 발생했습니다.';
+  }
+};
+```
+
+### Firestore 에러
+```typescript
+const handleFirestoreError = (error: any) => {
+  switch (error.code) {
+    case 'permission-denied':
+      return '데이터 접근 권한이 없습니다.';
+    case 'unavailable':
+      return '서비스가 일시적으로 사용할 수 없습니다.';
+    case 'resource-exhausted':
+      return '요청 한도를 초과했습니다. 잠시 후 다시 시도해 주세요.';
+    default:
+      return '데이터 처리 중 오류가 발생했습니다.';
+  }
+};
+```
+
+### Storage 에러
+```typescript
+const handleStorageError = (error: any) => {
+  switch (error.code) {
+    case 'storage/unauthorized':
+      return '파일 업로드 권한이 없습니다.';
+    case 'storage/quota-exceeded':
+      return '저장 공간이 부족합니다.';
+    case 'storage/invalid-format':
+      return '지원하지 않는 파일 형식입니다.';
+    case 'storage/file-too-large':
+      return '파일 크기가 너무 큽니다. (최대 2MB)';
+    default:
+      return '파일 업로드 중 오류가 발생했습니다.';
+  }
+};
+```
+
+## 오프라인 에러 처리
+### 네트워크 상태 감지
+```typescript
+const useNetworkStatus = () => {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  return isOnline;
+};
+```
+
+### 오프라인 큐
+```typescript
+const useOfflineQueue = () => {
+  const [queue, setQueue] = useState<Array<() => Promise<void>>>([]);
+
+  const addToQueue = (operation: () => Promise<void>) => {
+    setQueue(prev => [...prev, operation]);
+  };
+
+  const processQueue = async () => {
+    if (queue.length === 0) return;
+
+    for (const operation of queue) {
+      try {
+        await operation();
+      } catch (error) {
+        console.error('큐 처리 중 오류:', error);
+      }
+    }
+
+    setQueue([]);
+  };
+
+  return { addToQueue, processQueue, queueLength: queue.length };
+};
+```
+
+## 로깅 및 모니터링
+### 에러 로깅
+```typescript
+const logError = (error: Error, context?: any) => {
+  console.error('에러 발생:', {
+    message: error.message,
+    stack: error.stack,
+    context,
+    timestamp: new Date().toISOString(),
+    userAgent: navigator.userAgent,
+  });
+
+  // 프로덕션에서는 에러 추적 서비스로 전송
+  if (process.env.NODE_ENV === 'production') {
+    // Sentry, LogRocket 등
+  }
+};
+```
+
+### 성능 모니터링
+```typescript
+const measurePerformance = (operation: string, fn: () => Promise<any>) => {
+  const start = performance.now();
+  
+  return fn().finally(() => {
+    const duration = performance.now() - start;
+    console.log(`${operation} 실행 시간: ${duration}ms`);
+    
+    if (duration > 5000) {
+      console.warn(`${operation}이 5초 이상 걸렸습니다.`);
+    }
+  });
+};
+```
+description:
+globs:
+alwaysApply: false
+---

@@ -1,0 +1,71 @@
+# 프론트엔드 개발 표준
+
+## TypeScript 규칙
+- 모든 컴포넌트는 `.tsx` 확장자 사용
+- 인터페이스는 `I` 접두사 사용 (예: `IMemo`, `IUser`)
+- 타입 정의는 별도 파일로 분리
+
+## 명명 규칙
+- **컴포넌트**: PascalCase (예: `MemoList`, `ImageUpload`)
+- **함수**: camelCase (예: `createMemo`, `uploadImage`)
+- **상수**: UPPER_SNAKE_CASE (예: `MAX_IMAGE_SIZE`)
+- **파일명**: kebab-case (예: `memo-list.tsx`, `image-upload.tsx`)
+
+## 스타일링 규칙
+- **TailwindCSS 기본 클래스 우선 사용**: 커스텀 CSS 금지
+- **Shadcn UI 컴포넌트 활용**: 직접 구현 금지
+- **반응형 필수**: `sm:`, `md:`, `lg:` 브레이크포인트 활용
+- **다크모드 지원**: `dark:` 클래스 활용
+
+## TailwindCSS 기본 클래스 사용 우선순위
+1. **TailwindCSS 기본 클래스 우선**: `bg-gradient-to-br`, `from-sky-50`, `via-blue-50`, `to-cyan-100` 등
+2. **Shadcn UI CSS 변수는 최소한으로 사용**: 충돌 방지를 위해 기본값만 활용
+3. **커스텀 CSS 클래스 금지**: `!important` 사용 금지
+4. **배경 그라데이션**: Tailwind의 `bg-gradient-*` 클래스 사용
+
+## Shadcn UI 적용 방법
+CRA 환경에서는 CLI 설치가 불가능하므로:
+- 컴포넌트를 [frontend/src/components/ui/](mdc:frontend/src/components/ui/) 폴더에 수동 복사
+- Button, Card, Dialog, Input, Textarea, Select 컴포넌트 필수 사용
+- 공식 리포지토리에서 직접 복사하여 적용
+- **중요**: Shadcn UI의 CSS 변수와 Tailwind 기본 클래스 충돌 주의
+
+## heroicon 사용 규칙
+- 모든 아이콘은 heroicon에서 선택
+- 크기: 20x20, 24x24, 32x32 표준 크기 사용
+- 스타일: outline 또는 solid 일관성 유지
+
+## 배경 및 레이아웃 가이드라인
+- **배경 그라데이션**: `bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-100`
+- **다크모드 배경**: `dark:from-slate-900 dark:via-slate-800 dark:to-slate-700`
+- **반투명 효과**: `bg-white/80`, `backdrop-blur-md` 활용
+- **레이아웃**: `min-h-screen`, `max-w-7xl mx-auto` 사용
+
+## 파일 구조
+```
+frontend/src/
+├── components/
+│   ├── ui/          # Shadcn UI 컴포넌트
+│   ├── memo/        # 메모 관련 컴포넌트
+│   └── common/      # 공통 컴포넌트
+├── pages/           # 페이지 컴포넌트
+├── hooks/           # 커스텀 훅
+├── services/        # Firebase 서비스
+├── types/           # TypeScript 타입 정의
+└── utils/           # 유틸리티 함수
+```
+
+## 금지사항
+- ❌ 커스텀 CSS 작성 (TailwindCSS 기본 클래스 사용)
+- ❌ Shadcn UI CSS 변수 강제 수정
+- ❌ `!important` 사용
+- ❌ Shadcn UI, heroicon 사용하지 않고 직접 구현
+- ❌ 영어 UI 텍스트 사용 (한국어 필수)
+- ❌ 반응형 디자인 고려하지 않은 고정 레이아웃
+- ❌ body에 직접 CSS 적용 (컴포넌트 레벨에서 처리)
+
+## 권장사항
+- ✅ TailwindCSS 기본 그라데이션 클래스 사용
+- ✅ 컴포넌트별 배경 스타일링
+- ✅ Shadcn UI 컴포넌트와 Tailwind 클래스 조합
+- ✅ 반응형 및 다크모드 고려한 디자인

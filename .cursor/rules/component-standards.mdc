@@ -1,0 +1,100 @@
+# 컴포넌트 개발 표준
+
+## 메모 관련 컴포넌트
+### MemoList
+- 최신순 정렬
+- 미리보기 형태로 표시
+- 반응형 그리드 레이아웃
+- 무한 스크롤 지원
+
+### MemoEditor
+- 제목 + 본문 입력
+- 이미지 첨부 기능
+- 상용구 삽입 기능
+- 자동 저장 (드래프트)
+
+### MemoDetail
+- 전체 내용 표시
+- 첨부 이미지 갤러리
+- 편집/삭제 버튼
+- 생성/수정일자 표시
+
+### ImageUpload
+- 드래그 앤 드롭 지원
+- 2MB 이하 자동 압축
+- 미리보기 썸네일
+- 업로드 진행률 표시
+
+### TemplateManager
+- 상용구 목록 관리
+- 카테고리별 분류
+- 클릭 시 커서 위치에 삽입
+- 모바일에서 슬라이드 패널
+
+## 공통 컴포넌트
+### Layout
+- 반응형 헤더/푸터
+- 사이드바 (데스크톱)
+- 모바일 네비게이션
+- 다크모드 토글
+
+### Loading
+- 스켈레톤 UI
+- 스피너 애니메이션
+- 로딩 상태 메시지
+
+### ErrorBoundary
+- 에러 캐치 및 표시
+- 재시도 기능
+- 사용자 친화적 메시지
+
+## 컴포넌트 작성 규칙
+```typescript
+interface IComponentProps {
+  // Props 인터페이스 정의
+}
+
+const ComponentName: React.FC<IComponentProps> = ({ prop1, prop2 }) => {
+  // 커스텀 훅 사용
+  const { data, loading, error } = useCustomHook();
+  
+  // 이벤트 핸들러
+  const handleClick = () => {
+    // 로직 구현
+  };
+  
+  // 조건부 렌더링
+  if (loading) return <Loading />;
+  if (error) return <ErrorMessage error={error} />;
+  
+  return (
+    <div className="component-container">
+      {/* JSX 내용 */}
+    </div>
+  );
+};
+
+export default ComponentName;
+```
+
+## 스타일링 규칙
+- TailwindCSS 클래스 사용
+- 반응형 디자인 필수
+- 다크모드 지원
+- 접근성 고려 (ARIA 라벨)
+
+## 성능 최적화
+- React.memo() 사용 (필요시)
+- useCallback, useMemo 활용
+- 지연 로딩 (React.lazy)
+- 이미지 최적화
+
+## 테스트 규칙
+- React Testing Library 사용
+- 사용자 행동 중심 테스트
+- 스냅샷 테스트
+- 커버리지 80% 이상
+description:
+globs:
+alwaysApply: false
+---

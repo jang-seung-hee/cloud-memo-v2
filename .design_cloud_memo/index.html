@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Memo - 디자인 가이드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'media',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            start: '#87ceeb',
+                            end: '#4682b4',
+                            hover: {
+                                start: '#7bb8d9',
+                                end: '#3d6b9a'
+                            }
+                        },
+                        secondary: {
+                            start: '#f0f8ff',
+                            end: '#b0e0e6'
+                        },
+                        dark: {
+                            bg: '#1c1c1e',
+                            card: '#23232a',
+                            text: '#f4f4f5',
+                            point: '#0a84ff',
+                            border: '#6b7280',
+                            'bg-secondary': '#2c2c34',
+                            'text-secondary': '#a5b4fc',
+                            'text-muted': '#e5e7eb',
+                            'border-light': '#6b7280',
+                            'shadow': 'rgba(0,0,0,0.5)',
+                            'overlay': 'rgba(0,0,0,0.3)'
+                        }
+                    },
+                    boxShadow: {
+                        'light': '0 2px 8px rgba(0, 0, 0, 0.1)',
+                        'medium': '0 4px 12px rgba(0, 0, 0, 0.15)',
+                        'dark': '0 8px 24px rgba(0, 0, 0, 0.5)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        }
+        
+        /* 커스텀 애니메이션 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(0); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        .slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        /* 그라데이션 버튼 */
+        .btn-primary {
+            background: linear-gradient(135deg, #87ceeb 0%, #4682b4 100%);
+            transition: all 0.2s ease;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #7bb8d9 0%, #3d6b9a 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* 카드 호버 효과 */
+        .memo-card {
+            transition: all 0.2s ease;
+        }
+        
+        .memo-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* 아이콘 애니메이션 */
+        .icon-hover {
+            transition: all 0.2s ease;
+        }
+        
+        .icon-hover:hover {
+            transform: scale(1.1);
+        }
+        
+        /* 로딩 스피너 */
+        .loading-spinner {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #87ceeb;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 다크모드 전환 */
+        .dark-mode-transition {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-secondary-start to-secondary-end dark:from-dark-bg dark:to-dark-bg-secondary dark-mode-transition">
+    <!-- 헤더 -->
+    <header class="bg-white dark:bg-dark-card shadow-sm border-b border-gray-200 dark:border-dark-border">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- 로고 -->
+                <div class="flex items-center">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-gradient-to-br from-primary-start to-primary-end rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <span class="text-xl font-bold text-gray-900 dark:text-dark-text">Cloud Memo</span>
+                    </div>
+                </div>
+
+                <!-- 액션 버튼들 -->
+                <div class="hidden md:flex items-center space-x-4">
+                    <!-- 상용구 관리 버튼 -->
+                    <button class="flex items-center bg-white border border-blue-300 text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-all duration-200">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                            <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                        </svg>
+                        <span>상용구관리</span>
+                    </button>
+                    
+                    <!-- 동기화 상태 -->
+                    <div class="flex items-center space-x-2 text-sm text-gray-600 dark:text-dark-text-muted">
+                        <div class="w-2 h-2 bg-green-500 rounded-full pulse"></div>
+                        <span>동기화됨</span>
+                    </div>
+                    
+                    <!-- 사용자 프로필 -->
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-gradient-to-br from-primary-start to-primary-end rounded-full flex items-center justify-center">
+                            <span class="text-white text-sm font-medium">U</span>
+                        </div>
+                        <span class="text-sm text-gray-700 dark:text-dark-text">사용자</span>
+                    </div>
+                </div>
+
+                <!-- 모바일 메뉴 버튼 -->
+                <div class="md:hidden">
+                    <button class="p-2 text-gray-600 dark:text-dark-text-muted hover:text-gray-900 dark:hover:text-dark-text">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 하단 고정 탭 -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white dark:bg-dark-card border-t border-gray-200 dark:border-dark-border z-50">
+        <div class="flex justify-around">
+            <button class="flex-1 flex flex-col items-center py-3 px-4 text-blue-600 dark:text-primary-start border-b-2 border-blue-600 dark:border-primary-start">
+                <svg class="w-6 h-6 mb-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd" />
+                </svg>
+                <span class="text-xs">메모 목록</span>
+            </button>
+            <button class="flex-1 flex flex-col items-center py-3 px-4 text-gray-600 dark:text-dark-text-muted">
+                <svg class="w-6 h-6 mb-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                </svg>
+                <span class="text-xs">새 메모</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 메인 컨텐츠 -->
+    <main class="max-w-8xl px-4 sm:px-8 md:px-16 lg:px-24 xl:px-32 py-4 sm:py-6 pb-20">
+        <!-- 동기화 상태 표시 -->
+        <div class="mb-4 text-left">
+            <div class="flex items-center space-x-2 text-sm text-gray-600 dark:text-dark-text-muted">
+                <div class="w-2 h-2 bg-green-500 rounded-full pulse"></div>
+                <span>Firebase와 동기화됨</span>
+            </div>
+        </div>
+
+        <!-- 액션 버튼들과 검색 -->
+        <div class="mb-6 text-left">
+            <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                <!-- 새 메모 버튼 -->
+                <button class="btn-primary text-white font-medium py-2 px-4 rounded-lg flex items-center w-full sm:w-auto">
+                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                    </svg>
+                    <span>새 메모</span>
+                </button>
+
+                <!-- 검색창 -->
+                <div class="flex-1 w-full sm:max-w-md">
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="메모 검색..."
+                            class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-dark-border rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-start focus:border-transparent bg-white dark:bg-dark-card text-gray-900 dark:text-dark-text"
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 메모 목록 -->
+        <div class="w-full text-left">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <!-- 메모 카드 1 -->
+                <div class="memo-card bg-white dark:bg-dark-card rounded-lg shadow-light dark:shadow-dark border border-gray-200 dark:border-dark-border p-5 sm:p-6 flex flex-col min-h-[280px] sm:min-h-[260px] cursor-pointer group fade-in">
+                    <!-- 액션 버튼들 -->
+                    <div class="flex items-center justify-end space-x-1 mb-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button class="p-1.5 sm:p-1 text-gray-600 dark:text-dark-text-muted hover:text-gray-900 dark:hover:text-dark-text icon-hover">
+                            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                                <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                            </svg>
+                        </button>
+                        <button class="p-1.5 sm:p-1 text-gray-600 dark:text-dark-text-muted hover:text-gray-900 dark:hover:text-dark-text icon-hover">
+                            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                            </svg>
+                        </button>
+                        <button class="p-1.5 sm:p-1 text-red-600 hover:text-red-700 icon-hover">
+                            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- 헤더 -->
+                    <div class="mb-3">
+                        <div class="flex items-center gap-2 mb-1">
+                            <h3 class="text-lg sm:text-base font-semibold text-gray-900 dark:text-dark-text line-clamp-2 leading-tight text-left flex-1">
+                                프로젝트 회의록 - UI/UX 디자인 리뷰
+                            </h3>
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                기억
+                            </span>
+                        </div>
+                        <div class="flex items-center text-sm sm:text-xs text-gray-500 dark:text-dark-text-muted">
+                            <span>내 메모</span>
+                            <span class="mx-2">•</span>
+                            <span>오늘</span>
+                        </div>
+                    </div>
+
+                    <!-- 내용 미리보기 -->
+                    <div class="mb-3 flex-1">
+                        <div class="text-gray-700 dark:text-dark-text text-base sm:text-sm leading-relaxed whitespace-pre-wrap text-left">
+                            오늘 UI/UX 디자인 리뷰 회의에서 새로운 디자인 시스템에 대해 논의했습니다. 주요 변경사항으로는 색상 팔레트 업데이트와 컴포넌트 라이브러리 개선이 포함됩니다...
+                            <button class="text-blue-600 dark:text-primary-start hover:text-blue-800 dark:hover:text-primary-end font-medium ml-1 text-xs">
+                                더보기
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 하단 메타데이터 -->
+                    <div class="mt-auto">
+                        <div class="flex items-center justify-between text-xs text-gray-500 dark:text-dark-text-muted">
+                            <span>ID: abc12345</span>
+                            <span>245자</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 메모 카드 2 -->
+                <div class="memo-card bg-white dark:bg-dark-card rounded-lg shadow-light dark:shadow-dark border border-gray-200 dark:border-dark-border p-5 sm:p-6 flex flex-col min-h-[280px] sm:min-h-[260px] cursor-pointer group fade-in">
+                    <!-- 액션 버튼들 -->
+                    <div class="flex items-center justify-end space-x-1 mb-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button class="p-1.5 sm:p-1 text-gray-600 dark:text-dark-text-muted hover:text-gray-900 dark:hover:text-dark-text icon-hover">
+                            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                                <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                            </svg>
+                        </button>
+                        <button class="p-1.5 sm:p-1 text-gray-600 dark:text-dark-text-muted hover:text-gray-900 dark:hover:text-dark-text icon-hover">
+                            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                            </svg>
+                        </button>
+                        <button class="p-1.5 sm:p-1 text-red-600 hover:text-red-700 icon-hover">
+                            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- 헤더 -->
+                    <div class="mb-3">
+                        <div class="flex items-center gap-2 mb-1">
+                            <h3 class="text-lg sm:text-base font-semibold text-gray-900 dark:text-dark-text line-clamp-2 leading-tight text-left flex-1">
+                                주간 개발 일정
+                            </h3>
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
+                                임시
+                            </span>
+                        </div>
+                        <div class="flex items-center text-sm sm:text-xs text-gray-500 dark:text-dark-text-muted">
+                            <span>내 메모</span>
+                            <span class="mx-2">•</span>
+                            <span>어제</span>
+                        </div>
+                    </div>
+
+                    <!-- 내용 미리보기 -->
+                    <div class="mb-3 flex-1">
+                        <div class="text-gray-700 dark:text-dark-text text-base sm:text-sm leading-relaxed whitespace-pre-wrap text-left">
+                            이번 주 개발 일정:
+                            - 월: Firebase 연동 완료
+                            - 화: UI 컴포넌트 개선
+                            - 수: 테스트 코드 작성
+                            - 목: 버그 수정 및 최적화
+                            - 금: 배포 준비
+                        </div>
+                    </div>
+
+                    <!-- 하단 메타데이터 -->
+                    <div class="mt-auto">
+                        <div class="flex items-center justify-between text-xs text-gray-500 dark:text-dark-text-muted">
+                            <span>ID: def67890</span>
+                            <span>156자</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 메모 카드 3 -->
+                <div class="memo-card bg-white dark:bg-dark-card rounded-lg shadow-light dark:shadow-dark border border-gray-200 dark:border-dark-border p-5 sm:p-6 flex flex-col min-h-[280px] sm:min-h-[260px] cursor-pointer group fade-in">
+                    <!-- 액션 버튼들 -->
+                    <div class="flex items-center justify-end space-x-1 mb-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button class="p-1.5 sm:p-1 text-gray-600 dark:text-dark-text-muted hover:text-gray-900 dark:hover:text-dark-text icon-hover">
+                            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                                <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                            </svg>
+                        </button>
+                        <button class="p-1.5 sm:p-1 text-gray-600 dark:text-dark-text-muted hover:text-gray-900 dark:hover:text-dark-text icon-hover">
+                            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                            </svg>
+                        </button>
+                        <button class="p-1.5 sm:p-1 text-red-600 hover:text-red-700 icon-hover">
+                            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- 헤더 -->
+                    <div class="mb-3">
+                        <div class="flex items-center gap-2 mb-1">
+                            <h3 class="text-lg sm:text-base font-semibold text-gray-900 dark:text-dark-text line-clamp-2 leading-tight text-left flex-1">
+                                아이디어 노트 - 새로운 기능 제안
+                            </h3>
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                중요
+                            </span>
+                        </div>
+                        <div class="flex items-center text-sm sm:text-xs text-gray-500 dark:text-dark-text-muted">
+                            <span>내 메모</span>
+                            <span class="mx-2">•</span>
+                            <span>3일 전</span>
+                        </div>
+                    </div>
+
+                    <!-- 내용 미리보기 -->
+                    <div class="mb-3 flex-1">
+                        <div class="text-gray-700 dark:text-dark-text text-base sm:text-sm leading-relaxed whitespace-pre-wrap text-left">
+                            새로운 기능 아이디어:
+                            1. 실시간 협업 기능
+                            2. AI 기반 메모 분류
+                            3. 음성 메모 기능
+                            4. 마크다운 지원
+                            5. 태그 시스템
+                        </div>
+                    </div>
+
+                    <!-- 하단 메타데이터 -->
+                    <div class="mt-auto">
+                        <div class="flex items-center justify-between text-xs text-gray-500 dark:text-dark-text-muted">
+                            <span>ID: ghi11111</span>
+                            <span>89자</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 메모 카드 4 (이미지 포함) -->
+                <div class="memo-card bg-white dark:bg-dark-card rounded-lg shadow-light dark:shadow-dark border border-gray-200 dark:border-dark-border p-5 sm:p-6 flex flex-col min-h-[280px] sm:min-h-[260px] cursor-pointer group fade-in">
+                    <!-- 액션 버튼들 -->
+                    <div class="flex items-center justify-end space-x-1 mb-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button class="p-1.5 sm:p-1 text-gray-600 dark:text-dark-text-muted hover:text-gray-900 dark:hover:text-dark-text icon-hover">
+                            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                                <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                            </svg>
+                        </button>
+                        <button class="p-1.5 sm:p-1 text-gray-600 dark:text-dark-text-muted hover:text-gray-900 dark:hover:text-dark-text icon-hover">
+                            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                            </svg>
+                        </button>
+                        <button class="p-1.5 sm:p-1 text-red-600 hover:text-red-700 icon-hover">
+                            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- 헤더 -->
+                    <div class="mb-3">
+                        <div class="flex items-center gap-2 mb-1">
+                            <h3 class="text-lg sm:text-base font-semibold text-gray-900 dark:text-dark-text line-clamp-2 leading-tight text-left flex-1">
+                                디자인 스케치
+                            </h3>
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                기억
+                            </span>
+                        </div>
+                        <div class="flex items-center text-sm sm:text-xs text-gray-500 dark:text-dark-text-muted">
+                            <span>내 메모</span>
+                            <span class="mx-2">•</span>
+                            <span>1주일 전</span>
+                        </div>
+                    </div>
+
+                    <!-- 내용 미리보기 -->
+                    <div class="mb-3 flex-1">
+                        <div class="text-gray-700 dark:text-dark-text text-base sm:text-sm leading-relaxed whitespace-pre-wrap text-left">
+                            새로운 UI 디자인 스케치입니다. 사용자 경험을 개선하기 위한 레이아웃 변경사항을 포함합니다.
+                        </div>
+                    </div>
+
+                    <!-- 이미지 미리보기 -->
+                    <div class="mb-3">
+                        <div class="flex items-center space-x-2 mb-2">
+                            <svg class="w-3 h-3 text-gray-400 dark:text-dark-text-muted" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="text-xs text-gray-500 dark:text-dark-text-muted">2개 이미지</span>
+                        </div>
+                        <div class="flex space-x-2">
+                            <div class="w-12 h-12 bg-gray-200 dark:bg-dark-bg-secondary rounded overflow-hidden flex-shrink-0 border border-gray-200 dark:border-dark-border">
+                                <div class="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="w-12 h-12 bg-gray-200 dark:bg-dark-bg-secondary rounded overflow-hidden flex-shrink-0 border border-gray-200 dark:border-dark-border">
+                                <div class="w-full h-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 하단 메타데이터 -->
+                    <div class="mt-auto">
+                        <div class="flex items-center justify-between text-xs text-gray-500 dark:text-dark-text-muted">
+                            <span>ID: jkl22222</span>
+                            <span>67자</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 다크모드 토글 버튼 (개발용) -->
+    <button id="darkModeToggle" class="fixed top-4 right-4 p-2 bg-white dark:bg-dark-card rounded-lg shadow-medium border border-gray-200 dark:border-dark-border text-gray-600 dark:text-dark-text-muted hover:text-gray-900 dark:hover:text-dark-text transition-all duration-200">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd" />
+        </svg>
+    </button>
+
+    <script>
+        // 다크모드 토글 기능
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const html = document.documentElement;
+        
+        darkModeToggle.addEventListener('click', () => {
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                localStorage.setItem('darkMode', 'light');
+            } else {
+                html.classList.add('dark');
+                localStorage.setItem('darkMode', 'dark');
+            }
+        });
+        
+        // 페이지 로드 시 다크모드 상태 복원
+        if (localStorage.getItem('darkMode') === 'dark' || 
+            (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            html.classList.add('dark');
+        }
+        
+        // 카드 호버 효과 개선
+        document.querySelectorAll('.memo-card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-2px)';
+                card.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.15)';
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0)';
+                card.style.boxShadow = '';
+            });
+        });
+        
+        // 검색 기능 시뮬레이션
+        const searchInput = document.querySelector('input[placeholder="메모 검색..."]');
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const cards = document.querySelectorAll('.memo-card');
+            
+            cards.forEach(card => {
+                const title = card.querySelector('h3').textContent.toLowerCase();
+                const content = card.querySelector('.text-gray-700').textContent.toLowerCase();
+                
+                if (title.includes(searchTerm) || content.includes(searchTerm)) {
+                    card.style.display = 'flex';
+                    card.classList.add('fade-in');
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

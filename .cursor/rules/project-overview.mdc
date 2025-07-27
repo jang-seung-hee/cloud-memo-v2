@@ -1,0 +1,33 @@
+# Cloud Memo 프로젝트 개요
+
+## 프로젝트 목적
+Cloud Memo는 "10초 만에 기록하고, 3초 만에 다시 꺼내볼 수 있는" 실용적인 메모 앱입니다.
+
+## 핵심 기술 스택
+- **프론트엔드**: React + TypeScript + TailwindCSS + Shadcn UI + heroicon
+- **백엔드**: Firebase (Firestore, Storage, Authentication)
+- **라우팅**: React Router
+- **호스팅**: Netlify
+
+## 폴더 구조 규칙
+- **백엔드 코드**: 반드시 [backend/](mdc:backend/) 폴더에만 작성
+- **프론트엔드 코드**: 반드시 [frontend/](mdc:frontend/) 폴더에만 작성
+- **금지사항**: 백엔드와 프론트엔드 코드 혼재 금지
+
+## 개발 단계
+1. **1차**: UI/UX MVP (3-7일) - Shadcn UI 수동 적용, 반응형 레이아웃
+2. **2차**: 클라우드 확장 - Firebase 설정, CRUD 기능, 이미지 업로드
+3. **3차**: 부가 기능 - 검색, 태그, 폴더, 공유 기능
+
+## 성능 목표
+- 메모 저장까지 10초 이내
+- 모든 주요 액션 3클릭 이내
+- 이미지 2MB 이하 압축 필수
+- 반응형 디자인 필수 (PC/모바일)
+
+## 한국어 UI 필수
+모든 사용자 인터페이스 텍스트는 반드시 한국어로 작성해야 합니다.
+description:
+globs:
+alwaysApply: false
+---

@@ -1,0 +1,224 @@
+# 테스트 표준
+
+## 테스트 도구
+- **단위 테스트**: Jest + React Testing Library
+- **E2E 테스트**: Playwright (선택사항)
+- **커버리지**: Jest Coverage
+- **스냅샷**: Jest Snapshot
+
+## 테스트 파일 구조
+```
+frontend/src/
+├── components/
+│   ├── __tests__/          # 컴포넌트 테스트
+│   └── __mocks__/          # 모킹 파일
+├── hooks/
+│   └── __tests__/          # 훅 테스트
+├── services/
+│   └── __tests__/          # 서비스 테스트
+└── utils/
+    └── __tests__/          # 유틸리티 테스트
+```
+
+## 컴포넌트 테스트 규칙
+### 기본 구조
+```typescript
+import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoList } from '../MemoList';
+
+describe('MemoList', () => {
+  const mockMemos = [
+    { id: '1', title: '테스트 메모', content: '내용' }
+  ];
+
+  it('메모 목록을 렌더링한다', () => {
+    render(<MemoList memos={mockMemos} />);
+    expect(screen.getByText('테스트 메모')).toBeInTheDocument();
+  });
+
+  it('메모 클릭 시 상세 페이지로 이동한다', () => {
+    const mockOnClick = jest.fn();
+    render(<MemoList memos={mockMemos} onMemoClick={mockOnClick} />);
+    
+    fireEvent.click(screen.getByText('테스트 메모'));
+    expect(mockOnClick).toHaveBeenCalledWith('1');
+  });
+});
+```
+
+### 사용자 행동 중심 테스트
+```typescript
+describe('MemoEditor', () => {
+  it('사용자가 메모를 작성하고 저장할 수 있다', async () => {
+    const mockOnSave = jest.fn();
+    render(<MemoEditor onSave={mockOnSave} />);
+    
+    // 제목 입력
+    const titleInput = screen.getByPlaceholderText('제목을 입력하세요');
+    fireEvent.change(titleInput, { target: { value: '새 메모' } });
+    
+    // 내용 입력
+    const contentInput = screen.getByPlaceholderText('내용을 입력하세요');
+    fireEvent.change(contentInput, { target: { value: '메모 내용' } });
+    
+    // 저장 버튼 클릭
+    const saveButton = screen.getByText('저장');
+    fireEvent.click(saveButton);
+    
+    expect(mockOnSave).toHaveBeenCalledWith({
+      title: '새 메모',
+      content: '메모 내용'
+    });
+  });
+});
+```
+
+## 훅 테스트 규칙
+```typescript
+import { renderHook, act } from '@testing-library/react';
+import { useMemoList } from '../useMemoList';
+
+describe('useMemoList', () => {
+  it('메모 목록을 가져온다', async () => {
+    const { result } = renderHook(() => useMemoList());
+    
+    await act(async () => {
+      await result.current.loadMemos();
+    });
+    
+    expect(result.current.memos).toHaveLength(2);
+    expect(result.current.loading).toBe(false);
+  });
+});
+```
+
+## 서비스 테스트 규칙
+### Firebase 모킹
+```typescript
+import { mockFirebase } from '../__mocks__/firebase';
+
+jest.mock('../services/firebase', () => mockFirebase);
+
+describe('MemoService', () => {
+  it('메모를 생성한다', async () => {
+    const memoData = { title: '테스트', content: '내용' };
+    const result = await createMemo(memoData);
+    
+    expect(result.id).toBeDefined();
+    expect(result.title).toBe('테스트');
+  });
+});
+```
+
+## 유틸리티 테스트 규칙
+```typescript
+import { formatDate, compressImage } from '../utils';
+
+describe('formatDate', () => {
+  it('날짜를 한국어 형식으로 포맷한다', () => {
+    const date = new Date('2024-12-25');
+    const result = formatDate(date);
+    expect(result).toBe('2024년 12월 25일');
+  });
+});
+
+describe('compressImage', () => {
+  it('이미지를 2MB 이하로 압축한다', async () => {
+    const largeFile = new File([''], 'test.jpg', { type: 'image/jpeg' });
+    Object.defineProperty(largeFile, 'size', { value: 5 * 1024 * 1024 }); // 5MB
+    
+    const compressed = await compressImage(largeFile);
+    expect(compressed.size).toBeLessThanOrEqual(2 * 1024 * 1024);
+  });
+});
+```
+
+## 통합 테스트 규칙
+### 전체 플로우 테스트
+```typescript
+describe('메모 작성 플로우', () => {
+  it('사용자가 메모를 작성하고 저장하는 전체 과정', async () => {
+    // 1. 메인 페이지에서 새 메모 버튼 클릭
+    render(<App />);
+    fireEvent.click(screen.getByText('새 메모'));
+    
+    // 2. 메모 작성
+    const titleInput = screen.getByPlaceholderText('제목을 입력하세요');
+    fireEvent.change(titleInput, { target: { value: '통합 테스트 메모' } });
+    
+    // 3. 저장
+    fireEvent.click(screen.getByText('저장'));
+    
+    // 4. 메인 페이지로 돌아가서 메모 확인
+    await waitFor(() => {
+      expect(screen.getByText('통합 테스트 메모')).toBeInTheDocument();
+    });
+  });
+});
+```
+
+## 테스트 커버리지 목표
+- **전체 커버리지**: 80% 이상
+- **컴포넌트 커버리지**: 90% 이상
+- **유틸리티 함수 커버리지**: 95% 이상
+- **서비스 함수 커버리지**: 85% 이상
+
+## 테스트 실행 명령어
+```bash
+# 전체 테스트 실행
+npm test
+
+# 커버리지와 함께 실행
+npm test -- --coverage
+
+# 특정 파일만 테스트
+npm test MemoList.test.tsx
+
+# 감시 모드
+npm test -- --watch
+```
+
+## 모킹 규칙
+### Firebase 모킹
+```typescript
+// __mocks__/firebase.ts
+export const mockFirebase = {
+  auth: {
+    signInWithPopup: jest.fn(),
+    signOut: jest.fn(),
+    onAuthStateChanged: jest.fn()
+  },
+  firestore: {
+    collection: jest.fn(() => ({
+      add: jest.fn(),
+      get: jest.fn(),
+      where: jest.fn()
+    }))
+  },
+  storage: {
+    ref: jest.fn(() => ({
+      put: jest.fn(),
+      getDownloadURL: jest.fn()
+    }))
+  }
+};
+```
+
+## 접근성 테스트
+```typescript
+import { axe, toHaveNoViolations } from 'jest-axe';
+
+expect.extend(toHaveNoViolations);
+
+describe('접근성 테스트', () => {
+  it('접근성 위반이 없다', async () => {
+    const { container } = render(<MemoList memos={[]} />);
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+});
+```
+description:
+globs:
+alwaysApply: false
+---

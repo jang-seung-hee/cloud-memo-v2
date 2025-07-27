@@ -1,0 +1,78 @@
+# 백엔드 개발 표준
+
+## Firebase 설정 규칙
+- **인증**: Google 로그인만 지원
+- **데이터베이스**: Firestore 사용
+- **스토리지**: 이미지 파일 저장 (2MB 이하)
+- **보안**: 사용자별 데이터 분리
+
+## 백엔드 폴더 구조
+```
+backend/
+├── firebase/        # Firebase 설정 파일
+├── functions/       # Cloud Functions (필요시)
+├── security/        # 보안 규칙
+└── config/          # 환경 설정
+```
+
+## Firebase 설정 파일
+- [backend/firebase/config.ts](mdc:backend/firebase/config.ts) - Firebase 초기화
+- [backend/firebase/auth.ts](mdc:backend/firebase/auth.ts) - 인증 서비스
+- [backend/firebase/firestore.ts](mdc:backend/firebase/firestore.ts) - 데이터베이스 서비스
+- [backend/firebase/storage.ts](mdc:backend/firebase/storage.ts) - 스토리지 서비스
+
+## 환경변수 관리
+- Firebase 설정은 환경변수로 관리
+- `.env` 파일에 API 키 저장
+- 프로덕션/개발 환경 분리
+
+## 데이터 모델
+### 메모 (Memo)
+```typescript
+interface IMemo {
+  id: string;
+  userId: string;
+  title: string;
+  content: string;
+  images: string[]; // Firebase Storage URLs
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+```
+
+### 상용구 (Template)
+```typescript
+interface ITemplate {
+  id: string;
+  userId: string;
+  title: string;
+  content: string;
+  category: string;
+  createdAt: Timestamp;
+}
+```
+
+### 사용자 (User)
+```typescript
+interface IUser {
+  uid: string;
+  email: string;
+  displayName: string;
+  photoURL: string;
+  createdAt: Timestamp;
+}
+```
+
+## 보안 규칙
+- 사용자는 자신의 데이터만 접근 가능
+- 인증되지 않은 사용자 접근 차단
+- 이미지 업로드 크기 제한 (2MB)
+
+## 금지사항
+- ❌ Firebase 데이터를 로컬스토리지에 중복 저장
+- ❌ 보안 규칙 없이 데이터 접근 허용
+- ❌ 큰 이미지 파일 압축 없이 업로드
+description:
+globs:
+alwaysApply: false
+---

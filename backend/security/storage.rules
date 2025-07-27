@@ -1,0 +1,21 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // 사용자별 이미지 폴더
+    match /users/{userId}/images/{imageId} {
+      // 사용자는 자신의 이미지만 업로드/다운로드/삭제 가능
+      allow read, write, delete: if request.auth != null && 
+        request.auth.uid == userId;
+      
+      // 이미지 업로드 시 파일 형식만 검증 (크기는 클라이언트에서 압축 처리)
+      allow create: if request.auth != null && 
+        request.auth.uid == userId &&
+        request.resource.contentType.matches('image/(jpeg|png|webp)'); // 지원 이미지 형식만
+    }
+    
+    // 기본 규칙: 인증되지 않은 사용자는 모든 접근 차단
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+} 
