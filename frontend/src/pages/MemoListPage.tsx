@@ -12,17 +12,20 @@ import { Input } from '../components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { CategoryType } from '../components/ui/category-badge';
 import { useAuth } from '../hooks/useAuth';
+import { useTheme } from '../hooks/useTheme';
 
 export const MemoListPage: React.FC = () => {
   const { data: memos, loading: isLoading, error, refresh } = useMemos();
   const { isOffline } = useOffline();
   const { isDesktop, getTemplateSidebarWidth } = useDevice();
   const { user } = useAuth();
+  const { isDark } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<CategoryType | 'all'>('all');
   const navigate = useNavigate();
 
-
+  // 모바일 + 라이트 모드일 때의 스타일 조건
+  const isMobileLightMode = !isDesktop && !isDark;
 
   // 검색 및 카테고리 필터링
   const filteredMemos = memos.filter(memo => {
@@ -88,13 +91,33 @@ export const MemoListPage: React.FC = () => {
     return (
       <Layout title="Cloud Memo">
         <div className="text-center py-12">
-          <div className="bg-muted/50 rounded-xl p-8 border border-border/50">
-            <DocumentTextIcon className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-muted-foreground mb-2 font-medium">아직 저장된 메모가 없습니다.</p>
-            <p className="text-sm text-muted-foreground/70 mb-6">새 메모를 작성해보세요!</p>
+          <div className={`rounded-xl p-8 border ${
+            isMobileLightMode 
+              ? 'bg-white border-gray-200 shadow-sm' 
+              : 'bg-muted/50 border-border/50'
+          }`}>
+            <DocumentTextIcon className={`h-12 w-12 mx-auto mb-4 ${
+              isMobileLightMode 
+                ? 'text-gray-400' 
+                : 'text-muted-foreground'
+            }`} />
+            <p className={`mb-2 font-medium ${
+              isMobileLightMode 
+                ? 'text-gray-600' 
+                : 'text-muted-foreground'
+            }`}>아직 저장된 메모가 없습니다.</p>
+            <p className={`text-sm mb-6 ${
+              isMobileLightMode 
+                ? 'text-gray-500' 
+                : 'text-muted-foreground/70'
+            }`}>새 메모를 작성해보세요!</p>
             <Button
               onClick={handleNewMemo}
-              className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground mx-auto shadow-sm hover:shadow-md transition-all"
+              className={`flex items-center gap-2 mx-auto shadow-sm hover:shadow-md transition-all ${
+                isMobileLightMode 
+                  ? 'bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white' 
+                  : 'bg-primary hover:bg-primary/90 text-primary-foreground'
+              }`}
             >
               <PlusIcon className="h-4 w-4" />
               첫 번째 메모 작성하기
@@ -112,13 +135,21 @@ export const MemoListPage: React.FC = () => {
 
               {/* 모바일에서만 새로운 타이틀 스타일 적용 */}
               {!isDesktop && (
-            <div className="flex items-center justify-between px-4 py-1.5 bg-gradient-to-r from-sky-400 via-blue-500 to-cyan-500 dark:bg-slate-800 dark:from-slate-800 dark:via-slate-800 dark:to-slate-800 rounded-lg shadow-md">
+            <div className={`flex items-center justify-between px-4 py-1.5 rounded-lg shadow-sm ${
+              isMobileLightMode 
+                ? 'bg-white border border-gray-200' 
+                : 'bg-gradient-to-r from-sky-400 via-blue-500 to-cyan-500 dark:bg-slate-800 dark:from-slate-800 dark:via-slate-800 dark:to-slate-800 shadow-md'
+            }`}>
               {/* 왼쪽: 카테고리 드롭다운 */}
               <div className="flex items-center">
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value as CategoryType | 'all')}
-                  className="bg-white/20 text-white border border-white/30 rounded px-2 py-1 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-white/50"
+                  className={`border rounded px-2 py-1 text-xs font-medium focus:outline-none focus:ring-2 ${
+                    isMobileLightMode 
+                      ? 'bg-white text-gray-700 border-gray-300 focus:ring-blue-500/50' 
+                      : 'bg-white/20 text-white border-white/30 focus:ring-white/50'
+                  }`}
                 >
                   <option value="all" className="text-gray-800">전체</option>
                   <option value="temporary" className="text-gray-800">임시</option>
@@ -129,8 +160,16 @@ export const MemoListPage: React.FC = () => {
               
               {/* 우측: 타이틀 라벨 */}
               <div className="flex items-center">
-                <div className="w-1 h-1 bg-white rounded-full mr-2"></div>
-                <span className="text-sm font-semibold text-white tracking-wide">메모 목록</span>
+                <div className={`w-1 h-1 rounded-full mr-2 ${
+                  isMobileLightMode 
+                    ? 'bg-gray-400' 
+                    : 'bg-white'
+                }`}></div>
+                <span className={`text-sm font-semibold tracking-wide ${
+                  isMobileLightMode 
+                    ? 'text-gray-700' 
+                    : 'text-white'
+                }`}>메모 목록</span>
               </div>
             </div>
           )}
@@ -180,13 +219,21 @@ export const MemoListPage: React.FC = () => {
             {/* 검색 영역 - 모바일 모드 */}
             {!isDesktop && (
               <div className="relative">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <MagnifyingGlassIcon className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 ${
+                  isMobileLightMode 
+                    ? 'text-gray-400' 
+                    : 'text-muted-foreground'
+                }`} />
                 <Input
                   type="text"
                   placeholder="메모 검색..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 border-border/40 focus:border-ring focus:ring-ring/20 bg-white dark:bg-background py-3"
+                  className={`pl-10 py-3 ${
+                    isMobileLightMode 
+                      ? 'border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 bg-white' 
+                      : 'border-border/40 focus:border-ring focus:ring-ring/20 bg-white dark:bg-background'
+                  }`}
                 />
               </div>
             )}
@@ -201,10 +248,26 @@ export const MemoListPage: React.FC = () => {
 
           {filteredMemos.length === 0 && searchQuery && (
             <div className="text-center py-12">
-              <div className="bg-muted/50 rounded-xl p-8 border border-border/50">
-                <MagnifyingGlassIcon className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-muted-foreground mb-2 font-medium">검색 결과가 없습니다.</p>
-                <p className="text-sm text-muted-foreground/70">다른 키워드로 검색해보세요.</p>
+              <div className={`rounded-xl p-8 border ${
+                isMobileLightMode 
+                  ? 'bg-white border-gray-200 shadow-sm' 
+                  : 'bg-muted/50 border-border/50'
+              }`}>
+                <MagnifyingGlassIcon className={`h-12 w-12 mx-auto mb-4 ${
+                  isMobileLightMode 
+                    ? 'text-gray-400' 
+                    : 'text-muted-foreground'
+                }`} />
+                <p className={`mb-2 font-medium ${
+                  isMobileLightMode 
+                    ? 'text-gray-600' 
+                    : 'text-muted-foreground'
+                }`}>검색 결과가 없습니다.</p>
+                <p className={`text-sm ${
+                  isMobileLightMode 
+                    ? 'text-gray-500' 
+                    : 'text-muted-foreground/70'
+                }`}>다른 키워드로 검색해보세요.</p>
               </div>
             </div>
           )}

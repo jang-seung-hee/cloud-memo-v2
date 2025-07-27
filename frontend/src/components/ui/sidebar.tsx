@@ -114,7 +114,7 @@ export const TemplateSidebar: React.FC<TemplateSidebarProps> = ({
 
         {/* 카테고리 필터 */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1">
             {availableCategories.map((category) => (
               <Button
                 key={category}
@@ -122,7 +122,7 @@ export const TemplateSidebar: React.FC<TemplateSidebarProps> = ({
                 variant={selectedCategory === category ? "default" : "outline"}
                 size="sm"
                 onClick={() => handleCategoryChange(category)}
-                className={`${fontSizeClasses.text}`}
+                className={`px-1 py-1 text-xs h-6 ${fontSizeClasses.text}`}
               >
                 {category}
               </Button>

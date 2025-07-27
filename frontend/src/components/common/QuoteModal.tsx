@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useDevice } from '../../hooks/useDevice';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
-import { X } from 'lucide-react';
 
 // 쇼펜하워 · 니체 · 공자 · 맹자 명언 100선
 const philosophicalQuotes = [
@@ -183,14 +182,6 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose }) => {
           <DialogTitle className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">
             오늘의 명언
           </DialogTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="absolute top-4 right-4 h-8 w-8 p-0 hover:bg-slate-200 dark:hover:bg-slate-700"
-          >
-            <X className="h-4 w-4" />
-          </Button>
         </DialogHeader>
         
         <div className="text-center space-y-4">

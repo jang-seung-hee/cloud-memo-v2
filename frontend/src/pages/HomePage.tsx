@@ -20,8 +20,7 @@ import {
   Sparkles,
   Shield,
   Cloud,
-  ChevronRight,
-  Plus
+  ChevronRight
 } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
@@ -253,7 +252,7 @@ export const HomePage: React.FC = () => {
         </div>
 
         {/* 액션 버튼들 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
           {/* 메모 목록으로 이동 */}
           <div className="group">
             <div className="bg-white/80 dark:bg-[#23232a]/80 backdrop-blur-sm rounded-xl p-3 border border-gray-200/50 dark:border-[#6b7280]/50 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] cursor-pointer" onClick={handleGoToMemos}>
@@ -293,28 +292,6 @@ export const HomePage: React.FC = () => {
               </p>
               <div className="flex items-center text-[#4682b4] dark:text-[#87ceeb] font-medium text-xs group-hover:translate-x-1 transition-transform duration-300">
                 상용구 관리
-                <ArrowRight className="w-3 h-3 ml-1" />
-              </div>
-            </div>
-          </div>
-
-          {/* 새 메모 작성 */}
-          <div className="group">
-            <div className="bg-white/80 dark:bg-[#23232a]/80 backdrop-blur-sm rounded-xl p-3 border border-gray-200/50 dark:border-[#6b7280]/50 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] cursor-pointer" onClick={() => navigate('/memos/create')}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="w-6 h-6 bg-gradient-to-br from-[#87ceeb] to-[#4682b4] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <Plus className="w-3 h-3 text-white" />
-                </div>
-                <ChevronRight className="w-3 h-3 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-[#a5b4fc] transition-colors duration-300 group-hover:translate-x-1" />
-              </div>
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-[#f4f4f5] mb-1">
-                새 메모
-              </h3>
-              <p className="text-gray-600 dark:text-[#a5b4fc] text-xs mb-2">
-                새로운 메모를 작성하세요
-              </p>
-              <div className="flex items-center text-[#4682b4] dark:text-[#87ceeb] font-medium text-xs group-hover:translate-x-1 transition-transform duration-300">
-                메모 작성
                 <ArrowRight className="w-3 h-3 ml-1" />
               </div>
             </div>

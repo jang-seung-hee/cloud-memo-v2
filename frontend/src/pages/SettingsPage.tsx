@@ -6,12 +6,17 @@ import { MoonIcon, SunIcon, EyeIcon, DocumentTextIcon } from '@heroicons/react/2
 import { useTheme } from '../hooks/useTheme';
 import { useFontSize, FontSizeType } from '../hooks/useFontSize';
 import { useToast } from '../hooks/use-toast';
+import { useDevice } from '../hooks/useDevice';
 
 export const SettingsPage: React.FC = () => {
   const { isDark, toggleTheme } = useTheme();
   const { fontSize, changeFontSize, fontSizeClasses, getFontSizeFromSlider, getSliderValueFromFontSize } = useFontSize();
   const { toast } = useToast();
+  const { isDesktop } = useDevice();
   const [sliderValue, setSliderValue] = useState<number>(getSliderValueFromFontSize(fontSize));
+  
+  // 모바일 + 라이트 모드일 때의 스타일 조건
+  const isMobileLightMode = !isDesktop && !isDark;
 
   // fontSize가 변경될 때 sliderValue도 업데이트
   useEffect(() => {
@@ -44,12 +49,28 @@ export const SettingsPage: React.FC = () => {
       <div className="space-y-8">
         {/* 글씨 크기 설정 */}
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">글씨 크기 설정</h2>
-          <div className="p-6 border rounded-lg bg-card">
+          <h2 className={`text-lg font-semibold ${
+            isMobileLightMode 
+              ? 'text-gray-800' 
+              : 'text-foreground'
+          }`}>글씨 크기 설정</h2>
+          <div className={`p-6 border rounded-lg ${
+            isMobileLightMode 
+              ? 'bg-white border-gray-200 shadow-sm' 
+              : 'bg-card border-border'
+          }`}>
             <div className="space-y-6">
               <div>
-                <p className="font-medium mb-2">텍스트 크기</p>
-                <p className="text-sm text-muted-foreground mb-4">
+                <p className={`font-medium mb-2 ${
+                  isMobileLightMode 
+                    ? 'text-gray-700' 
+                    : 'text-foreground'
+                }`}>텍스트 크기</p>
+                <p className={`text-sm mb-4 ${
+                  isMobileLightMode 
+                    ? 'text-gray-600' 
+                    : 'text-muted-foreground'
+                }`}>
                   슬라이더를 조정하면 자동으로 저장됩니다. 메모와 상용구의 글씨 크기를 조절할 수 있습니다.
                 </p>
               </div>
@@ -58,8 +79,16 @@ export const SettingsPage: React.FC = () => {
                 {/* 슬라이더 */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">글씨 크기</span>
-                    <span className="text-sm text-muted-foreground">
+                    <span className={`text-sm font-medium ${
+                      isMobileLightMode 
+                        ? 'text-gray-700' 
+                        : 'text-foreground'
+                    }`}>글씨 크기</span>
+                    <span className={`text-sm ${
+                      isMobileLightMode 
+                        ? 'text-gray-600' 
+                        : 'text-muted-foreground'
+                    }`}>
                       {fontSizeLabels[sliderValue - 1]}
                     </span>
                   </div>
@@ -69,9 +98,17 @@ export const SettingsPage: React.FC = () => {
                     max={5}
                     min={1}
                     step={1}
-                    className="w-full"
+                    className={`w-full ${
+                      isMobileLightMode 
+                        ? '[&>span]:bg-gradient-to-r [&>span]:from-[#87ceeb] [&>span]:to-[#4682b4]' 
+                        : ''
+                    }`}
                   />
-                  <div className="flex justify-between text-xs text-muted-foreground">
+                  <div className={`flex justify-between text-xs ${
+                    isMobileLightMode 
+                      ? 'text-gray-500' 
+                      : 'text-muted-foreground'
+                  }`}>
                     <span>매우 작게</span>
                     <span>매우 크게</span>
                   </div>
@@ -79,42 +116,94 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               {/* 미리보기 */}
-              <div className="mt-6 p-4 border rounded-lg bg-muted/30">
+              <div className={`mt-6 p-4 border rounded-lg ${
+                isMobileLightMode 
+                  ? 'bg-gray-50 border-gray-200' 
+                  : 'bg-muted/30 border-border'
+              }`}>
                 <div className="flex items-center gap-2 mb-3">
-                  <EyeIcon className="h-4 w-4" />
-                  <p className="text-sm font-medium">미리보기</p>
+                  <EyeIcon className={`h-4 w-4 ${
+                    isMobileLightMode 
+                      ? 'text-gray-600' 
+                      : 'text-muted-foreground'
+                  }`} />
+                  <p className={`text-sm font-medium ${
+                    isMobileLightMode 
+                      ? 'text-gray-700' 
+                      : 'text-foreground'
+                  }`}>미리보기</p>
                 </div>
                 <div className="space-y-4">
                   {/* 메모 예시 */}
                   <div className="space-y-2">
-                    <h4 className="text-xs font-medium text-muted-foreground">📝 메모 예시</h4>
+                    <h4 className={`text-xs font-medium ${
+                      isMobileLightMode 
+                        ? 'text-gray-600' 
+                        : 'text-muted-foreground'
+                    }`}>📝 메모 예시</h4>
                     <div className="space-y-2">
-                      <h3 className={`font-semibold ${fontSizeClasses.title}`}>
+                      <h3 className={`font-semibold ${fontSizeClasses.title} ${
+                        isMobileLightMode 
+                          ? 'text-gray-800' 
+                          : 'text-foreground'
+                      }`}>
                         메모 제목 예시
                       </h3>
-                      <p className={`text-muted-foreground ${fontSizeClasses.content}`}>
+                      <p className={`${fontSizeClasses.content} ${
+                        isMobileLightMode 
+                          ? 'text-gray-600' 
+                          : 'text-muted-foreground'
+                      }`}>
                         이것은 메모 내용의 예시입니다. 글씨 크기가 어떻게 보이는지 확인할 수 있습니다.
                       </p>
-                      <p className={`text-muted-foreground ${fontSizeClasses.date}`}>
+                      <p className={`${fontSizeClasses.date} ${
+                        isMobileLightMode 
+                          ? 'text-gray-500' 
+                          : 'text-muted-foreground'
+                      }`}>
                         2024년 1월 15일 (14:30)
                       </p>
                     </div>
                   </div>
 
                   {/* 상용구 예시 */}
-                  <div className="space-y-2 pt-3 border-t border-border/30">
-                    <h4 className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                      <DocumentTextIcon className="h-3 w-3" />
+                  <div className={`space-y-2 pt-3 border-t ${
+                    isMobileLightMode 
+                      ? 'border-gray-200' 
+                      : 'border-border/30'
+                  }`}>
+                    <h4 className={`text-xs font-medium flex items-center gap-1 ${
+                      isMobileLightMode 
+                        ? 'text-gray-600' 
+                        : 'text-muted-foreground'
+                    }`}>
+                      <DocumentTextIcon className={`h-3 w-3 ${
+                        isMobileLightMode 
+                          ? 'text-gray-600' 
+                          : 'text-muted-foreground'
+                      }`} />
                       상용구 예시
                     </h4>
                     <div className="space-y-2">
-                      <h3 className={`font-semibold ${fontSizeClasses.title}`}>
+                      <h3 className={`font-semibold ${fontSizeClasses.title} ${
+                        isMobileLightMode 
+                          ? 'text-gray-800' 
+                          : 'text-foreground'
+                      }`}>
                         상용구 제목 예시
                       </h3>
-                      <p className={`text-muted-foreground ${fontSizeClasses.content}`}>
+                      <p className={`${fontSizeClasses.content} ${
+                        isMobileLightMode 
+                          ? 'text-gray-600' 
+                          : 'text-muted-foreground'
+                      }`}>
                         이것은 상용구 내용의 예시입니다. 자주 사용하는 문구의 글씨 크기도 함께 조절됩니다.
                       </p>
-                      <p className={`text-muted-foreground ${fontSizeClasses.date}`}>
+                      <p className={`${fontSizeClasses.date} ${
+                        isMobileLightMode 
+                          ? 'text-gray-500' 
+                          : 'text-muted-foreground'
+                      }`}>
                         수정: 2024년 1월 15일
                       </p>
                     </div>
@@ -127,12 +216,28 @@ export const SettingsPage: React.FC = () => {
 
         {/* 테마 설정 */}
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">테마 설정</h2>
-          <div className="p-6 border rounded-lg bg-card">
+          <h2 className={`text-lg font-semibold ${
+            isMobileLightMode 
+              ? 'text-gray-800' 
+              : 'text-foreground'
+          }`}>테마 설정</h2>
+          <div className={`p-6 border rounded-lg ${
+            isMobileLightMode 
+              ? 'bg-white border-gray-200 shadow-sm' 
+              : 'bg-card border-border'
+          }`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium">다크모드</p>
-                <p className="text-sm text-muted-foreground">
+                <p className={`font-medium ${
+                  isMobileLightMode 
+                    ? 'text-gray-700' 
+                    : 'text-foreground'
+                }`}>다크모드</p>
+                <p className={`text-sm ${
+                  isMobileLightMode 
+                    ? 'text-gray-600' 
+                    : 'text-muted-foreground'
+                }`}>
                   {isDark ? '다크 테마가 활성화되어 있습니다.' : '라이트 테마가 활성화되어 있습니다.'}
                 </p>
               </div>
@@ -140,7 +245,11 @@ export const SettingsPage: React.FC = () => {
                 variant="outline"
                 size="sm"
                 onClick={toggleTheme}
-                className="flex items-center gap-2"
+                className={`flex items-center gap-2 ${
+                  isMobileLightMode 
+                    ? 'border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900' 
+                    : ''
+                }`}
               >
                 {isDark ? (
                   <>

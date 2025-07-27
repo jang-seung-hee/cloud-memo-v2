@@ -16,6 +16,7 @@ import { useToast } from '../hooks/use-toast';
 import { useDevice } from '../hooks/useDevice';
 import { useDynamicTextareaHeight } from '../hooks/useDynamicTextareaHeight';
 import { useFontSize } from '../hooks/useFontSize';
+import { useTheme } from '../hooks/useTheme';
 import { Loader2 } from 'lucide-react';
 import { storageService } from '../services/firebase/storage';
 
@@ -28,6 +29,7 @@ export const MemoEditPage: React.FC = () => {
   const { data: templates, loading: templatesLoading } = useTemplates();
   const { isDesktop, isMobile, getTemplateSidebarWidth } = useDevice();
   const { fontSizeClasses } = useFontSize();
+  const { isDark } = useTheme();
   
   const [formData, setFormData] = useState<IMemoFormData>({
     content: '',
@@ -41,6 +43,9 @@ export const MemoEditPage: React.FC = () => {
   const [originalImages, setOriginalImages] = useState<string[]>([]);
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
   const [textareaHeight, setTextareaHeight] = useState(230); // 기본 높이
+  
+  // 모바일 + 라이트 모드일 때의 스타일 조건
+  const isMobileLightMode = !isDesktop && !isDark;
   
   // 동적 텍스트 필드 높이 훅 사용
   const { textareaRef } = useDynamicTextareaHeight({
@@ -324,12 +329,12 @@ export const MemoEditPage: React.FC = () => {
       if (formData.images.length > 0) {
         console.log('📤 새로 추가된 이미지 업로드 시작:', formData.images.length, '개');
         
-                  for (const imageFile of formData.images) {
-            try {
-              const imageUrl = await storageService.uploadImage(imageFile, user?.uid || '');
-              uploadedImageUrls.push(imageUrl);
-              console.log('✅ 이미지 업로드 완료:', imageUrl);
-            } catch (error) {
+        for (const imageFile of formData.images) {
+          try {
+            const imageUrl = await storageService.uploadImage(imageFile, user?.uid || '');
+            uploadedImageUrls.push(imageUrl);
+            console.log('✅ 이미지 업로드 완료:', imageUrl);
+          } catch (error) {
             console.error('❌ 이미지 업로드 실패:', error);
             toast({
               title: "이미지 업로드 실패",
@@ -358,7 +363,7 @@ export const MemoEditPage: React.FC = () => {
         title: "메모 수정 완료",
         description: "메모가 성공적으로 수정되었습니다."
       });
-      navigate('/'); // 메모 목록 페이지로 이동
+      navigate('/memos'); // 메모 목록 페이지로 이동
     } catch (error) {
       console.error('메모 수정 중 오류:', error);
       toast({
@@ -372,7 +377,7 @@ export const MemoEditPage: React.FC = () => {
   };
 
   const handleCancel = () => {
-    navigate('/');
+    navigate('/memos');
   };
 
   // 로딩 상태
@@ -552,12 +557,20 @@ export const MemoEditPage: React.FC = () => {
     <Layout title="메모 수정" showNewButton={false}>
       <div className="flex flex-col h-full space-y-2">
         {/* 헤더 - 새로운 타이틀 스타일 */}
-                  <div className="flex items-center justify-between px-4 py-1.5 bg-gradient-to-r from-sky-400 via-blue-500 to-cyan-500 dark:bg-slate-800 dark:from-slate-800 dark:via-slate-800 dark:to-slate-800 rounded-lg shadow-md">
+        <div className={`flex items-center justify-between px-4 py-1.5 rounded-lg shadow-sm ${
+          isMobileLightMode 
+            ? 'bg-white border border-gray-200' 
+            : 'bg-gradient-to-r from-sky-400 via-blue-500 to-cyan-500 dark:bg-slate-800 dark:from-slate-800 dark:via-slate-800 dark:to-slate-800 shadow-md'
+        }`}>
           <Button
             variant="ghost"
             size="sm"
             onClick={handleCancel}
-            className="flex items-center gap-1.5 text-white hover:text-blue-100 hover:bg-white/10 rounded-md transition-all duration-200 h-8"
+            className={`flex items-center gap-1.5 rounded-md transition-all duration-200 h-8 ${
+              isMobileLightMode 
+                ? 'text-gray-700 hover:text-gray-900 hover:bg-gray-50' 
+                : 'text-white hover:text-blue-100 hover:bg-white/10'
+            }`}
           >
             <ArrowLeftIcon className="h-4 w-4" />
             <span className="text-sm font-medium">뒤로가기</span>
@@ -565,37 +578,67 @@ export const MemoEditPage: React.FC = () => {
           
           {/* 메모 수정 라벨 */}
           <div className="flex items-center">
-            <div className="w-1 h-1 bg-white rounded-full mr-2"></div>
-            <span className="text-sm font-semibold text-white tracking-wide">메모 수정</span>
+            <div className={`w-1 h-1 rounded-full mr-2 ${
+              isMobileLightMode 
+                ? 'bg-gray-400' 
+                : 'bg-white'
+            }`}></div>
+            <span className={`text-sm font-semibold tracking-wide ${
+              isMobileLightMode 
+                ? 'text-gray-700' 
+                : 'text-white'
+            }`}>메모 수정</span>
           </div>
         </div>
 
-        {/* 카테고리와 상용구 버튼 - 컴팩트하게 우측 정렬 */}
-        <div className="flex items-center justify-end gap-2">
-          <CategorySelector
-            selectedCategory={formData.category}
-            onCategoryChange={handleCategoryChange}
-          />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsTemplateSidebarOpen(true)}
-            className="flex items-center gap-1 border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-900/20 px-2 py-1 h-8"
-          >
-            <BookmarkIcon className="h-3 w-3" />
-            <span className="text-xs">상용구</span>
-          </Button>
+        {/* 카테고리와 상용구 버튼 - 전체 너비로 정돈된 레이아웃 */}
+        <div className={`w-full px-3 py-2 rounded-lg ${
+          isMobileLightMode 
+            ? 'bg-gray-50 border border-gray-200' 
+            : 'bg-gray-50/50 dark:bg-gray-800/50 border border-gray-200/60 dark:border-gray-700/60'
+        }`}>
+          <div className="flex items-center justify-between gap-2">
+            <CategorySelector
+              selectedCategory={formData.category}
+              onCategoryChange={handleCategoryChange}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsTemplateSidebarOpen(true)}
+              className={`flex items-center gap-1 px-2 py-1 h-8 ${
+                isMobileLightMode 
+                  ? 'border-gray-300 text-gray-700 hover:bg-gray-50' 
+                  : 'border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-900/20'
+              }`}
+            >
+              <BookmarkIcon className="h-3 w-3" />
+              <span className="text-xs">상용구</span>
+            </Button>
+          </div>
         </div>
 
         {/* 메모 입력 영역 - 디바이스에 따른 동적 높이 */}
-        <Card className="flex-1 shadow-sm border-2 border-gray-200 dark:border-gray-700">
+        <Card className={`flex-1 shadow-sm border-2 ${
+          isMobileLightMode 
+            ? 'border-gray-200 bg-white' 
+            : 'border-gray-200 dark:border-gray-700'
+        }`}>
           <CardContent className="p-4 h-full">
             <div className="flex flex-col h-full">
               <div className="flex items-center justify-between mb-3">
-                <label htmlFor="content" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label htmlFor="content" className={`text-sm font-medium ${
+                  isMobileLightMode 
+                    ? 'text-gray-700' 
+                    : 'text-gray-700 dark:text-gray-300'
+                }`}>
                   메모 내용
                 </label>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <span className={`text-xs ${
+                  isMobileLightMode 
+                    ? 'text-gray-500' 
+                    : 'text-gray-500 dark:text-gray-400'
+                }`}>
                   {formData.content.length}자
                 </span>
               </div>
@@ -611,7 +654,11 @@ export const MemoEditPage: React.FC = () => {
                     height: textareaHeight,
                     minHeight: '230px'
                   }}
-                  className={`h-full resize-none border-0 focus:ring-0 focus:border-0 bg-transparent ${fontSizeClasses.content}`}
+                  className={`h-full resize-none border-0 focus:ring-0 focus:border-0 bg-transparent ${fontSizeClasses.content} ${
+                    isMobileLightMode 
+                      ? 'text-gray-700 placeholder-gray-400' 
+                      : 'text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500'
+                  }`}
                 />
               </div>
             </div>
@@ -619,7 +666,11 @@ export const MemoEditPage: React.FC = () => {
         </Card>
 
         {/* 이미지 업로드 영역 - 아이콘과 미리보기 분할 */}
-        <Card className="shadow-sm border-2 border-gray-200 dark:border-gray-700">
+        <Card className={`shadow-sm border-2 ${
+          isMobileLightMode 
+            ? 'border-gray-200 bg-white' 
+            : 'border-gray-200 dark:border-gray-700'
+        }`}>
           <CardContent className="p-4">
             <div className="space-y-3">
               {/* 카메라/갤러리 버튼과 이미지 미리보기 분할 */}
@@ -643,10 +694,22 @@ export const MemoEditPage: React.FC = () => {
                       };
                       cameraInput.click();
                     }}
-                    className="w-full h-10 flex items-center justify-center bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 hover:from-blue-100 hover:to-indigo-100 dark:from-slate-700 dark:to-slate-600 dark:border-slate-500 dark:hover:from-slate-600 dark:hover:to-slate-500 transition-all duration-200"
+                    className={`w-full h-10 flex items-center justify-center transition-all duration-200 ${
+                      isMobileLightMode 
+                        ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 hover:from-blue-100 hover:to-indigo-100' 
+                        : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 hover:from-blue-100 hover:to-indigo-100 dark:from-slate-700 dark:to-slate-600 dark:border-slate-500 dark:hover:from-slate-600 dark:hover:to-slate-500'
+                    }`}
                   >
-                    <CameraIcon className="h-4 w-4 text-blue-600 dark:text-blue-400 mr-1" />
-                    <span className="text-xs text-blue-700 dark:text-blue-300 font-medium">카메라</span>
+                    <CameraIcon className={`h-4 w-4 mr-1 ${
+                      isMobileLightMode 
+                        ? 'text-blue-600' 
+                        : 'text-blue-600 dark:text-blue-400'
+                    }`} />
+                    <span className={`text-xs font-medium ${
+                      isMobileLightMode 
+                        ? 'text-blue-700' 
+                        : 'text-blue-700 dark:text-blue-300'
+                    }`}>카메라</span>
                   </Button>
 
                   {/* 갤러리 버튼 */}
@@ -666,15 +729,31 @@ export const MemoEditPage: React.FC = () => {
                       };
                       fileInput.click();
                     }}
-                    className="w-full h-10 flex items-center justify-center bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 hover:from-green-100 hover:to-emerald-100 dark:from-slate-700 dark:to-slate-600 dark:border-slate-500 dark:hover:from-slate-600 dark:hover:to-slate-500 transition-all duration-200"
+                    className={`w-full h-10 flex items-center justify-center transition-all duration-200 ${
+                      isMobileLightMode 
+                        ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 hover:from-green-100 hover:to-emerald-100' 
+                        : 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 hover:from-green-100 hover:to-emerald-100 dark:from-slate-700 dark:to-slate-600 dark:border-slate-500 dark:hover:from-slate-600 dark:hover:to-slate-500'
+                    }`}
                   >
-                    <PhotoIcon className="h-4 w-4 text-green-600 dark:text-green-400 mr-1" />
-                    <span className="text-xs text-green-700 dark:text-green-300 font-medium">갤러리</span>
+                    <PhotoIcon className={`h-4 w-4 mr-1 ${
+                      isMobileLightMode 
+                        ? 'text-green-600' 
+                        : 'text-green-600 dark:text-green-400'
+                    }`} />
+                    <span className={`text-xs font-medium ${
+                      isMobileLightMode 
+                        ? 'text-green-700' 
+                        : 'text-green-700 dark:text-green-300'
+                    }`}>갤러리</span>
                   </Button>
                 </div>
 
                 {/* 오른쪽: 이미지 미리보기 영역 */}
-                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 p-2 min-h-[84px]">
+                <div className={`rounded-lg border-2 border-dashed p-2 min-h-[84px] ${
+                  isMobileLightMode 
+                    ? 'bg-gray-50 border-gray-300' 
+                    : 'bg-gray-50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600'
+                }`}>
                   {(originalImages.length > 0 || formData.images.length > 0) ? (
                     <div className="grid grid-cols-2 gap-1">
                       {/* 기존 이미지들 */}
@@ -734,7 +813,11 @@ export const MemoEditPage: React.FC = () => {
                     </div>
                   ) : (
                     <div className="flex items-center justify-center h-full">
-                      <PhotoIcon className="h-8 w-8 text-gray-400" />
+                      <PhotoIcon className={`h-8 w-8 ${
+                        isMobileLightMode 
+                          ? 'text-gray-400' 
+                          : 'text-gray-400'
+                      }`} />
                     </div>
                   )}
                 </div>
@@ -750,7 +833,11 @@ export const MemoEditPage: React.FC = () => {
             size="lg"
             onClick={handleCancel}
             disabled={isSaving}
-            className="flex-1 h-12"
+            className={`flex-1 h-12 ${
+              isMobileLightMode 
+                ? 'border-gray-300 text-gray-700 hover:bg-gray-50' 
+                : ''
+            }`}
           >
             <XMarkIcon className="h-5 w-5 mr-2" />
             취소
@@ -759,7 +846,11 @@ export const MemoEditPage: React.FC = () => {
             size="lg"
             onClick={handleSave}
             disabled={isSaving}
-            className="flex-1 h-12 bg-blue-600 hover:bg-blue-700 dark:bg-slate-600 dark:hover:bg-slate-500"
+            className={`flex-1 h-12 ${
+              isMobileLightMode 
+                ? 'bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5' 
+                : 'bg-blue-600 hover:bg-blue-700 dark:bg-slate-600 dark:hover:bg-slate-500'
+            }`}
           >
             {isSaving ? (
               <>

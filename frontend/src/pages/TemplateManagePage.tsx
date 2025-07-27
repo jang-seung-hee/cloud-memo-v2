@@ -21,6 +21,8 @@ import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/use-toast';
 import { useCategories } from '../hooks/useCategories';
 import { CategoryManager } from '../components/memo/CategoryManager';
+import { useDevice } from '../hooks/useDevice';
+import { useTheme } from '../hooks/useTheme';
 
 // 기본 템플릿 데이터 제거 - 사용자가 직접 생성하도록 변경
 const defaultTemplates: ITemplate[] = [];
@@ -29,6 +31,8 @@ export const TemplateManagePage: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { activeCategories, categories: userCategories, loading: categoriesLoading, refresh: refreshCategories } = useCategories();
+  const { isDesktop } = useDevice();
+  const { isDark } = useTheme();
   const [templates, setTemplates] = useState<ITemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -43,6 +47,9 @@ export const TemplateManagePage: React.FC = () => {
     content: '',
     category: ''
   });
+  
+  // 모바일 + 라이트 모드일 때의 스타일 조건
+  const isMobileLightMode = !isDesktop && !isDark;
 
   // 템플릿 데이터 로드
   useEffect(() => {
@@ -352,7 +359,11 @@ export const TemplateManagePage: React.FC = () => {
               <DialogTrigger asChild>
                 <Button
                   onClick={handleAddTemplate}
-                  className="flex items-center gap-2"
+                  className={`flex items-center gap-2 ${
+                    isMobileLightMode 
+                      ? 'bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white shadow-md' 
+                      : ''
+                  }`}
                 >
                   <PlusIcon className="h-4 w-4" />
                   새 상용구
@@ -363,7 +374,11 @@ export const TemplateManagePage: React.FC = () => {
             <Button
               onClick={() => setIsCategoryManagerOpen(true)}
               variant="outline"
-              className="flex items-center gap-2"
+              className={`flex items-center gap-2 ${
+                isMobileLightMode 
+                  ? 'border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900' 
+                  : ''
+              }`}
             >
               <Cog6ToothIcon className="h-4 w-4" />
               카테고리관리
@@ -373,20 +388,28 @@ export const TemplateManagePage: React.FC = () => {
           {/* 검색 입력 */}
           <div className="flex-1 w-full sm:max-w-md">
             <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <MagnifyingGlassIcon className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 ${
+                isMobileLightMode 
+                  ? 'text-gray-400' 
+                  : 'text-muted-foreground'
+              }`} />
               <Input
                 type="text"
                 placeholder="상용구 검색..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className={`pl-10 ${
+                  isMobileLightMode 
+                    ? 'border-gray-300 focus:border-blue-500 bg-white' 
+                    : ''
+                }`}
               />
             </div>
           </div>
           
           {/* 카테고리 필터 */}
           {categories.length > 1 && (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1">
               {categories.map((category) => (
                 <Button
                   key={category}
@@ -394,17 +417,36 @@ export const TemplateManagePage: React.FC = () => {
                   variant={selectedCategory === category ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSelectedCategory(category)}
+                  className={`px-2 py-1 text-xs flex-1 min-w-0 ${
+                    selectedCategory === category ? (
+                      isMobileLightMode 
+                        ? 'bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white shadow-md' 
+                        : ''
+                    ) : (
+                      isMobileLightMode 
+                        ? 'border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900' 
+                        : ''
+                    )
+                  }`}
                 >
-                  {category}
+                  <span className="truncate">{category}</span>
                 </Button>
               ))}
             </div>
           )}
           
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className={`max-w-2xl ${
+              isMobileLightMode 
+                ? 'bg-white border-gray-200 shadow-lg' 
+                : ''
+            }`}>
               <DialogHeader>
-                <DialogTitle>
+                <DialogTitle className={`${
+                  isMobileLightMode 
+                    ? 'text-gray-800' 
+                    : 'text-foreground'
+                }`}>
                   {editingTemplate ? '상용구 수정' : '새 상용구 추가'}
                 </DialogTitle>
               </DialogHeader>
@@ -415,7 +457,11 @@ export const TemplateManagePage: React.FC = () => {
               <div className="space-y-4">
                 {/* 제목 입력 */}
                 <div className="space-y-2">
-                  <label htmlFor="title" className="text-sm font-medium">
+                  <label htmlFor="title" className={`text-sm font-medium ${
+                    isMobileLightMode 
+                      ? 'text-gray-700' 
+                      : 'text-foreground'
+                  }`}>
                     제목
                   </label>
                   <Input
@@ -424,12 +470,20 @@ export const TemplateManagePage: React.FC = () => {
                     placeholder="상용구 제목을 입력하세요"
                     value={formData.title}
                     onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                    className={isMobileLightMode 
+                      ? 'border-gray-300 focus:border-blue-500 bg-white' 
+                      : ''
+                    }
                   />
                 </div>
 
                 {/* 카테고리 선택 */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">
+                  <label className={`text-sm font-medium ${
+                    isMobileLightMode 
+                      ? 'text-gray-700' 
+                      : 'text-foreground'
+                  }`}>
                     카테고리
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -443,13 +497,27 @@ export const TemplateManagePage: React.FC = () => {
                             variant={formData.category === cat.name ? "default" : "outline"}
                             size="sm"
                             onClick={() => setFormData(prev => ({ ...prev, category: cat.name }))}
-                            className="text-xs"
+                            className={`text-xs ${
+                              formData.category === cat.name ? (
+                                isMobileLightMode 
+                                  ? 'bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white shadow-md' 
+                                  : ''
+                              ) : (
+                                isMobileLightMode 
+                                  ? 'border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900' 
+                                  : ''
+                              )
+                            }`}
                           >
                             {cat.name}
                           </Button>
                         ))
                       ) : (
-                        <div className="px-4 py-2 text-muted-foreground text-sm">
+                        <div className={`px-4 py-2 text-sm ${
+                          isMobileLightMode 
+                            ? 'text-gray-500' 
+                            : 'text-muted-foreground'
+                        }`}>
                           카테고리가 없습니다
                         </div>
                       )
@@ -463,13 +531,27 @@ export const TemplateManagePage: React.FC = () => {
                             variant={formData.category === cat.name ? "default" : "outline"}
                             size="sm"
                             onClick={() => setFormData(prev => ({ ...prev, category: cat.name }))}
-                            className="text-xs"
+                            className={`text-xs ${
+                              formData.category === cat.name ? (
+                                isMobileLightMode 
+                                  ? 'bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white shadow-md' 
+                                  : ''
+                              ) : (
+                                isMobileLightMode 
+                                  ? 'border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900' 
+                                  : ''
+                              )
+                            }`}
                           >
                             {cat.name}
                           </Button>
                         ))
                       ) : (
-                        <div className="px-4 py-2 text-muted-foreground text-sm">
+                        <div className={`px-4 py-2 text-sm ${
+                          isMobileLightMode 
+                            ? 'text-gray-500' 
+                            : 'text-muted-foreground'
+                        }`}>
                           활성 카테고리가 없습니다
                         </div>
                       )
@@ -479,7 +561,11 @@ export const TemplateManagePage: React.FC = () => {
 
                 {/* 내용 입력 */}
                 <div className="space-y-2">
-                  <label htmlFor="content" className="text-sm font-medium">
+                  <label htmlFor="content" className={`text-sm font-medium ${
+                    isMobileLightMode 
+                      ? 'text-gray-700' 
+                      : 'text-foreground'
+                  }`}>
                     내용
                   </label>
                   <Textarea
@@ -487,7 +573,11 @@ export const TemplateManagePage: React.FC = () => {
                     placeholder="상용구 내용을 입력하세요"
                     value={formData.content}
                     onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                    className="min-h-[200px] resize-none"
+                    className={`min-h-[200px] resize-none ${
+                      isMobileLightMode 
+                        ? 'border-gray-300 focus:border-blue-500 bg-white' 
+                        : ''
+                    }`}
                   />
                 </div>
 
@@ -497,14 +587,22 @@ export const TemplateManagePage: React.FC = () => {
                     type="button"
                     variant="outline"
                     onClick={handleCancel}
-                    className="flex-1"
+                    className={`flex-1 ${
+                      isMobileLightMode 
+                        ? 'border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900' 
+                        : ''
+                    }`}
                   >
                     취소
                   </Button>
                   <Button
                     type="button"
                     onClick={handleSubmit}
-                    className="flex-1"
+                    className={`flex-1 ${
+                      isMobileLightMode 
+                        ? 'bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white shadow-md' 
+                        : ''
+                    }`}
                   >
                     {editingTemplate ? '수정' : '추가'}
                   </Button>
@@ -518,22 +616,46 @@ export const TemplateManagePage: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredTemplates.length === 0 ? (
             <div className="col-span-full text-center py-12">
-              <div className="text-muted-foreground mb-4">
-                <BookmarkIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg font-medium">
+              <div className={`mb-4 ${
+                isMobileLightMode 
+                  ? 'text-gray-600' 
+                  : 'text-muted-foreground'
+              }`}>
+                <BookmarkIcon className={`h-12 w-12 mx-auto mb-4 opacity-50 ${
+                  isMobileLightMode 
+                    ? 'text-gray-400' 
+                    : 'text-muted-foreground'
+                }`} />
+                <p className={`text-lg font-medium ${
+                  isMobileLightMode 
+                    ? 'text-gray-700' 
+                    : 'text-foreground'
+                }`}>
                   {searchTerm || selectedCategory !== '전체' 
                     ? '검색 결과가 없습니다' 
                     : '상용구가 없습니다'
                   }
                 </p>
-                <p className="text-sm">
+                <p className={`text-sm ${
+                  isMobileLightMode 
+                    ? 'text-gray-500' 
+                    : 'text-muted-foreground'
+                }`}>
                   {searchTerm || selectedCategory !== '전체' 
                     ? '다른 검색어나 카테고리를 시도해보세요.' 
                     : '새 상용구를 추가해보세요!'
                   }
                 </p>
                 {!searchTerm && selectedCategory === '전체' && (
-                  <Button onClick={handleAddTemplate} size="sm" className="mt-4">
+                  <Button 
+                    onClick={handleAddTemplate} 
+                    size="sm" 
+                    className={`mt-4 ${
+                      isMobileLightMode 
+                        ? 'bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white shadow-md' 
+                        : ''
+                    }`}
+                  >
                     <PlusIcon className="h-4 w-4 mr-2" />
                     첫 번째 상용구 추가하기
                   </Button>
@@ -542,11 +664,19 @@ export const TemplateManagePage: React.FC = () => {
             </div>
           ) : (
             filteredTemplates.map((template) => (
-              <Card key={template.id} className="group">
+              <Card key={template.id} className={`group ${
+                isMobileLightMode 
+                  ? 'bg-white border-gray-200 shadow-sm hover:shadow-md' 
+                  : ''
+              }`}>
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <CardTitle className="text-lg font-semibold line-clamp-2">
+                      <CardTitle className={`text-lg font-semibold line-clamp-2 ${
+                        isMobileLightMode 
+                          ? 'text-gray-800' 
+                          : 'text-foreground'
+                      }`}>
                         {template.title}
                       </CardTitle>
                       <span className={getCategoryBadgeStyle(template.category)}>
@@ -559,7 +689,11 @@ export const TemplateManagePage: React.FC = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleEditTemplate(template)}
-                        className="h-8 w-8 p-0"
+                        className={`h-8 w-8 p-0 ${
+                          isMobileLightMode 
+                            ? 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' 
+                            : ''
+                        }`}
                       >
                         <PencilIcon className="h-4 w-4" />
                       </Button>
@@ -568,7 +702,11 @@ export const TemplateManagePage: React.FC = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDeleteTemplate(template)}
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                        className={`h-8 w-8 p-0 text-red-600 hover:text-red-700 ${
+                          isMobileLightMode 
+                            ? 'hover:bg-red-50' 
+                            : ''
+                        }`}
                       >
                         <TrashIcon className="h-4 w-4" />
                       </Button>
@@ -576,10 +714,18 @@ export const TemplateManagePage: React.FC = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <p className="text-muted-foreground text-sm line-clamp-3 mb-3">
+                  <p className={`text-sm line-clamp-3 mb-3 ${
+                    isMobileLightMode 
+                      ? 'text-gray-600' 
+                      : 'text-muted-foreground'
+                  }`}>
                     {template.content}
                   </p>
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <div className={`flex items-center justify-between text-xs ${
+                    isMobileLightMode 
+                      ? 'text-gray-500' 
+                      : 'text-muted-foreground'
+                  }`}>
                     <span>
                       {template.updatedAt.getTime() > template.createdAt.getTime() 
                         ? `수정: ${template.updatedAt.toLocaleDateString('ko-KR')} ${template.updatedAt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })}`
@@ -595,22 +741,40 @@ export const TemplateManagePage: React.FC = () => {
         
         {/* 삭제 확인 다이얼로그 */}
         <AlertDialog open={!!deletingTemplate} onOpenChange={(open) => !open && setDeletingTemplate(null)}>
-          <AlertDialogContent>
+          <AlertDialogContent className={isMobileLightMode 
+            ? 'bg-white border-gray-200 shadow-lg' 
+            : ''
+          }>
             <AlertDialogHeader>
-              <AlertDialogTitle>상용구 삭제</AlertDialogTitle>
-              <AlertDialogDescription>
+              <AlertDialogTitle className={isMobileLightMode 
+                ? 'text-gray-800' 
+                : 'text-foreground'
+              }>상용구 삭제</AlertDialogTitle>
+              <AlertDialogDescription className={isMobileLightMode 
+                ? 'text-gray-600' 
+                : 'text-muted-foreground'
+              }>
                 "{deletingTemplate?.title}" 상용구를 삭제하시겠습니까?
                 <br />
-                <span className="text-destructive">
+                <span className={isMobileLightMode 
+                  ? 'text-red-600' 
+                  : 'text-destructive'
+                }>
                   이 작업은 되돌릴 수 없습니다.
                 </span>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>취소</AlertDialogCancel>
+              <AlertDialogCancel className={isMobileLightMode 
+                ? 'border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900' 
+                : ''
+              }>취소</AlertDialogCancel>
               <AlertDialogAction
                 onClick={executeDeleteTemplate}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                className={isMobileLightMode 
+                  ? 'bg-red-600 text-white hover:bg-red-700' 
+                  : 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                }
                 disabled={isDeleting}
               >
                 {isDeleting ? '삭제 중...' : '삭제'}

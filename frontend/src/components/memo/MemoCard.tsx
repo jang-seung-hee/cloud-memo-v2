@@ -358,9 +358,9 @@ export const MemoCard: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
           // PC 모드: 이미지 유무에 따라 최적화된 레이아웃
           <>
             {memo.images.length === 0 ? (
-              // 이미지가 없을 때: 더 많은 텍스트 표시
-              <div className="bg-muted/80 dark:bg-muted/70 rounded-lg p-3 mb-4 relative">
-                <p className={`text-muted-foreground line-clamp-7 leading-tight whitespace-pre-wrap ${fontSizeClasses.content}`}>
+              // 이미지가 없을 때: 더 큰 고정 높이로 텍스트 영역 설정
+              <div className="bg-muted/80 dark:bg-muted/70 rounded-lg p-3 mb-4 relative h-[280px] flex flex-col">
+                <p className={`text-muted-foreground line-clamp-7 leading-tight whitespace-pre-wrap flex-1 ${fontSizeClasses.content}`}>
                   {truncateText(memo.content, 220)}
                 </p>
                 <div className="absolute bottom-0 left-0 right-0 h-[40px] bg-white dark:bg-card rounded-b-lg"></div>
@@ -368,10 +368,10 @@ export const MemoCard: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
             ) : (
               // 이미지가 있을 때: 절대 위치로 이미지를 하단에 고정
               <div className="relative h-full">
-                {/* 텍스트 영역 - 이미지 컨테이너 높이만큼 하단 여백 확보 */}
-                <div className="pb-22">
-                  <div className="bg-muted/80 dark:bg-muted/70 rounded-lg p-3">
-                    <p className={`text-muted-foreground line-clamp-7 leading-normal whitespace-pre-wrap ${fontSizeClasses.content}`}>
+                {/* 텍스트 영역 - 고정 높이로 설정 */}
+                <div className="h-[220px] pb-22">
+                  <div className="bg-muted/80 dark:bg-muted/70 rounded-lg p-3 h-full flex flex-col">
+                    <p className={`text-muted-foreground line-clamp-7 leading-normal whitespace-pre-wrap flex-1 ${fontSizeClasses.content}`}>
                       {truncateText(memo.content, 150)}
                     </p>
                   </div>

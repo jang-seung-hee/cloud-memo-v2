@@ -7,6 +7,8 @@ import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/use-toast';
 import { firestoreService } from '../../services/firebase/firestore';
 import { ICategory } from '../../types/template';
+import { useDevice } from '../../hooks/useDevice';
+import { useTheme } from '../../hooks/useTheme';
 
 interface CategoryManagerProps {
   isOpen: boolean;
@@ -21,9 +23,14 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isDesktop } = useDevice();
+  const { isDark } = useTheme();
   const [categories, setCategories] = useState<ICategory[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // 모바일 + 라이트 모드일 때의 스타일 조건
+  const isMobileLightMode = !isDesktop && !isDark;
 
   // 카테고리 슬롯 초기화 (5개)
   const initializeCategories = () => {
@@ -155,9 +162,17 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className={`sm:max-w-lg ${
+        isMobileLightMode 
+          ? 'bg-white border-gray-200 shadow-lg' 
+          : ''
+      }`}>
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className={`${
+            isMobileLightMode 
+              ? 'text-gray-800' 
+              : 'text-foreground'
+          }`}>
             카테고리 관리
           </DialogTitle>
         </DialogHeader>
@@ -165,15 +180,27 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
         <div className="space-y-4">
           {isLoading ? (
             <div className="text-center py-8">
-              <div className="text-muted-foreground">카테고리를 불러오는 중...</div>
+              <div className={`${
+                isMobileLightMode 
+                  ? 'text-gray-600' 
+                  : 'text-muted-foreground'
+              }`}>카테고리를 불러오는 중...</div>
             </div>
           ) : (
             <>
               {/* 테이블 헤더 */}
-              <div className="grid grid-cols-3 gap-4 text-sm font-medium text-muted-foreground border-b pb-2">
+              <div className={`grid grid-cols-3 gap-4 text-sm font-medium border-b pb-2 ${
+                isMobileLightMode 
+                  ? 'text-gray-600 border-gray-200' 
+                  : 'text-muted-foreground border-border'
+              }`}>
                 <div className="text-center">순서</div>
-                <div className="text-center">명칭 (4글자미만)</div>
-                <div className="text-center text-red-600">사용 안함</div>
+                <div className="text-center">최대4글자</div>
+                <div className={`text-center ${
+                  isMobileLightMode 
+                    ? 'text-red-600' 
+                    : 'text-red-600'
+                }`}>사용 안함</div>
               </div>
 
               {/* 카테고리 슬롯들 */}
@@ -182,7 +209,11 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
                   <div key={category.id} className="grid grid-cols-3 gap-4 items-center">
                     {/* 순서 */}
                     <div className="text-center">
-                      <div className="inline-flex items-center justify-center w-12 h-8 bg-muted rounded-lg text-sm font-medium">
+                      <div className={`inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-medium ${
+                        isMobileLightMode 
+                          ? 'bg-gray-100 text-gray-700' 
+                          : 'bg-muted text-foreground'
+                      }`}>
                         {index + 1}번
                       </div>
                     </div>
@@ -195,7 +226,11 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
                         value={category.name}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleNameChange(index, e.target.value)}
                         maxLength={4}
-                        className="text-center"
+                        className={`text-center ${
+                          isMobileLightMode 
+                            ? 'border-gray-300 focus:border-blue-500 bg-white' 
+                            : ''
+                        }`}
                         disabled={!category.isActive}
                       />
                     </div>
@@ -219,7 +254,11 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
               <div className="pt-4">
                 <Button
                   onClick={handleSave}
-                  className="w-full"
+                  className={`w-full ${
+                    isMobileLightMode 
+                      ? 'bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white shadow-md' 
+                      : ''
+                  }`}
                   disabled={isSaving}
                 >
                   {isSaving ? '저장 중...' : '저장'}

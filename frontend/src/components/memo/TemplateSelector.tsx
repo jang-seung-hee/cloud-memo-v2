@@ -170,7 +170,7 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
         
         <div className="mt-6 space-y-4 h-full flex flex-col">
           {/* 카테고리 필터 */}
-          <div className="flex flex-wrap gap-2 flex-shrink-0">
+          <div className="flex flex-wrap gap-1 flex-shrink-0">
             {categories.map((category) => (
               <Button
                 key={category}
@@ -178,6 +178,7 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                 variant={selectedCategory === category ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedCategory(category)}
+                className="px-1 py-1 text-xs h-6"
               >
                 {category}
               </Button>
