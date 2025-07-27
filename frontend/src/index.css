@@ -1,0 +1,164 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 95%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 220 13% 8%;
+    --foreground: 210 40% 98%;
+    --card: 220 13% 6%;
+    --card-foreground: 210 40% 98%;
+    --popover: 220 13% 6%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 220 13% 8%;
+    --secondary: 220 13% 12%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 220 13% 12%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 220 13% 12%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 220 13% 15%;
+    --input: 220 13% 15%;
+    --ring: 224.3 76.3% 94.1%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  
+  /* 하단 메뉴 안정성 향상 */
+  nav {
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+  
+  /* 버튼 내부 요소 안정성 */
+  button {
+    will-change: transform;
+    transform: translateZ(0);
+  }
+  
+  /* 버튼 active 상태 안정성 */
+  button:active {
+    transform: translateZ(0) scale(0.98);
+    transition: transform 0.1s ease-out;
+  }
+  
+  /* 아이콘과 텍스트 안정성 */
+  svg, span {
+    will-change: transform;
+    transform: translateZ(0);
+  }
+}
+
+@layer utilities {
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  /* 하단 메뉴 전용 유틸리티 */
+  .nav-stable {
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+  
+  .nav-button-stable {
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+  
+  /* PC 모드 하단 메뉴 고정 위치 안정성 */
+  .nav-fixed-position {
+    position: absolute;
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
+  }
+  
+  /* 버튼 컨테이너 안정성 */
+  .nav-button-container {
+    position: absolute;
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
+    pointer-events: auto;
+  }
+  
+  /* CSS Grid 레이아웃 안정성 */
+  .nav-grid-stable {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    align-items: center;
+    justify-items: center;
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
+  }
+  
+  /* Grid 아이템 안정성 */
+  .nav-grid-item {
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
+    contain: layout style paint;
+  }
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
