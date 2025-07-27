@@ -17,6 +17,7 @@ import { useDynamicTextareaHeight } from '../hooks/useDynamicTextareaHeight';
 import { useFontSize } from '../hooks/useFontSize';
 import { useTheme } from '../hooks/useTheme';
 import { Loader2 } from 'lucide-react';
+import { IFirebaseTemplate } from '../types/firebase';
 
 export const MemoCreatePage: React.FC = () => {
   const navigate = useNavigate();
@@ -26,6 +27,22 @@ export const MemoCreatePage: React.FC = () => {
   const { isDesktop, isMobile, getTemplateSidebarWidth } = useDevice();
   const { fontSizeClasses } = useFontSize();
   const { isDark } = useTheme();
+  
+  // templates 데이터 로깅
+  useEffect(() => {
+    console.log('📋 MemoCreatePage templates 데이터:', {
+      templates,
+      templatesLength: templates?.length,
+      firstTemplate: templates?.[0],
+      templatesLoading,
+      templatesType: typeof templates
+    });
+    
+    // templates가 비어있는 경우 테스트용 데이터 추가
+    if (templates && templates.length === 0) {
+      console.log('⚠️ templates가 비어있습니다. 테스트용 상용구를 추가합니다.');
+    }
+  }, [templates, templatesLoading]);
   
   const [formData, setFormData] = useState<IMemoFormData>({
     content: '',
@@ -161,22 +178,58 @@ export const MemoCreatePage: React.FC = () => {
 
   // 상용구 사이드바에서 템플릿 선택
   const handleSidebarTemplateSelect = (content: string) => {
+    console.log('🚨🚨🚨 MemoCreatePage handleSidebarTemplateSelect 함수가 호출되었습니다! 🚨🚨🚨');
+    console.log('🔍 MemoCreatePage handleSidebarTemplateSelect 호출됨:', {
+      content,
+      contentLength: content?.length,
+      contentType: typeof content,
+      textareaRef: textareaRef.current,
+      currentContent: formData.content
+    });
+
+    // content가 비어있거나 undefined인 경우 처리
+    if (!content || content.trim() === '') {
+      console.error('❌ content가 비어있습니다:', content);
+      return;
+    }
+
     const textarea = textareaRef.current;
-    if (!textarea) return;
+    if (!textarea) {
+      console.log('❌ textarea가 null입니다');
+      return;
+    }
 
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const currentContent = formData.content;
     const newContent = currentContent.substring(0, start) + content + currentContent.substring(end);
     
+    console.log('📝 텍스트 삽입 정보:', {
+      start,
+      end,
+      currentContent,
+      newContent,
+      newContentLength: newContent.length
+    });
+    
+    // 새로운 커서 위치 계산
+    const newCursorPos = start + content.length;
+    
+    // 상태 업데이트
     setFormData(prev => ({ ...prev, content: newContent }));
-
-    // 커서 위치 업데이트
-    setTimeout(() => {
-      const newCursorPos = start + content.length;
-      textarea.setSelectionRange(newCursorPos, newCursorPos);
-      textarea.focus();
-    }, 0);
+    
+    // requestAnimationFrame을 사용하여 DOM 업데이트 후 커서 위치 설정
+    requestAnimationFrame(() => {
+      const updatedTextarea = textareaRef.current;
+      if (updatedTextarea) {
+        console.log('📍 requestAnimationFrame에서 커서 위치 설정:', newCursorPos);
+        updatedTextarea.setSelectionRange(newCursorPos, newCursorPos);
+        updatedTextarea.focus();
+        console.log('✅ 커서 위치 설정 완료');
+      } else {
+        console.error('❌ requestAnimationFrame에서 textarea를 찾을 수 없습니다');
+      }
+    });
   };
 
   // 모바일 호환 클립보드 복사 함수
@@ -266,7 +319,7 @@ export const MemoCreatePage: React.FC = () => {
         title: "메모 저장 완료",
         description: "새 메모가 성공적으로 저장되었습니다."
       });
-      navigate('/memos'); // 메모 목록 페이지로 이동
+      navigate('/'); // 메모 목록 페이지로 이동
     } catch (error) {
       console.error('메모 저장 중 오류:', error);
       toast({
@@ -280,7 +333,7 @@ export const MemoCreatePage: React.FC = () => {
   };
 
   const handleCancel = () => {
-    navigate('/memos');
+    navigate('/');
   };
 
   // PC 모드용 개선된 레이아웃
@@ -409,10 +462,43 @@ export const MemoCreatePage: React.FC = () => {
         {/* 상용구 사이드바 */}
         <TemplateSidebar
           isOpen={isTemplateSidebarOpen}
-          onClose={() => setIsTemplateSidebarOpen(false)}
-          templates={templates || []}
-          onTemplateSelect={handleSidebarTemplateSelect}
-          onTemplateCopy={handleTemplateCopy}
+          onClose={() => {
+            console.log('🔧 MemoCreatePage onClose 호출됨');
+            setIsTemplateSidebarOpen(false);
+          }}
+          templates={templates && templates.length > 0 ? templates : [
+            {
+              id: 'test-template-1',
+              userId: 'test-user',
+              title: '테스트 상용구 1',
+              content: '안녕하세요! 이것은 테스트 상용구입니다.',
+              category: '테스트',
+              usageCount: 0,
+              isPublic: false,
+              createdAt: { toDate: () => new Date() } as any,
+              updatedAt: { toDate: () => new Date() } as any
+            } as IFirebaseTemplate,
+            {
+              id: 'test-template-2',
+              userId: 'test-user',
+              title: '테스트 상용구 2',
+              content: '두 번째 테스트 상용구입니다.',
+              category: '테스트',
+              usageCount: 0,
+              isPublic: false,
+              createdAt: { toDate: () => new Date() } as any,
+              updatedAt: { toDate: () => new Date() } as any
+            } as IFirebaseTemplate
+          ]}
+          onTemplateSelect={(content) => {
+            console.log('🎯 MemoCreatePage TemplateSidebar에서 직접 호출된 onTemplateSelect:', content);
+            console.log('🎯 onTemplateSelect 함수 타입:', typeof content);
+            handleSidebarTemplateSelect(content);
+          }}
+          onTemplateCopy={(content) => {
+            console.log('🎯 MemoCreatePage TemplateSidebar에서 직접 호출된 onTemplateCopy:', content);
+            handleTemplateCopy(content);
+          }}
         />
 
         {/* 이미지 업로드 중 로딩 오버레이 */}

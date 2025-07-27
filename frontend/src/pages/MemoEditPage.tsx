@@ -19,6 +19,7 @@ import { useFontSize } from '../hooks/useFontSize';
 import { useTheme } from '../hooks/useTheme';
 import { Loader2 } from 'lucide-react';
 import { storageService } from '../services/firebase/storage';
+import { IFirebaseTemplate } from '../types/firebase';
 
 export const MemoEditPage: React.FC = () => {
   const navigate = useNavigate();
@@ -224,22 +225,50 @@ export const MemoEditPage: React.FC = () => {
 
   // 상용구 사이드바에서 템플릿 선택
   const handleSidebarTemplateSelect = (content: string) => {
+    console.log('🔍 MemoEditPage handleSidebarTemplateSelect 호출됨:', {
+      content,
+      contentLength: content?.length,
+      textareaRef: textareaRef.current,
+      currentContent: formData.content
+    });
+
     const textarea = textareaRef.current;
-    if (!textarea) return;
+    if (!textarea) {
+      console.log('❌ textarea가 null입니다');
+      return;
+    }
 
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const currentContent = formData.content;
     const newContent = currentContent.substring(0, start) + content + currentContent.substring(end);
     
+    console.log('📝 텍스트 삽입 정보:', {
+      start,
+      end,
+      currentContent,
+      newContent,
+      newContentLength: newContent.length
+    });
+    
+    // 새로운 커서 위치 계산
+    const newCursorPos = start + content.length;
+    
+    // 상태 업데이트
     setFormData(prev => ({ ...prev, content: newContent }));
-
-    // 커서 위치 업데이트
-    setTimeout(() => {
-      const newCursorPos = start + content.length;
-      textarea.setSelectionRange(newCursorPos, newCursorPos);
-      textarea.focus();
-    }, 0);
+    
+    // requestAnimationFrame을 사용하여 DOM 업데이트 후 커서 위치 설정
+    requestAnimationFrame(() => {
+      const updatedTextarea = textareaRef.current;
+      if (updatedTextarea) {
+        console.log('📍 requestAnimationFrame에서 커서 위치 설정:', newCursorPos);
+        updatedTextarea.setSelectionRange(newCursorPos, newCursorPos);
+        updatedTextarea.focus();
+        console.log('✅ 커서 위치 설정 완료');
+      }
+    });
+    
+    console.log('✅ 상태 업데이트 완료, newCursorPos:', newCursorPos);
   };
 
   // 모바일 호환 클립보드 복사 함수
@@ -363,7 +392,7 @@ export const MemoEditPage: React.FC = () => {
         title: "메모 수정 완료",
         description: "메모가 성공적으로 수정되었습니다."
       });
-      navigate('/memos'); // 메모 목록 페이지로 이동
+      navigate('/'); // 메모 목록 페이지로 이동
     } catch (error) {
       console.error('메모 수정 중 오류:', error);
       toast({
@@ -377,7 +406,7 @@ export const MemoEditPage: React.FC = () => {
   };
 
   const handleCancel = () => {
-    navigate('/memos');
+    navigate('/');
   };
 
   // 로딩 상태
@@ -525,8 +554,34 @@ export const MemoEditPage: React.FC = () => {
         <TemplateSidebar
           isOpen={isTemplateSidebarOpen}
           onClose={() => setIsTemplateSidebarOpen(false)}
-          templates={templates || []}
-          onTemplateSelect={handleSidebarTemplateSelect}
+          templates={templates && templates.length > 0 ? templates : [
+            {
+              id: 'test-template-1',
+              userId: 'test-user',
+              title: '테스트 상용구 1',
+              content: '안녕하세요! 이것은 테스트 상용구입니다.',
+              category: '테스트',
+              usageCount: 0,
+              isPublic: false,
+              createdAt: { toDate: () => new Date() } as any,
+              updatedAt: { toDate: () => new Date() } as any
+            } as IFirebaseTemplate,
+            {
+              id: 'test-template-2',
+              userId: 'test-user',
+              title: '테스트 상용구 2',
+              content: '두 번째 테스트 상용구입니다.',
+              category: '테스트',
+              usageCount: 0,
+              isPublic: false,
+              createdAt: { toDate: () => new Date() } as any,
+              updatedAt: { toDate: () => new Date() } as any
+            } as IFirebaseTemplate
+          ]}
+          onTemplateSelect={(content) => {
+            console.log('🎯 MemoEditPage TemplateSidebar에서 직접 호출된 onTemplateSelect:', content);
+            handleSidebarTemplateSelect(content);
+          }}
           onTemplateCopy={handleTemplateCopy}
         />
 
@@ -871,8 +926,34 @@ export const MemoEditPage: React.FC = () => {
       <TemplateSidebar
         isOpen={isTemplateSidebarOpen}
         onClose={() => setIsTemplateSidebarOpen(false)}
-        templates={templates || []}
-        onTemplateSelect={handleSidebarTemplateSelect}
+        templates={templates && templates.length > 0 ? templates : [
+          {
+            id: 'test-template-1',
+            userId: 'test-user',
+            title: '테스트 상용구 1',
+            content: '안녕하세요! 이것은 테스트 상용구입니다.',
+            category: '테스트',
+            usageCount: 0,
+            isPublic: false,
+            createdAt: { toDate: () => new Date() } as any,
+            updatedAt: { toDate: () => new Date() } as any
+          },
+          {
+            id: 'test-template-2',
+            userId: 'test-user',
+            title: '테스트 상용구 2',
+            content: '두 번째 테스트 상용구입니다.',
+            category: '테스트',
+            usageCount: 0,
+            isPublic: false,
+            createdAt: { toDate: () => new Date() } as any,
+            updatedAt: { toDate: () => new Date() } as any
+          }
+        ]}
+        onTemplateSelect={(content) => {
+          console.log('🎯 MemoEditPage TemplateSidebar에서 직접 호출된 onTemplateSelect:', content);
+          handleSidebarTemplateSelect(content);
+        }}
         onTemplateCopy={handleTemplateCopy}
       />
 

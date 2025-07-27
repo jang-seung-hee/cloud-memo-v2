@@ -32,6 +32,22 @@ export const TemplateSidebar: React.FC<TemplateSidebarProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('전체');
   const [sidebarWidth, setSidebarWidth] = useState(320);
 
+  // props 로깅
+  useEffect(() => {
+    console.log('🔧 TemplateSidebar props 확인:', {
+      isOpen,
+      templatesLength: templates?.length,
+      onTemplateSelect: typeof onTemplateSelect,
+      onTemplateCopy: typeof onTemplateCopy,
+      onClose: typeof onClose
+    });
+    
+    // onTemplateSelect 함수의 실제 내용 확인
+    if (onTemplateSelect) {
+      console.log('🔧 onTemplateSelect 함수 내용:', onTemplateSelect.toString().substring(0, 100) + '...');
+    }
+  }, [isOpen, templates, onTemplateSelect, onTemplateCopy, onClose]);
+
   // 사이드바 넓이 동적 계산
   useEffect(() => {
     const updateSidebarWidth = () => {
@@ -63,8 +79,46 @@ export const TemplateSidebar: React.FC<TemplateSidebarProps> = ({
   // 사용 가능한 카테고리 목록 생성
   const availableCategories = ['전체', ...activeCategories.map(cat => cat.name)];
 
+  // templates 데이터 로깅
+  useEffect(() => {
+    console.log('📋 TemplateSidebar templates 데이터:', {
+      templates,
+      templatesLength: templates?.length,
+      filteredTemplates,
+      filteredLength: filteredTemplates?.length,
+      selectedCategory,
+      availableCategories
+    });
+  }, [templates, filteredTemplates, selectedCategory, availableCategories]);
+
   const handleTemplateClick = (template: IFirebaseTemplate) => {
-    onTemplateSelect(template.content);
+    console.log('🔍 TemplateSidebar handleTemplateClick 호출됨:', {
+      template,
+      content: template.content,
+      contentLength: template.content?.length,
+      title: template.title,
+      id: template.id
+    });
+    
+    // content가 비어있거나 undefined인 경우 처리
+    if (!template.content || template.content.trim() === '') {
+      console.error('❌ template.content가 비어있습니다:', template);
+      return;
+    }
+    
+    console.log('✅ content 전달:', template.content);
+    console.log('📞 onTemplateSelect 콜백 호출 시작');
+    console.log('📞 onTemplateSelect 함수 타입:', typeof onTemplateSelect);
+    console.log('📞 onTemplateSelect 함수 내용:', onTemplateSelect?.toString().substring(0, 100) + '...');
+    
+    try {
+      onTemplateSelect(template.content);
+      console.log('✅ onTemplateSelect 콜백 호출 완료');
+    } catch (error) {
+      console.error('❌ onTemplateSelect 콜백 호출 중 오류:', error);
+    }
+    
+    console.log('📞 onClose 콜백 호출');
     onClose();
   };
 
