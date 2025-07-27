@@ -16,7 +16,6 @@ import {
   Monitor, 
   Sun, 
   Moon,
-  QrCode,
   ArrowRight,
   Sparkles,
   Shield,
@@ -30,8 +29,8 @@ export const HomePage: React.FC = () => {
   const { user, isAuthenticated, login, logout } = useAuth();
   const { data: memos, loading: memosLoading } = useMemos();
   const { data: templates, loading: templatesLoading } = useTemplates();
-  const { isDesktop, isMobile } = useDevice();
-  const { isDark, toggleTheme } = useTheme();
+  const { isMobile } = useDevice();
+  const { isDark } = useTheme();
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
 
   // QR 코드 생성 (현재 페이지 URL)

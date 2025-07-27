@@ -1,8 +1,12 @@
 # cloud-memo-v2/netlify.toml
 
 [build]
+  base = "frontend"
   command = "npm run build"
-  publish = "frontend/build"
+  publish = "build"
+
+[build.environment]
+  CI = "false"
 
 [[redirects]]
   from = "/*"
