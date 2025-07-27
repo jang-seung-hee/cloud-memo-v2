@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { HomePage } from './pages/HomePage';
 import { MemoListPage } from './pages/MemoListPage';
 import { MemoCreatePage } from './pages/MemoCreatePage';
 import { MemoEditPage } from './pages/MemoEditPage';
@@ -58,9 +59,10 @@ function App() {
           <Routes>
           {/* 공개 라우트 */}
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/" element={<HomePage />} />
           
           {/* 보호된 라우트 */}
-          <Route path="/" element={
+          <Route path="/memos" element={
             <ProtectedRoute>
               <MemoListPage />
             </ProtectedRoute>

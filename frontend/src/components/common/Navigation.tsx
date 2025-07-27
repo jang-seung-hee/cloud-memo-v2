@@ -25,7 +25,7 @@ export const Navigation: React.FC = () => {
   const { insertTemplateText } = useTemplateContext();
   const [isTemplateSidebarOpen, setIsTemplateSidebarOpen] = useState(false);
 
-  const isMemoList = location.pathname === '/';
+  const isMemoList = location.pathname === '/memos';
 
   // 모바일 호환 클립보드 복사 함수
   const copyToClipboard = async (text: string): Promise<boolean> => {
@@ -119,12 +119,32 @@ export const Navigation: React.FC = () => {
           {/* PC 모드: 고정된 위치 레이아웃 */}
           {isDesktop ? (
             <div className="relative w-full h-full nav-grid-stable px-4">
-              {/* 메모 목록 버튼 */}
+              {/* 홈 버튼 */}
               <div className="nav-grid-item">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => navigate('/')}
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-1.5 h-auto rounded-xl transition-colors duration-200 nav-button-stable p-3 w-20 h-12",
+                    location.pathname === '/' 
+                      ? "bg-primary text-primary-foreground shadow-md" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                  )}
+                >
+                  <div className="flex flex-col items-center justify-center w-full h-full">
+                    <HomeIcon className={cn("transition-transform duration-200 h-6 w-6", location.pathname === '/' && "scale-110")} />
+                    <span className="font-medium transition-all duration-200 text-xs leading-none">홈</span>
+                  </div>
+                </Button>
+              </div>
+
+              {/* 메모 목록 버튼 */}
+              <div className="nav-grid-item">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/memos')}
                   className={cn(
                     "flex flex-col items-center justify-center gap-1.5 h-auto rounded-xl transition-colors duration-200 nav-button-stable p-3 w-20 h-12",
                     isMemoList 
@@ -176,12 +196,30 @@ export const Navigation: React.FC = () => {
             </div>
           ) : (
             /* 모바일 모드: 기존 레이아웃 유지 */
-            <div className="relative flex justify-center items-center p-3 gap-16 h-full nav-stable">
-              {/* 메모 목록 버튼 */}
+            <div className="relative flex justify-center items-center p-3 gap-12 h-full nav-stable">
+              {/* 홈 버튼 */}
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate('/')}
+                className={cn(
+                  `flex flex-col items-center justify-center gap-1.5 h-auto rounded-xl transition-colors duration-200 nav-button-stable p-2 min-w-[60px] min-h-[48px]`,
+                  location.pathname === '/' 
+                    ? "bg-primary text-primary-foreground shadow-md" 
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                )}
+              >
+                <div className="flex flex-col items-center justify-center w-full h-full">
+                  <HomeIcon className={cn("transition-transform duration-200 h-5 w-5", location.pathname === '/' && "scale-110")} />
+                  <span className="font-medium transition-all duration-200 text-xs leading-none">홈</span>
+                </div>
+              </Button>
+
+              {/* 메모 목록 버튼 */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/memos')}
                 className={cn(
                   `flex flex-col items-center justify-center gap-1.5 h-auto rounded-xl transition-colors duration-200 nav-button-stable p-2 min-w-[60px] min-h-[48px]`,
                   isMemoList 
