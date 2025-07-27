@@ -16,6 +16,9 @@ import { useDevice } from './hooks/useDevice';
 import { measurePageLoad, monitorMemoryUsage } from './utils/performanceTest';
 
 function App() {
+  // 환경 변수 확인용 로그 추가
+  console.log('Firebase API Key loaded:', process.env.REACT_APP_FIREBASE_API_KEY ? '✅ Loaded' : '❌ Not loaded');
+  
   const { isDesktop } = useDevice();
   const [showQuoteModal, setShowQuoteModal] = useState(false);
 
