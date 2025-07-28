@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { Button } from '../ui/button';
 import { PhotoIcon, XMarkIcon, CameraIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../../hooks/useAuth';
@@ -26,49 +26,59 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   const { user } = useAuth();
   const { isDesktop } = useDevice();
 
-  const handleFileSelect = (files: FileList | null) => {
-    console.log('🔍 handleFileSelect 호출됨:', files);
+  const handleFileSelect = useCallback((files: FileList | null) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 handleFileSelect 호출됨:', files);
+    }
     if (!files) return;
 
     const newImages: File[] = [];
 
     Array.from(files).forEach((file) => {
-      console.log('📁 파일 정보:', {
-        name: file.name,
-        size: file.size,
-        type: file.type
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📁 파일 정보:', {
+          name: file.name,
+          size: file.size,
+          type: file.type
+        });
+      }
       
       // 파일 형식 검증만 수행 (용량은 압축으로 처리)
       const validationError = validateImageFile(file);
       if (validationError) {
-        console.log('❌ 파일 검증 실패:', file.name, validationError);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('❌ 파일 검증 실패:', file.name, validationError);
+        }
         alert(`${file.name}: ${validationError}`);
         return;
       }
 
-      console.log('✅ 이미지 파일 추가:', file.name);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ 이미지 파일 추가:', file.name);
+      }
       newImages.push(file);
     });
 
     if (newImages.length > 0) {
-      console.log('📸 최종 이미지 목록:', newImages.map(f => f.name));
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📸 최종 이미지 목록:', newImages.map(f => f.name));
+      }
       const updatedImages = [...images, ...newImages];
       onImagesChange(updatedImages);
     }
-  };
+  }, [images, onImagesChange]);
 
-  const handleRemoveImage = (index: number) => {
+  const handleRemoveImage = useCallback((index: number) => {
     const newImages = images.filter((_, i) => i !== index);
     onImagesChange(newImages);
-  };
+  }, [images, onImagesChange]);
 
-  const handleRemoveExistingImage = (index: number) => {
+  const handleRemoveExistingImage = useCallback((index: number) => {
     if (onExistingImagesChange) {
       const newExistingImages = existingImages.filter((_, i) => i !== index);
       onExistingImagesChange(newExistingImages);
     }
-  };
+  }, [existingImages, onExistingImagesChange]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();

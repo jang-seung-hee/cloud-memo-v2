@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './useAuth';
 import { firestoreService } from '../services/firebase/firestore';
 import { 
@@ -52,6 +52,11 @@ export const useMemos = (options?: IQueryOptions): UseMemosReturn => {
     loading: true,
     error: null
   });
+  
+  // 디바운싱을 위한 타이머 ref
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // 이전 데이터를 저장하여 불필요한 업데이트 방지
+  const previousDataRef = useRef<IFirebaseMemo[]>([]);
 
   // 메모 목록 로드
   const loadMemos = useCallback(async () => {
@@ -77,7 +82,7 @@ export const useMemos = (options?: IQueryOptions): UseMemosReturn => {
     }
   }, [isAuthenticated, user, options]);
 
-  // 실시간 리스너 설정
+  // 실시간 리스너 설정 (즉시 반응하도록 최적화)
   useEffect(() => {
     if (!isAuthenticated || !user) {
       setState(prev => ({ ...prev, loading: false, data: [] }));
@@ -91,28 +96,51 @@ export const useMemos = (options?: IQueryOptions): UseMemosReturn => {
         category: memo.category || 'temporary'
       }));
       
-      setState(prev => ({ ...prev, data: processedMemos, loading: false, error: null }));
+      // 이전 데이터와 비교하여 실제 변경사항이 있는지 확인
+      const hasChanged = JSON.stringify(processedMemos) !== JSON.stringify(previousDataRef.current);
+      
+      if (hasChanged) {
+        // 즉시 업데이트 (디바운싱 제거로 반응성 향상)
+        previousDataRef.current = processedMemos;
+        setState(prev => ({ ...prev, data: processedMemos, loading: false, error: null }));
+      }
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      // 컴포넌트 언마운트 시 타이머 정리
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
   }, [isAuthenticated, user]);
 
   // 메모 생성
   const createMemo = useCallback(async (data: IMemoCreateData): Promise<string> => {
-    console.log('🔍 useMemos.createMemo 호출됨:', { isAuthenticated, user: user?.uid, data });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 useMemos.createMemo 호출됨:', { isAuthenticated, user: user?.uid, data });
+    }
     
     if (!isAuthenticated || !user) {
-      console.error('❌ 인증되지 않음:', { isAuthenticated, user: user?.uid });
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ 인증되지 않음:', { isAuthenticated, user: user?.uid });
+      }
       throw new Error('인증이 필요합니다.');
     }
 
     try {
-      console.log('✅ 인증 확인됨, firestoreService.createMemo 호출...');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ 인증 확인됨, firestoreService.createMemo 호출...');
+      }
       const memoId = await firestoreService.createMemo(user.uid, data);
-      console.log('✅ 메모 생성 완료:', memoId);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ 메모 생성 완료:', memoId);
+      }
       return memoId;
     } catch (error) {
-      console.error('❌ 메모 생성 실패:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ 메모 생성 실패:', error);
+      }
       const errorMessage = error instanceof Error ? error.message : '메모 생성 실패';
       setState(prev => ({ ...prev, error: errorMessage }));
       throw error;

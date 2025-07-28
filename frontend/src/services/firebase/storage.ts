@@ -9,6 +9,11 @@ import {
 } from 'firebase/storage';
 import { storage } from './config';
 import { compressImage, validateImageFile, formatFileSize } from '../../utils/imageCompression';
+import { logDebug, logInfo, logError } from '../../utils/logger';
+
+// 이미지 캐시를 위한 Map (메모리 최적화)
+const imageCache = new Map<string, { url: string; timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5분 캐시
 
 // Storage 서비스 클래스
 export const storageService = {
@@ -20,7 +25,7 @@ export const storageService = {
     onProgress?: (progress: number) => void
   ): Promise<string> {
     try {
-      console.log('🚀 uploadImage 호출됨:', { 
+      logDebug('uploadImage 호출됨:', { 
         fileName: file.name, 
         userId,
         originalSize: formatFileSize(file.size)
@@ -33,9 +38,9 @@ export const storageService = {
       }
 
       // 이미지 압축
-      console.log('🗜️ 이미지 압축 시작...');
+      logDebug('이미지 압축 시작...');
       const compressedFile = await compressImage(file);
-      console.log('✅ 이미지 압축 완료:', {
+      logInfo('이미지 압축 완료:', {
         originalSize: formatFileSize(file.size),
         compressedSize: formatFileSize(compressedFile.size),
         compressionRatio: ((file.size - compressedFile.size) / file.size * 100).toFixed(1) + '%'
@@ -46,11 +51,11 @@ export const storageService = {
       const fileExtension = compressedFile.name.split('.').pop();
       const finalFileName = fileName || `image_${timestamp}.${fileExtension}`;
       
-      console.log('📁 파일명 생성:', finalFileName);
+      logDebug('파일명 생성:', finalFileName);
       
       // Storage 경로 설정 (사용자별 폴더)
       const storageRef = ref(storage, `users/${userId}/images/${finalFileName}`);
-      console.log('📂 Storage 경로:', `users/${userId}/images/${finalFileName}`);
+      logDebug('Storage 경로:', `users/${userId}/images/${finalFileName}`);
       
       // 메타데이터 설정
       const metadata: UploadMetadata = {
@@ -64,7 +69,7 @@ export const storageService = {
         }
       };
 
-      console.log('📤 파일 업로드 시작...');
+      logDebug('파일 업로드 시작...');
       
       // 진행률 콜백이 있으면 시뮬레이션 (Firebase Storage는 진행률을 직접 제공하지 않음)
       if (onProgress) {
@@ -76,30 +81,50 @@ export const storageService = {
       
       // 파일 업로드
       const uploadResult: UploadResult = await uploadBytes(storageRef, compressedFile, metadata);
-      console.log('✅ 파일 업로드 완료:', uploadResult);
+      logInfo('파일 업로드 완료:', uploadResult);
       
       if (onProgress) {
         onProgress(100); // 업로드 완료
       }
       
       // 다운로드 URL 반환
-      console.log('🔗 다운로드 URL 생성 중...');
+      logDebug('다운로드 URL 생성 중...');
       const downloadURL = await getDownloadURL(uploadResult.ref);
-      console.log('✅ 다운로드 URL 생성 완료:', downloadURL);
+      logInfo('다운로드 URL 생성 완료:', downloadURL);
       return downloadURL;
     } catch (error) {
-      console.error('❌ 이미지 업로드 오류:', error);
+      logError('이미지 업로드 오류:', error);
       throw error;
     }
   },
 
-  // 이미지 URL 가져오기
+  // 이미지 URL 가져오기 (캐싱 적용)
   async getImageURL(path: string): Promise<string> {
     try {
+      // 캐시 확인
+      const cached = imageCache.get(path);
+      const now = Date.now();
+      
+      if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+        logDebug('캐시된 이미지 URL 사용:', path);
+        return cached.url;
+      }
+      
       const storageRef = ref(storage, path);
-      return await getDownloadURL(storageRef);
+      const url = await getDownloadURL(storageRef);
+      
+      // 캐시에 저장
+      imageCache.set(path, { url, timestamp: now });
+      
+      // 캐시 크기 제한 (메모리 누수 방지)
+      if (imageCache.size > 100) {
+        const oldestKey = imageCache.keys().next().value;
+        imageCache.delete(oldestKey);
+      }
+      
+      return url;
     } catch (error) {
-      console.error('이미지 URL 가져오기 오류:', error);
+      logError('이미지 URL 가져오기 오류:', error);
       throw error;
     }
   },
@@ -109,8 +134,9 @@ export const storageService = {
     try {
       const storageRef = ref(storage, url);
       await deleteObject(storageRef);
+      logInfo('이미지 삭제 완료:', url);
     } catch (error) {
-      console.error('이미지 삭제 오류:', error);
+      logError('이미지 삭제 오류:', error);
       throw error;
     }
   },
@@ -123,7 +149,7 @@ export const storageService = {
       // 이 함수는 향후 확장을 위한 플레이스홀더입니다.
       return [];
     } catch (error) {
-      console.error('사용자 이미지 목록 가져오기 오류:', error);
+      logError('사용자 이미지 목록 가져오기 오류:', error);
       throw error;
     }
   },

@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Cloud Memo v2",
+  "name": "Cloud Memo v2 - 클라우드 기반 메모 애플리케이션",
   "icons": [
     {
       "src": "favicon.ico",

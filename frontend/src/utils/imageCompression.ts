@@ -3,6 +3,8 @@
  * Firebase Storage 업로드 전 이미지를 2MB 이하로 압축
  */
 
+import { logDebug, logInfo, logError } from './logger';
+
 export interface CompressionOptions {
   maxSizeMB?: number;
   maxWidth?: number;
@@ -14,11 +16,12 @@ export const defaultCompressionOptions: CompressionOptions = {
   maxSizeMB: 2,
   maxWidth: 800,
   maxHeight: 600,
-  quality: 0.5  // 더 강한 압축
+  quality: 0.7  // CPU 사용량과 품질의 균형점으로 조정
 };
 
 /**
  * 이미지 파일을 압축하여 지정된 크기 이하로 만듭니다
+ * 메모리 최적화: URL.createObjectURL 해제, 캔버스 메모리 정리
  */
 export const compressImage = (
   file: File, 
@@ -26,7 +29,7 @@ export const compressImage = (
 ): Promise<File> => {
   const opts = { ...defaultCompressionOptions, ...options };
   
-  console.log('🗜️ compressImage 호출됨:', { 
+  logDebug('compressImage 호출됨:', { 
     fileName: file.name, 
     originalSize: file.size,
     options: opts 
@@ -36,9 +39,25 @@ export const compressImage = (
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
+    let objectUrl: string | null = null;
+
+    // 메모리 정리 함수
+    const cleanup = () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+        objectUrl = null;
+      }
+      // 캔버스 메모리 해제
+      canvas.width = 0;
+      canvas.height = 0;
+      // 이미지 객체 정리
+      img.onload = null;
+      img.onerror = null;
+      img.src = '';
+    };
 
     img.onload = () => {
-      console.log('🖼️ 이미지 로드 완료:', { 
+      logDebug('이미지 로드 완료:', { 
         width: img.width, 
         height: img.height 
       });
@@ -55,7 +74,7 @@ export const compressImage = (
         height = opts.maxHeight!;
       }
 
-      console.log('📐 압축 후 크기:', { width, height });
+      logDebug('압축 후 크기:', { width, height });
 
       canvas.width = width;
       canvas.height = height;
@@ -67,7 +86,7 @@ export const compressImage = (
       canvas.toBlob(
         (blob) => {
           if (blob) {
-            console.log('✅ 압축 완료:', { 
+            logInfo('압축 완료:', { 
               originalSize: file.size,
               compressedSize: blob.size,
               compressionRatio: ((file.size - blob.size) / file.size * 100).toFixed(1) + '%'
@@ -77,9 +96,13 @@ export const compressImage = (
               type: file.type,
               lastModified: Date.now()
             });
+            
+            // 메모리 정리 후 결과 반환
+            cleanup();
             resolve(compressedFile);
           } else {
-            console.error('❌ 압축 실패: blob 생성 실패');
+            logError('압축 실패: blob 생성 실패');
+            cleanup();
             reject(new Error('이미지 압축 실패'));
           }
         },
@@ -89,11 +112,14 @@ export const compressImage = (
     };
 
     img.onerror = () => {
-      console.error('❌ 이미지 로드 실패');
+      logError('이미지 로드 실패');
+      cleanup();
       reject(new Error('이미지 로드 실패'));
     };
     
-    img.src = URL.createObjectURL(file);
+    // URL.createObjectURL 생성 및 이미지 로드
+    objectUrl = URL.createObjectURL(file);
+    img.src = objectUrl;
   });
 };
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Layout } from '../components/common/Layout';
 import { MemoCard } from '../components/memo/MemoCard';
 import { useMemos } from '../hooks/useFirestore';
@@ -27,29 +27,32 @@ export const MemoListPage: React.FC = () => {
   // 모바일 + 라이트 모드일 때의 스타일 조건
   const isMobileLightMode = !isDesktop && !isDark;
 
-  // 검색 및 카테고리 필터링
-  const filteredMemos = memos.filter(memo => {
-    const matchesSearch = memo.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         memo.content.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || memo.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  // 검색 및 카테고리 필터링을 useMemo로 최적화
+  const filteredMemos = useMemo(() => {
+    return memos.filter(memo => {
+      const matchesSearch = memo.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           memo.content.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = selectedCategory === 'all' || memo.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [memos, searchQuery, selectedCategory]);
 
-  const handleNewMemo = () => {
+  // 이벤트 핸들러들을 useCallback으로 최적화
+  const handleNewMemo = useCallback(() => {
     navigate('/create');
-  };
+  }, [navigate]);
 
-  const handleCategoryChange = (category: CategoryType | 'all') => {
+  const handleCategoryChange = useCallback((category: CategoryType | 'all') => {
     setSelectedCategory(category);
-  };
+  }, []);
 
   // 메모 업데이트 후 목록 새로고침
-  const handleMemoUpdate = () => {
+  const handleMemoUpdate = useCallback(() => {
     // 로컬 상태가 이미 업데이트되었으므로 추가 새로고침 불필요
     // setTimeout(() => {
     //   refresh();
     // }, 100);
-  };
+  }, []);
 
   if (isLoading) {
     return (

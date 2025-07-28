@@ -20,7 +20,8 @@ import {
   Sparkles,
   Shield,
   Cloud,
-  ChevronRight
+  ChevronRight,
+  RefreshCw
 } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
@@ -70,297 +71,250 @@ export const HomePage: React.FC = () => {
   // 로그인 전 홈 페이지
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#4682b4] to-[#2c5aa0] dark:from-[#1a1a1c] dark:to-[#0f0f11]">
-        <div className="container mx-auto px-4 py-6 max-w-4xl">
-          {/* 헤더 */}
-          <div className="text-center mb-6">
-            <div className="flex items-center justify-center mb-3">
-              <div className="relative">
-                <div className="w-12 h-12 bg-gradient-to-br from-[#87ceeb] to-[#4682b4] rounded-2xl flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-                  <BookOpen className="w-6 h-6 text-white" />
-                </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#0a84ff] rounded-full flex items-center justify-center">
-                  <Sparkles className="w-2 h-2 text-white" />
-                </div>
+      <div className="min-h-screen bg-gradient-to-br from-[#8bc0e0] to-[#6a9bd0] dark:bg-gradient-to-b dark:from-slate-800 dark:via-slate-900 dark:to-gray-950 flex items-center justify-center">
+        <div className="w-full max-w-md px-6 py-8">
+          {/* 로고 및 타이틀 */}
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <BookOpen className="w-8 h-8 text-white" />
               </div>
             </div>
             
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
               Cloud Memo
             </h1>
-            <p className="text-base text-white/80 max-w-2xl mx-auto">
-              생각을 담고, 아이디어를 연결하세요
+            <p className="text-gray-600 dark:text-gray-300">
+              메모를 클라우드에 저장하고 동기화하세요
             </p>
           </div>
 
-          {/* 기능 소개 카드들 */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-            <div className="bg-white/80 dark:bg-[#23232a]/80 backdrop-blur-sm rounded-xl p-3 border border-gray-200/50 dark:border-[#6b7280]/50 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] group">
-              <div className="w-8 h-8 bg-gradient-to-br from-[#87ceeb] to-[#4682b4] rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
-                <Cloud className="w-4 h-4 text-white" />
-              </div>
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-[#f4f4f5] mb-1">
-                클라우드 동기화
-              </h3>
-              <p className="text-gray-600 dark:text-[#a5b4fc] text-xs">
-                모든 기기에서 실시간으로 메모를 동기화하고 접근하세요
-              </p>
-            </div>
-
-            <div className="bg-white/80 dark:bg-[#23232a]/80 backdrop-blur-sm rounded-xl p-3 border border-gray-200/50 dark:border-[#6b7280]/50 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] group">
-              <div className="w-8 h-8 bg-gradient-to-br from-[#87ceeb] to-[#4682b4] rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
-                <FileText className="w-4 h-4 text-white" />
-              </div>
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-[#f4f4f5] mb-1">
-                상용구 관리
-              </h3>
-              <p className="text-gray-600 dark:text-[#a5b4fc] text-xs">
-                자주 사용하는 텍스트를 상용구로 저장하고 빠르게 재사용하세요
-              </p>
-            </div>
-
-            <div className="bg-white/80 dark:bg-[#23232a]/80 backdrop-blur-sm rounded-xl p-3 border border-gray-200/50 dark:border-[#6b7280]/50 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] group">
-              <div className="w-8 h-8 bg-gradient-to-br from-[#87ceeb] to-[#4682b4] rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
-                <Shield className="w-4 h-4 text-white" />
-              </div>
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-[#f4f4f5] mb-1">
-                안전한 보관
-              </h3>
-              <p className="text-gray-600 dark:text-[#a5b4fc] text-xs">
-                Firebase의 강력한 보안으로 안전하게 메모를 보관하세요
-              </p>
-            </div>
+          {/* 로그인 박스 */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 mb-6">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white text-center mb-2">
+              로그인
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300 text-center text-sm mb-4">
+              Google 계정으로 로그인하여 시작하세요
+            </p>
+            <Button 
+              onClick={handleLogin}
+              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
+            >
+              <ArrowRight className="w-4 h-4 mr-2" />
+              로그인
+            </Button>
+            <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-3">
+              로그인하면 메모가 클라우드에 자동으로 동기화됩니다.
+            </p>
           </div>
 
-          {/* QR 코드 및 로그인 섹션 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
-            {/* QR 코드 */}
-            <div className="bg-white/80 dark:bg-[#23232a]/80 backdrop-blur-sm rounded-xl p-3 border border-gray-200/50 dark:border-[#6b7280]/50 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02]">
-              <div className="text-center">
+          {/* 주요 기능 및 QR 코드 */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white text-center mb-4">
+              주요 기능
+            </h2>
+            
+            <div className="flex items-start gap-4">
+              {/* 주요 기능 목록 */}
+              <div className="flex-1 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                    <Cloud className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">클라우드 동기화</span>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                    <FileText className="w-4 h-4 text-green-600 dark:text-green-400" />
+                  </div>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">모든 기기에서 접근</span>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                    <Shield className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">안전한 데이터 보호</span>
+                </div>
+              </div>
+
+              {/* QR 코드 */}
+              <div className="relative">
                 {qrCodeUrl && (
-                  <div className="flex justify-center">
+                  <div className="relative">
                     <img 
                       src={qrCodeUrl} 
                       alt="QR Code" 
-                      className="w-full max-w-36 h-auto border-4 border-white dark:border-[#6b7280] rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300"
+                      className="w-20 h-20 border-2 border-gray-300 dark:border-gray-600 rounded-lg"
                     />
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-gray-600 rounded-full flex items-center justify-center">
+                      <RefreshCw className="w-2.5 h-2.5 text-white" />
+                    </div>
                   </div>
                 )}
               </div>
             </div>
-
-            {/* 로그인 섹션 */}
-            <div className="bg-white/80 dark:bg-[#23232a]/80 backdrop-blur-sm rounded-xl p-3 border border-gray-200/50 dark:border-[#6b7280]/50 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] group">
-              <div className="text-center">
-                <div className="w-8 h-8 bg-gradient-to-br from-[#87ceeb] to-[#4682b4] rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-300">
-                  <LogIn className="w-4 h-4 text-white" />
-                </div>
-                <h3 className="text-base font-semibold text-gray-900 dark:text-[#f4f4f5] mb-1">
-                  시작하기
-                </h3>
-                <p className="text-gray-600 dark:text-[#a5b4fc] text-xs mb-3">
-                  Google 계정으로 간편하게 로그인하고 서비스를 이용하세요
-                </p>
-                <Button 
-                  onClick={handleLogin}
-                  size="lg"
-                  className="w-full bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white font-medium py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5"
-                >
-                  <LogIn className="w-4 h-4 mr-2" />
-                  Google로 로그인
-                </Button>
-                
-                <div className="mt-2 text-xs text-gray-500 dark:text-[#a5b4fc] space-y-0.5">
-                  <p>• 개인정보는 안전하게 보호됩니다</p>
-                  <p>• 언제든지 로그아웃할 수 있습니다</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 디바이스 및 테마 정보 */}
-          <div className="mt-4 text-center">
-            <div className="flex items-center justify-center gap-3 mb-1">
-              <Badge variant="outline" className="flex items-center gap-1 px-2 py-1 rounded-full border-white/30 bg-white/20 text-white hover:bg-white/30 transition-all duration-300 hover:scale-105">
-                {isMobile ? <Smartphone className="w-3 h-3" /> : <Monitor className="w-3 h-3" />}
-                <span className="text-xs font-medium">{isMobile ? '모바일' : '데스크톱'}</span>
-              </Badge>
-              <Badge variant="outline" className="flex items-center gap-1 px-2 py-1 rounded-full border-white/30 bg-white/20 text-white hover:bg-white/30 transition-all duration-300 hover:scale-105">
-                {isDark ? <Moon className="w-3 h-3" /> : <Sun className="w-3 h-3" />}
-                <span className="text-xs font-medium">{isDark ? '다크 모드' : '라이트 모드'}</span>
-              </Badge>
-            </div>
-            <p className="text-xs text-white/70">
-              최적화된 환경으로 제공됩니다
-            </p>
           </div>
         </div>
       </div>
     );
   }
 
-  // 로그인 후 홈 페이지
+    // 로그인 후 홈 페이지
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#4682b4] to-[#2c5aa0] dark:from-[#1a1a1c] dark:to-[#0f0f11]">
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
-        {/* 헤더 */}
-        <div className="text-center mb-4">
-          <div className="flex items-center justify-center mb-2">
-            <div className="relative">
-              <div className="w-12 h-12 bg-gradient-to-br from-[#87ceeb] to-[#4682b4] rounded-2xl flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-                <BookOpen className="w-6 h-6 text-white" />
-              </div>
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#0a84ff] rounded-full flex items-center justify-center">
-                <Sparkles className="w-2 h-2 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-[#8bc0e0] to-[#6a9bd0] dark:bg-gradient-to-b dark:from-slate-800 dark:via-slate-900 dark:to-gray-950 flex flex-col">
+      {/* 메인 콘텐츠 */}
+      <div className="flex-1 flex items-center justify-center px-6 py-8 pb-24">
+        <div className="w-full max-w-md">
+          {/* 로고 및 타이틀 */}
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <BookOpen className="w-8 h-8 text-white" />
               </div>
             </div>
+            
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              Cloud Memo
+            </h1>
+            <p className="text-gray-600 dark:text-gray-300">
+              안녕하세요, <span className="font-semibold text-gray-900 dark:text-white">{user?.displayName || user?.email}</span>님!
+            </p>
           </div>
-          
-          <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">
-            Cloud Memo
-          </h1>
-          <p className="text-base text-white/80">
-            안녕하세요, <span className="font-semibold text-white">{user?.displayName || user?.email}</span>님!
-          </p>
-        </div>
 
-        {/* 통계 카드들 */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="bg-white/80 dark:bg-[#23232a]/80 backdrop-blur-sm rounded-xl p-2 border border-gray-200/50 dark:border-[#6b7280]/50 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] group">
+          {/* 로그인 정보 박스 */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-lg border border-gray-200 dark:border-gray-700 mb-6">
             <div className="text-center">
-              <div className="w-6 h-6 bg-gradient-to-br from-[#87ceeb] to-[#4682b4] rounded-xl flex items-center justify-center mx-auto mb-1 group-hover:scale-110 transition-transform duration-300">
-                <FileText className="w-3 h-3 text-white" />
-              </div>
-              <div className="text-lg font-bold text-gray-900 dark:text-[#f4f4f5] mb-0.5">
-                {memosLoading ? '...' : memoCount}
-              </div>
-              <p className="text-xs text-gray-600 dark:text-[#a5b4fc] font-medium">총 메모</p>
-            </div>
-          </div>
-
-          <div className="bg-white/80 dark:bg-[#23232a]/80 backdrop-blur-sm rounded-xl p-2 border border-gray-200/50 dark:border-[#6b7280]/50 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] group">
-            <div className="text-center">
-              <div className="w-6 h-6 bg-gradient-to-br from-[#87ceeb] to-[#4682b4] rounded-xl flex items-center justify-center mx-auto mb-1 group-hover:scale-110 transition-transform duration-300">
-                <Sparkles className="w-3 h-3 text-white" />
-              </div>
-              <div className="text-lg font-bold text-gray-900 dark:text-[#f4f4f5] mb-0.5">
-                {templatesLoading ? '...' : templateCount}
-              </div>
-              <p className="text-xs text-gray-600 dark:text-[#a5b4fc] font-medium">상용구</p>
-            </div>
-          </div>
-        </div>
-
-        {/* 액션 버튼들 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-          {/* 메모 목록으로 이동 */}
-          <div className="group">
-            <div className="bg-white/80 dark:bg-[#23232a]/80 backdrop-blur-sm rounded-xl p-3 border border-gray-200/50 dark:border-[#6b7280]/50 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] cursor-pointer" onClick={handleGoToMemos}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="w-6 h-6 bg-gradient-to-br from-[#87ceeb] to-[#4682b4] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <BookOpen className="w-3 h-3 text-white" />
-                </div>
-                <ChevronRight className="w-3 h-3 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-[#a5b4fc] transition-colors duration-300 group-hover:translate-x-1" />
-              </div>
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-[#f4f4f5] mb-1">
-                메모 관리
-              </h3>
-              <p className="text-gray-600 dark:text-[#a5b4fc] text-xs mb-2">
-                저장된 메모를 확인하고 관리하세요
-              </p>
-              <div className="flex items-center text-[#4682b4] dark:text-[#87ceeb] font-medium text-xs group-hover:translate-x-1 transition-transform duration-300">
-                메모 목록 보기
-                <ArrowRight className="w-3 h-3 ml-1" />
-              </div>
-            </div>
-          </div>
-
-          {/* 템플릿 관리 */}
-          <div className="group">
-            <div className="bg-white/80 dark:bg-[#23232a]/80 backdrop-blur-sm rounded-xl p-3 border border-gray-200/50 dark:border-[#6b7280]/50 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] cursor-pointer" onClick={handleGoToTemplates}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="w-6 h-6 bg-gradient-to-br from-[#87ceeb] to-[#4682b4] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <Sparkles className="w-3 h-3 text-white" />
-                </div>
-                <ChevronRight className="w-3 h-3 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-[#a5b4fc] transition-colors duration-300 group-hover:translate-x-1" />
-              </div>
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-[#f4f4f5] mb-1">
-                상용구 관리
-              </h3>
-              <p className="text-gray-600 dark:text-[#a5b4fc] text-xs mb-2">
-                자주 사용하는 텍스트를 관리하세요
-              </p>
-              <div className="flex items-center text-[#4682b4] dark:text-[#87ceeb] font-medium text-xs group-hover:translate-x-1 transition-transform duration-300">
-                상용구 관리
-                <ArrowRight className="w-3 h-3 ml-1" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* QR 코드 및 사용자 정보 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          {/* QR 코드 */}
-          <div className="bg-white/80 dark:bg-[#23232a]/80 backdrop-blur-sm rounded-xl p-3 border border-gray-200/50 dark:border-[#6b7280]/50 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02]">
-            <div className="text-center">
-              {qrCodeUrl && (
-                <div className="flex justify-center">
+              <div className="w-10 h-10 mx-auto mb-2">
+                {user?.photoURL ? (
                   <img 
-                    src={qrCodeUrl} 
-                    alt="QR Code" 
-                    className="w-full max-w-32 h-auto border-4 border-white dark:border-[#6b7280] rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300"
+                    src={user.photoURL} 
+                    alt="Profile" 
+                    className="w-10 h-10 rounded-full border-2 border-gray-200 dark:border-gray-600 shadow-md"
                   />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* 사용자 정보 및 로그아웃 */}
-          <div className="bg-white/80 dark:bg-[#23232a]/80 backdrop-blur-sm rounded-xl p-3 border border-gray-200/50 dark:border-[#6b7280]/50 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] group">
-            <div className="text-center">
-              <div className="w-8 h-8 bg-gradient-to-br from-[#87ceeb] to-[#4682b4] rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-300">
-                <User className="w-4 h-4 text-white" />
+                ) : (
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center shadow-md">
+                    <User className="w-5 h-5 text-white" />
+                  </div>
+                )}
               </div>
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-[#f4f4f5] mb-1">
-                계정 정보
-              </h3>
-              <div className="mb-2">
-                <p className="font-semibold text-gray-900 dark:text-[#f4f4f5] text-xs">
+              <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
+                로그인 정보
+              </h2>
+              <div className="mb-3">
+                <p className="font-medium text-gray-900 dark:text-white text-xs">
                   {user?.displayName || '사용자'}
                 </p>
-                <p className="text-xs text-gray-600 dark:text-[#a5b4fc] mt-0.5">
+                <p className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">
                   {user?.email}
                 </p>
               </div>
               
-              <Separator className="my-2 bg-gray-200 dark:bg-[#6b7280]" />
+              <Separator className="my-2 bg-gray-200 dark:bg-gray-600" />
               
               <Button 
                 onClick={handleLogout}
                 variant="outline"
-                className="w-full py-1 rounded-lg border-gray-300 dark:border-[#6b7280] text-gray-700 dark:text-[#a5b4fc] hover:bg-gray-50 dark:hover:bg-[#2c2c34] transition-all duration-300 text-xs hover:scale-[1.02] hover:-translate-y-0.5"
+                className="w-full py-1.5 rounded-lg border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 text-xs"
               >
                 로그아웃
               </Button>
             </div>
           </div>
-        </div>
 
-        {/* 디바이스 및 테마 정보 */}
-        <div className="mt-3 text-center">
-          <div className="flex items-center justify-center gap-3 mb-1">
-            <Badge variant="outline" className="flex items-center gap-1 px-2 py-1 rounded-full border-white/30 bg-white/20 text-white hover:bg-white/30 transition-all duration-300 hover:scale-105">
-              {isMobile ? <Smartphone className="w-3 h-3" /> : <Monitor className="w-3 h-3" />}
-              <span className="text-xs font-medium">{isMobile ? '모바일' : '데스크톱'}</span>
-            </Badge>
-            <Badge variant="outline" className="flex items-center gap-1 px-2 py-1 rounded-full border-white/30 bg-white/20 text-white hover:bg-white/30 transition-all duration-300 hover:scale-105">
-              {isDark ? <Moon className="w-3 h-3" /> : <Sun className="w-3 h-3" />}
-              <span className="text-xs font-medium">{isDark ? '다크 모드' : '라이트 모드'}</span>
-            </Badge>
+          {/* 주요 기능 및 QR 코드 */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white text-center mb-4">
+              주요 기능
+            </h2>
+            
+            <div className="flex items-start gap-4">
+              {/* 주요 기능 목록 */}
+              <div className="flex-1 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                    <Cloud className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">클라우드 동기화</span>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                    <FileText className="w-4 h-4 text-green-600 dark:text-green-400" />
+                  </div>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">모든 기기에서 접근</span>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                    <Shield className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">안전한 데이터 보호</span>
+                </div>
+              </div>
+
+              {/* QR 코드 */}
+              <div className="relative">
+                {qrCodeUrl && (
+                  <div className="relative">
+                    <img 
+                      src={qrCodeUrl} 
+                      alt="QR Code" 
+                      className="w-20 h-20 border-2 border-gray-300 dark:border-gray-600 rounded-lg"
+                    />
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-gray-600 rounded-full flex items-center justify-center">
+                      <RefreshCw className="w-2.5 h-2.5 text-white" />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-          <p className="text-xs text-white/70">
-            최적화된 환경으로 제공됩니다
-          </p>
+        </div>
+      </div>
+
+      {/* 바텀 고정 메뉴 */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg">
+        <div className="flex justify-around items-center py-3 px-6">
+          {/* 홈 */}
+          <div className="flex flex-col items-center">
+            <div className="w-6 h-6 bg-blue-500 rounded-lg flex items-center justify-center mb-1">
+              <BookOpen className="w-3 h-3 text-white" />
+            </div>
+            <span className="text-xs text-blue-500 font-medium">홈</span>
+          </div>
+
+          {/* 메모목록 */}
+          <div 
+            className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={handleGoToMemos}
+          >
+            <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-lg flex items-center justify-center mb-1">
+              <FileText className="w-3 h-3 text-gray-600 dark:text-gray-300" />
+            </div>
+            <span className="text-xs text-gray-600 dark:text-gray-300">메모목록</span>
+          </div>
+
+          {/* 퀵 사용구 */}
+          <div 
+            className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={handleGoToTemplates}
+          >
+            <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-lg flex items-center justify-center mb-1">
+              <Sparkles className="w-3 h-3 text-gray-600 dark:text-gray-300" />
+            </div>
+            <span className="text-xs text-gray-600 dark:text-gray-300">퀵 사용구</span>
+          </div>
+
+          {/* 새메모 */}
+          <div className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity">
+            <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-lg flex items-center justify-center mb-1">
+              <ArrowRight className="w-3 h-3 text-gray-600 dark:text-gray-300" />
+            </div>
+            <span className="text-xs text-gray-600 dark:text-gray-300">새메모</span>
+          </div>
         </div>
       </div>
     </div>

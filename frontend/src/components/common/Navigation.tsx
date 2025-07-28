@@ -5,7 +5,8 @@ import { cn } from '../../lib/utils';
 import { 
   HomeIcon, 
   PlusIcon, 
-  SparklesIcon 
+  SparklesIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import { TemplateSidebar } from '../ui/sidebar';
 import { useDevice } from '../../hooks/useDevice';
@@ -123,11 +124,13 @@ export const Navigation: React.FC = () => {
   return (
     <>
       <nav className={`fixed bottom-0 left-0 right-0 z-50 ${
-        isMobileLightMode || isDesktopLightMode
-          ? 'bg-gray-200 border-t border-gray-300 shadow-sm' 
-          : 'bg-white/95 dark:bg-gray-950/95 border-t border-gray-200/60 dark:border-slate-800/60 backdrop-blur-md'
-      } nav-stable ${isDesktop ? 'h-14' : 'h-12'}`}>
-        <div className="relative w-full h-full nav-stable">
+        isDesktop 
+          ? (isMobileLightMode || isDesktopLightMode)
+            ? 'bg-gray-200 border-t border-gray-300 shadow-sm' 
+            : 'bg-white/95 dark:bg-gray-950/95 border-t border-gray-200/60 dark:border-slate-800/60 backdrop-blur-md'
+          : 'bg-gray-200 dark:bg-gray-950 border-t border-gray-200 dark:border-gray-700 shadow-lg'
+      } nav-stable ${isDesktop ? 'h-14' : ''}`}>
+        <div className={isDesktop ? "relative w-full h-full nav-stable" : ""}>
           {/* PC 모드: 고정된 위치 레이아웃 */}
           {isDesktop ? (
             <div className="relative w-full h-full flex justify-around items-center px-4">
@@ -216,91 +219,96 @@ export const Navigation: React.FC = () => {
               </Button>
             </div>
           ) : (
-            /* 모바일 모드: 화면에 맞는 레이아웃 */
-            <div className="relative flex justify-around items-center h-full px-2">
-              {/* 홈 버튼 */}
-              <Button
-                variant="ghost"
-                size="sm"
+            /* 모바일 모드: 홈 화면과 동일한 디자인 */
+            <div className="flex justify-around items-center py-3 px-6">
+              {/* 홈 */}
+              <div 
+                className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity"
                 onClick={() => navigate('/')}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-1 h-auto rounded-xl transition-colors duration-200 nav-button-stable p-1 flex-1 mx-1",
+              >
+                <div className={cn(
+                  "w-6 h-6 rounded-lg flex items-center justify-center mb-1",
                   location.pathname === '/' 
-                    ? isMobileLightMode
-                      ? "bg-blue-600 text-white shadow-md"
-                      : "bg-primary text-primary-foreground shadow-md"
-                    : isMobileLightMode
-                      ? "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                )}
-              >
-                <div className="flex flex-col items-center justify-center w-full h-full">
-                  <HomeIcon className={cn("transition-transform duration-200 h-4 w-4", location.pathname === '/' && "scale-110")} />
-                  <span className="font-medium transition-all duration-200 text-xs leading-none">홈</span>
+                    ? "bg-blue-500" 
+                    : "bg-gray-300 dark:bg-gray-600"
+                )}>
+                  <HomeIcon className={cn(
+                    "w-3 h-3",
+                    location.pathname === '/' 
+                      ? "text-white" 
+                      : "text-gray-600 dark:text-gray-300"
+                  )} />
                 </div>
-              </Button>
+                <span className={cn(
+                  "text-xs font-medium",
+                  location.pathname === '/' 
+                    ? "text-blue-500" 
+                    : "text-gray-600 dark:text-gray-300"
+                )}>홈</span>
+              </div>
 
-              {/* 메모 목록 버튼 */}
-              <Button
-                variant="ghost"
-                size="sm"
+              {/* 메모목록 */}
+              <div 
+                className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity"
                 onClick={() => navigate('/memos')}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-1 h-auto rounded-xl transition-colors duration-200 nav-button-stable p-1 flex-1 mx-1",
+              >
+                <div className={cn(
+                  "w-6 h-6 rounded-lg flex items-center justify-center mb-1",
                   isMemoList 
-                    ? isMobileLightMode
-                      ? "bg-blue-600 text-white shadow-md"
-                      : "bg-primary text-primary-foreground shadow-md"
-                    : isMobileLightMode
-                      ? "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                )}
-              >
-                <div className="flex flex-col items-center justify-center w-full h-full">
-                  <HomeIcon className={cn("transition-transform duration-200 h-4 w-4", isMemoList && "scale-110")} />
-                  <span className="font-medium transition-all duration-200 text-xs leading-none">메모 목록</span>
+                    ? "bg-blue-500" 
+                    : "bg-gray-300 dark:bg-gray-600"
+                )}>
+                  <DocumentTextIcon className={cn(
+                    "w-3 h-3",
+                    isMemoList 
+                      ? "text-white" 
+                      : "text-gray-600 dark:text-gray-300"
+                  )} />
                 </div>
-              </Button>
+                <span className={cn(
+                  "text-xs font-medium",
+                  isMemoList 
+                    ? "text-blue-500" 
+                    : "text-gray-600 dark:text-gray-300"
+                )}>메모목록</span>
+              </div>
 
-              {/* 퀵 상용구 버튼 */}
-              <Button
-                variant="ghost"
-                size="sm"
+              {/* 퀵 사용구 */}
+              <div 
+                className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity"
                 onClick={() => setIsTemplateSidebarOpen(!isTemplateSidebarOpen)}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-1 h-auto rounded-xl transition-colors duration-200 nav-button-stable p-1 flex-1 mx-1",
+              >
+                <div className={cn(
+                  "w-6 h-6 rounded-lg flex items-center justify-center mb-1",
                   isTemplateSidebarOpen 
-                    ? isMobileLightMode
-                      ? "text-blue-600 bg-blue-50 hover:bg-blue-100"
-                      : "text-primary bg-primary/10 hover:bg-primary/20"
-                    : isMobileLightMode
-                      ? "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                )}
-              >
-                <div className="flex flex-col items-center justify-center w-full h-full">
-                  <SparklesIcon className="transition-transform duration-200 h-4 w-4" />
-                  <span className="font-medium transition-all duration-200 text-xs leading-none">퀵 상용구</span>
+                    ? "bg-blue-500" 
+                    : "bg-gray-300 dark:bg-gray-600"
+                )}>
+                  <SparklesIcon className={cn(
+                    "w-3 h-3",
+                    isTemplateSidebarOpen 
+                      ? "text-white" 
+                      : "text-gray-600 dark:text-gray-300"
+                  )} />
                 </div>
-              </Button>
+                <span className={cn(
+                  "text-xs font-medium",
+                  isTemplateSidebarOpen 
+                    ? "text-blue-500" 
+                    : "text-gray-600 dark:text-gray-300"
+                )}>퀵 사용구</span>
+              </div>
 
-              {/* 새 메모 버튼 */}
-              <Button
-                variant="ghost"
-                size="sm"
+              {/* 새메모 */}
+              <div 
+                className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity"
                 onClick={() => navigate('/create')}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-1 h-auto rounded-xl transition-colors duration-200 nav-button-stable p-1 flex-1 mx-1",
-                  isMobileLightMode
-                    ? "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                )}
               >
-                <div className="flex flex-col items-center justify-center w-full h-full">
-                  <PlusIcon className="transition-transform duration-200 h-4 w-4" />
-                  <span className="font-medium transition-all duration-200 text-xs leading-none">새 메모</span>
+                <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-lg flex items-center justify-center mb-1">
+                  <PlusIcon className="w-3 h-3 text-gray-600 dark:text-gray-300" />
                 </div>
-              </Button>
+                <span className="text-xs font-medium text-gray-600 dark:text-gray-300">새메모</span>
+              </div>
             </div>
           )}
         </div>

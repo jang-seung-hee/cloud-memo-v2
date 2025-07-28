@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon, BookmarkIcon, XMarkIcon, CheckIcon, PhotoIcon, CameraIcon } from '@heroicons/react/24/outline';
 import { Button } from '../components/ui/button';
@@ -28,19 +28,21 @@ export const MemoCreatePage: React.FC = () => {
   const { fontSizeClasses } = useFontSize();
   const { isDark } = useTheme();
   
-  // templates 데이터 로깅
+  // templates 데이터 로깅 (개발 환경에서만)
   useEffect(() => {
-    console.log('📋 MemoCreatePage templates 데이터:', {
-      templates,
-      templatesLength: templates?.length,
-      firstTemplate: templates?.[0],
-      templatesLoading,
-      templatesType: typeof templates
-    });
-    
-    // templates가 비어있는 경우 테스트용 데이터 추가
-    if (templates && templates.length === 0) {
-      console.log('⚠️ templates가 비어있습니다. 테스트용 상용구를 추가합니다.');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📋 MemoCreatePage templates 데이터:', {
+        templates,
+        templatesLength: templates?.length,
+        firstTemplate: templates?.[0],
+        templatesLoading,
+        templatesType: typeof templates
+      });
+      
+      // templates가 비어있는 경우 안내 메시지
+      if (templates && templates.length === 0 && !templatesLoading) {
+        console.log('ℹ️ 템플릿이 없습니다. 새 템플릿을 만들어보세요.');
+      }
     }
   }, [templates, templatesLoading]);
   
@@ -117,14 +119,14 @@ export const MemoCreatePage: React.FC = () => {
   }, [isMobile]);
 
   // 메모 내용에서 제목 추출 (줄바꿈 제거 후 10자)
-  const extractTitle = (content: string): string => {
+  const extractTitle = useCallback((content: string): string => {
     const cleanContent = content.trim().replace(/\n/g, ' ').replace(/\s+/g, ' ');
     return cleanContent.substring(0, 10) || '제목 없음';
-  };
+  }, []);
 
-  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleContentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setFormData(prev => ({ ...prev, content: e.target.value }));
-  };
+  }, []);
 
   const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const clipboardData = e.clipboardData;
@@ -319,7 +321,7 @@ export const MemoCreatePage: React.FC = () => {
         title: "메모 저장 완료",
         description: "새 메모가 성공적으로 저장되었습니다."
       });
-      navigate('/'); // 메모 목록 페이지로 이동
+      navigate('/memos'); // 메모 목록 페이지로 이동
     } catch (error) {
       console.error('메모 저장 중 오류:', error);
       toast({
@@ -333,7 +335,7 @@ export const MemoCreatePage: React.FC = () => {
   };
 
   const handleCancel = () => {
-    navigate('/');
+    navigate('/memos');
   };
 
   // PC 모드용 개선된 레이아웃
@@ -636,6 +638,46 @@ export const MemoCreatePage: React.FC = () => {
           </CardContent>
         </Card>
 
+        {/* 액션 버튼 - 이미지 박스 위로 이동 */}
+        <div className="flex items-center justify-center gap-4">
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={handleCancel}
+            disabled={isSaving}
+            className={`flex-1 h-12 ${
+              isMobileLightMode 
+                ? 'border-gray-300 text-gray-700 hover:bg-gray-50' 
+                : ''
+            }`}
+          >
+            <XMarkIcon className="h-5 w-5 mr-2" />
+            취소
+          </Button>
+          <Button
+            size="lg"
+            onClick={handleSave}
+            disabled={isSaving}
+            className={`flex-1 h-12 ${
+              isMobileLightMode 
+                ? 'bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5' 
+                : 'bg-blue-600 hover:bg-blue-700 dark:bg-slate-600 dark:hover:bg-slate-500'
+            }`}
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                저장 중...
+              </>
+            ) : (
+              <>
+                <CheckIcon className="h-5 w-5 mr-2" />
+                저장
+              </>
+            )}
+          </Button>
+        </div>
+
         {/* 이미지 업로드 영역 - 아이콘과 미리보기 분할 */}
         <Card className={`shadow-sm border-2 ${
           isMobileLightMode 
@@ -770,46 +812,6 @@ export const MemoCreatePage: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-
-        {/* 액션 버튼 - Shadcn UI 스타일 */}
-        <div className="flex items-center justify-center gap-4 pt-2">
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={handleCancel}
-            disabled={isSaving}
-            className={`flex-1 h-12 ${
-              isMobileLightMode 
-                ? 'border-gray-300 text-gray-700 hover:bg-gray-50' 
-                : ''
-            }`}
-          >
-            <XMarkIcon className="h-5 w-5 mr-2" />
-            취소
-          </Button>
-          <Button
-            size="lg"
-            onClick={handleSave}
-            disabled={isSaving}
-            className={`flex-1 h-12 ${
-              isMobileLightMode 
-                ? 'bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5' 
-                : 'bg-blue-600 hover:bg-blue-700 dark:bg-slate-600 dark:hover:bg-slate-500'
-            }`}
-          >
-            {isSaving ? (
-              <>
-                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                저장 중...
-              </>
-            ) : (
-              <>
-                <CheckIcon className="h-5 w-5 mr-2" />
-                저장
-              </>
-            )}
-          </Button>
-        </div>
       </div>
 
       {/* 상용구 사이드바 */}

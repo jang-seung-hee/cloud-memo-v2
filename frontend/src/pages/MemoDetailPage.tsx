@@ -8,6 +8,7 @@ import { CategoryBadge } from '../components/ui/category-badge';
 import { SimpleImageGallery } from '../components/ui/SimpleImage';
 import { IFirebaseMemo } from '../types/firebase';
 import { firestoreService } from '../services/firebase/firestore';
+import { googleCalendarService } from '../services/google/calendar';
 import { storageService } from '../services/firebase/storage';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/use-toast';
@@ -239,12 +240,19 @@ export const MemoDetailPage: React.FC = () => {
     );
   }
 
-  if (!memo) {
+  // 로딩이 완료되었지만 메모가 없는 경우 (삭제되었거나 권한이 없는 경우)
+  if (!memo && !isLoading) {
     return (
       <Layout title="메모 상세보기">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
-            <p className="text-muted-foreground">메모를 찾을 수 없습니다.</p>
+            <div className="text-6xl mb-4">📝</div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              메모를 찾을 수 없습니다
+            </h2>
+            <p className="text-muted-foreground mb-4">
+              해당 메모가 삭제되었거나 접근 권한이 없습니다.
+            </p>
             <Button onClick={handleBack} className="mt-4">
               목록으로 돌아가기
             </Button>
@@ -252,6 +260,11 @@ export const MemoDetailPage: React.FC = () => {
         </div>
       </Layout>
     );
+  }
+
+  // memo가 null인 경우 타입 가드
+  if (!memo) {
+    return null;
   }
 
   // PC 모드용 레이아웃
@@ -294,6 +307,19 @@ export const MemoDetailPage: React.FC = () => {
                   {/* 왼쪽: 카테고리와 작성일 */}
                   <div className="flex items-center gap-3">
                     <CategoryBadge category={memo.category || 'temporary'} size="md" />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-muted-foreground hover:text-blue-600 transition-colors"
+                      onClick={() => {
+                        const now = new Date();
+                        googleCalendarService.openCalendarEvent(memo, now, 60);
+                      }}
+                      title="구글 캘린더에 등록"
+                    >
+                      <CalendarIcon className="h-3.5 w-3.5 mr-1" />
+                      <span className="text-xs">캘린더등록</span>
+                    </Button>
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 px-3 py-1 rounded-md">
                       <CalendarIcon className="h-4 w-4" />
                       <span className={fontSizeClasses.date}>{formatFullDate(memo.updatedAt > memo.createdAt ? memo.updatedAt : memo.createdAt)}</span>
@@ -414,6 +440,8 @@ export const MemoDetailPage: React.FC = () => {
             </div>
           </div>
         )}
+
+
       </Layout>
     );
   }
@@ -489,7 +517,22 @@ export const MemoDetailPage: React.FC = () => {
               
               {/* 카테고리와 작성일 */}
               <div className="flex items-center justify-between">
-                <CategoryBadge category={memo.category || 'temporary'} size="sm" />
+                <div className="flex items-center gap-2">
+                  <CategoryBadge category={memo.category || 'temporary'} size="sm" />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-muted-foreground hover:text-blue-600 transition-colors"
+                    onClick={() => {
+                      const now = new Date();
+                      googleCalendarService.openCalendarEvent(memo, now, 60);
+                    }}
+                    title="구글 캘린더에 등록"
+                  >
+                    <CalendarIcon className="h-3.5 w-3.5 mr-1" />
+                    <span className="text-xs">캘린더</span>
+                  </Button>
+                </div>
                 <div className={`flex items-center gap-2 px-3 py-1 rounded-md ${
                   isMobileLightMode 
                     ? 'text-gray-600 bg-gray-50' 
@@ -590,12 +633,12 @@ export const MemoDetailPage: React.FC = () => {
                   </AlertDialog>
                 </div>
               </div>
-              <div className={`flex-1 p-0.5 rounded-lg border ${
+              <div className={`flex-1 p-1.5 rounded-lg border ${
                 isMobileLightMode 
                   ? 'bg-gray-50 border-gray-200' 
                   : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'
               }`}>
-                <div className={`whitespace-pre-wrap leading-relaxed ${fontSizeClasses.content} h-full overflow-y-auto ${
+                <div className={`whitespace-pre-wrap leading-relaxed ${fontSizeClasses.content} min-h-[200px] overflow-y-auto ${
                   isMobileLightMode 
                     ? 'text-gray-700' 
                     : 'text-gray-700 dark:text-gray-300'
@@ -663,6 +706,8 @@ export const MemoDetailPage: React.FC = () => {
           </div>
         </div>
       )}
+
+
     </Layout>
   );
 }; 

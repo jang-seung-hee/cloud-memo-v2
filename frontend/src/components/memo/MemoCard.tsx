@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -28,7 +28,7 @@ interface MemoCardProps {
   onMemoUpdate?: () => void;
 }
 
-export const MemoCard: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
+const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
   const navigate = useNavigate();
   const { isDesktop, getTemplateSidebarWidth } = useDevice();
   const { toast } = useToast();
@@ -36,8 +36,9 @@ export const MemoCard: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const formatDate = (timestamp: any) => {
-    // Firebase Timestamp를 Date로 변환
+  // 날짜 포맷팅 함수를 useMemo로 최적화
+  const formattedDate = useMemo(() => {
+    const timestamp = memo.createdAt || memo.updatedAt;
     const date = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp);
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - date.getTime());
@@ -62,16 +63,24 @@ export const MemoCard: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
       });
       return `${dateString} (${timeString})`;
     }
-  };
+  }, [memo.createdAt, memo.updatedAt]);
 
-  const truncateText = (text: string, maxLength: number) => {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
-  };
+  // 텍스트 자르기 함수를 useMemo로 최적화
+  const truncatedContent = useMemo(() => {
+    const maxLength = isDesktop ? 220 : 150;
+    if (memo.content.length <= maxLength) return memo.content;
+    return memo.content.substring(0, maxLength) + '...';
+  }, [memo.content, isDesktop]);
 
-  const handleClick = () => {
+  // 이벤트 핸들러들을 useCallback으로 최적화
+  const handleClick = useCallback(() => {
     navigate(`/memo/${memo.id}`);
-  };
+  }, [navigate, memo.id]);
+
+  const handleExpandToggle = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsExpanded(prev => !prev);
+  }, []);
 
   // 모바일 호환 클립보드 복사 함수
   const copyToClipboard = async (text: string): Promise<boolean> => {
@@ -103,7 +112,7 @@ export const MemoCard: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
   };
 
   // 복사 기능
-  const handleCopy = async (e: React.MouseEvent) => {
+  const handleCopy = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
       const textToCopy = memo.content;
@@ -128,16 +137,16 @@ export const MemoCard: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
         variant: "destructive"
       });
     }
-  };
+  }, [memo.content, toast]);
 
   // 수정 기능
-  const handleEdit = (e: React.MouseEvent) => {
+  const handleEdit = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     navigate(`/memo/${memo.id}/edit`);
-  };
+  }, [navigate, memo.id]);
 
   // 삭제 기능
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     setIsDeleting(true);
     try {
       // 이미지가 있으면 먼저 삭제
@@ -174,7 +183,7 @@ export const MemoCard: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
     } finally {
       setIsDeleting(false);
     }
-  };
+  }, [memo.id, memo.images, onMemoUpdate, toast]);
 
   return (
     <Card 
@@ -202,7 +211,7 @@ export const MemoCard: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
                 <div className="flex items-center gap-1 text-muted-foreground">
                   <ClockIcon className="h-3 w-3" />
                   <span className={`text-xs ${fontSizeClasses.date}`}>
-                    {formatDate(memo.createdAt || memo.updatedAt)}
+                    {formattedDate}
                   </span>
                 </div>
               </div>
@@ -279,7 +288,7 @@ export const MemoCard: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
               <div className="flex items-center gap-1 text-muted-foreground">
                 <ClockIcon className="h-3 w-3" />
                 <span className={`text-xs ${fontSizeClasses.date}`}>
-                  {formatDate(memo.createdAt || memo.updatedAt)}
+                  {formattedDate}
                 </span>
               </div>
             </div>
@@ -361,7 +370,7 @@ export const MemoCard: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
               // 이미지가 없을 때: 더 큰 고정 높이로 텍스트 영역 설정
               <div className="bg-muted/80 dark:bg-muted/70 rounded-lg p-3 mb-4 relative h-[280px] flex flex-col">
                 <p className={`text-muted-foreground line-clamp-7 leading-tight whitespace-pre-wrap flex-1 ${fontSizeClasses.content}`}>
-                  {truncateText(memo.content, 220)}
+                  {truncatedContent}
                 </p>
                 <div className="absolute bottom-0 left-0 right-0 h-[40px] bg-white dark:bg-card rounded-b-lg"></div>
               </div>
@@ -372,7 +381,7 @@ export const MemoCard: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
                 <div className="h-[220px] pb-22">
                   <div className="bg-muted/80 dark:bg-muted/70 rounded-lg p-3 h-full flex flex-col">
                     <p className={`text-muted-foreground line-clamp-7 leading-normal whitespace-pre-wrap flex-1 ${fontSizeClasses.content}`}>
-                      {truncateText(memo.content, 150)}
+                      {truncatedContent}
                     </p>
                   </div>
                 </div>
@@ -405,7 +414,7 @@ export const MemoCard: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
                   {isDesktop && (
                     <div className="absolute right-4 -bottom-8 flex items-center gap-2 text-muted-foreground">
                       <ClockIcon className="h-3 w-3" />
-                      <span className={fontSizeClasses.date}>{formatDate(memo.createdAt || memo.updatedAt)}</span>
+                      <span className={fontSizeClasses.date}>{formattedDate}</span>
                     </div>
                   )}
                 </div>
@@ -418,7 +427,7 @@ export const MemoCard: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
             {/* 텍스트 영역 - flex-1로 남은 공간 차지 */}
             <div className="flex-1">
               <p className={`text-muted-foreground mb-2 leading-normal whitespace-pre-wrap ${fontSizeClasses.content} ${isExpanded ? '' : 'line-clamp-6'}`}>
-                {isExpanded ? memo.content : truncateText(memo.content, 150)}
+                {isExpanded ? memo.content : truncatedContent}
               </p>
               {memo.content.length > 150 && (
                 <div className="flex justify-end">
@@ -480,4 +489,7 @@ export const MemoCard: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
       </CardContent>
     </Card>
   );
-}; 
+};
+
+// React.memo로 컴포넌트 최적화
+export const MemoCard = React.memo(MemoCardComponent); 

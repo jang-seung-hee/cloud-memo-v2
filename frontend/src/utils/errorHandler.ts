@@ -3,6 +3,8 @@
  * Firebase 관련 에러를 사용자 친화적인 메시지로 변환
  */
 
+import { logWarn, logInfo } from './logger';
+
 export interface FirebaseError {
   code: string;
   message: string;
@@ -95,7 +97,7 @@ const FIREBASE_ERROR_MESSAGES: Record<string, ErrorInfo> = {
  * Firebase 에러를 사용자 친화적인 메시지로 변환
  */
 export const handleFirebaseError = (error: any): ErrorInfo => {
-  console.error('🔥 Firebase 에러:', error);
+  console.error('Firebase 에러:', error);
 
   // Firebase 에러 객체에서 코드 추출
   const errorCode = error?.code || error?.message || 'unknown';
@@ -155,6 +157,8 @@ export const logError = (error: any, context?: string) => {
   // 향후 에러 분석 서비스 연동 시 사용
   // analytics.logError(errorInfo);
 };
+
+
 
 /**
  * 재시도 가능한 작업을 위한 래퍼

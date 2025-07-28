@@ -11,6 +11,8 @@ import { auth } from './config';
 // Google 인증 제공업체
 const googleProvider = new GoogleAuthProvider();
 
+
+
 // 환경변수 확인
 const isFirebaseConfigured = process.env.REACT_APP_FIREBASE_API_KEY && 
   process.env.REACT_APP_FIREBASE_API_KEY !== 'dummy-api-key';

@@ -392,7 +392,7 @@ export const MemoEditPage: React.FC = () => {
         title: "메모 수정 완료",
         description: "메모가 성공적으로 수정되었습니다."
       });
-      navigate('/'); // 메모 목록 페이지로 이동
+      navigate('/memos'); // 메모 목록 페이지로 이동
     } catch (error) {
       console.error('메모 수정 중 오류:', error);
       toast({
@@ -406,7 +406,7 @@ export const MemoEditPage: React.FC = () => {
   };
 
   const handleCancel = () => {
-    navigate('/');
+    navigate('/memos');
   };
 
   // 로딩 상태
@@ -720,6 +720,46 @@ export const MemoEditPage: React.FC = () => {
           </CardContent>
         </Card>
 
+        {/* 액션 버튼 - 이미지 박스 위로 이동 */}
+        <div className="flex items-center justify-center gap-4">
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={handleCancel}
+            disabled={isSaving}
+            className={`flex-1 h-12 ${
+              isMobileLightMode 
+                ? 'border-gray-300 text-gray-700 hover:bg-gray-50' 
+                : ''
+            }`}
+          >
+            <XMarkIcon className="h-5 w-5 mr-2" />
+            취소
+          </Button>
+          <Button
+            size="lg"
+            onClick={handleSave}
+            disabled={isSaving}
+            className={`flex-1 h-12 ${
+              isMobileLightMode 
+                ? 'bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5' 
+                : 'bg-blue-600 hover:bg-blue-700 dark:bg-slate-600 dark:hover:bg-slate-500'
+            }`}
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                저장 중...
+              </>
+            ) : (
+              <>
+                <CheckIcon className="h-5 w-5 mr-2" />
+                저장
+              </>
+            )}
+          </Button>
+        </div>
+
         {/* 이미지 업로드 영역 - 아이콘과 미리보기 분할 */}
         <Card className={`shadow-sm border-2 ${
           isMobileLightMode 
@@ -880,46 +920,6 @@ export const MemoEditPage: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-
-        {/* 액션 버튼 - Shadcn UI 스타일 */}
-        <div className="flex items-center justify-center gap-4 pt-2">
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={handleCancel}
-            disabled={isSaving}
-            className={`flex-1 h-12 ${
-              isMobileLightMode 
-                ? 'border-gray-300 text-gray-700 hover:bg-gray-50' 
-                : ''
-            }`}
-          >
-            <XMarkIcon className="h-5 w-5 mr-2" />
-            취소
-          </Button>
-          <Button
-            size="lg"
-            onClick={handleSave}
-            disabled={isSaving}
-            className={`flex-1 h-12 ${
-              isMobileLightMode 
-                ? 'bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5' 
-                : 'bg-blue-600 hover:bg-blue-700 dark:bg-slate-600 dark:hover:bg-slate-500'
-            }`}
-          >
-            {isSaving ? (
-              <>
-                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                저장 중...
-              </>
-            ) : (
-              <>
-                <CheckIcon className="h-5 w-5 mr-2" />
-                저장
-              </>
-            )}
-          </Button>
-        </div>
       </div>
 
       {/* 상용구 사이드바 */}

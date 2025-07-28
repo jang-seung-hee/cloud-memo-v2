@@ -8,6 +8,8 @@
 # Backup folders
 .백업/
 백업/
+.Doc/
+Doc/
 
 # Dependencies
 node_modules/
@@ -49,4 +51,28 @@ coverage/
 
 # Temporary folders
 tmp/
-temp/ 
+temp/
+
+# Archive files (ZIP files)
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+*.bz2
+
+# Security and sensitive files
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+*.p8
+*.pem
+secrets/
+secrets.json
+config.json
+firebase-key.json
+service-account.json 

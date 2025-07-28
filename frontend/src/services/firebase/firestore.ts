@@ -24,6 +24,7 @@ import {
 import { db } from './config';
 import { storageService } from './storage';
 import { compressImage } from '../../utils/imageCompression';
+import { logDebug, logInfo, logError } from '../../utils/logger';
 import { 
   IFirebaseMemo, 
   IFirebaseTemplate, 
@@ -57,8 +58,8 @@ export class FirestoreService {
   // 메모 생성
   async createMemo(userId: string, data: IMemoCreateData): Promise<string> {
     try {
-      console.log('🔍 createMemo 호출됨:', { userId, data });
-      console.log('📸 data.images 상태:', {
+      logDebug('createMemo 호출됨:', { userId, data });
+      logDebug('data.images 상태:', {
         images: data.images,
         length: data.images?.length,
         isArray: Array.isArray(data.images),
@@ -68,38 +69,38 @@ export class FirestoreService {
       // 이미지 업로드 처리
       const imageUrls: string[] = [];
       if (data.images && data.images.length > 0) {
-        console.log('📸 이미지 업로드 시작:', data.images.length, '개 파일');
+        logInfo('이미지 업로드 시작:', data.images.length, '개 파일');
         for (const imageFile of data.images) {
           try {
-            console.log('📁 이미지 파일 정보:', {
+            logDebug('이미지 파일 정보:', {
               name: imageFile.name,
               size: imageFile.size,
               type: imageFile.type
             });
             
             // 이미지 압축 (1MB 이하로 더 강하게 압축)
-            console.log('🗜️ 이미지 압축 시작...');
+            logDebug('이미지 압축 시작...');
             const compressedImage = await compressImage(imageFile, { maxSizeMB: 1 });
-            console.log('✅ 이미지 압축 완료:', {
+            logInfo('이미지 압축 완료:', {
               name: compressedImage.name,
               size: compressedImage.size
             });
             
             // Firebase Storage에 업로드
-            console.log('☁️ Firebase Storage 업로드 시작...');
+            logDebug('Firebase Storage 업로드 시작...');
             const imageUrl = await storageService.uploadImage(compressedImage, userId);
-            console.log('✅ 이미지 업로드 완료:', imageUrl);
+            logInfo('이미지 업로드 완료:', imageUrl);
             imageUrls.push(imageUrl);
           } catch (error) {
-            console.error('❌ 이미지 업로드 실패:', error);
+            logError('이미지 업로드 실패:', error);
             // 이미지 업로드 실패 시에도 메모는 생성
           }
         }
       } else {
-        console.log('📸 업로드할 이미지 없음');
+        logDebug('업로드할 이미지 없음');
       }
       
-      console.log('📝 최종 이미지 URL 목록:', imageUrls);
+      logDebug('최종 이미지 URL 목록:', imageUrls);
 
       // 기본 데이터 객체 생성
       const baseData = {
@@ -129,7 +130,7 @@ export class FirestoreService {
 
       return docRef.id;
     } catch (error) {
-      console.error('메모 생성 오류:', error);
+      logError('메모 생성 오류:', error);
       throw this.createFirestoreError(error);
     }
   }
@@ -145,7 +146,7 @@ export class FirestoreService {
       }
       return null;
     } catch (error) {
-      console.error('메모 조회 오류:', error);
+      logError('메모 조회 오류:', error);
       throw this.createFirestoreError(error);
     }
   }

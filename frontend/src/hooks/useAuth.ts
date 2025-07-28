@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { User } from 'firebase/auth';
 import { authService } from '../services/auth';
 
@@ -23,6 +23,11 @@ export const useAuth = (): UseAuthReturn => {
     loading: true,
     error: null
   });
+  
+  // 디바운싱을 위한 타이머 ref
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // 이전 사용자 상태를 저장하여 불필요한 업데이트 방지
+  const previousUserRef = useRef<User | null>(null);
 
   // 로그인 함수
   const login = useCallback(async (): Promise<void> => {
@@ -56,18 +61,36 @@ export const useAuth = (): UseAuthReturn => {
     }
   }, []);
 
-  // 인증 상태 변경 리스너 설정
+  // 인증 상태 변경 리스너 설정 (디바운싱 적용)
   useEffect(() => {
     const unsubscribe = authService.onAuthStateChanged((user) => {
-      setAuthState({
-        user,
-        loading: false,
-        error: null
-      });
+      // 이전 사용자와 비교하여 실제 변경사항이 있는지 확인
+      const hasChanged = user?.uid !== previousUserRef.current?.uid;
+      
+      if (hasChanged) {
+        // 디바운싱 적용 (100ms로 단축하여 반응성 향상)
+        if (debounceTimerRef.current) {
+          clearTimeout(debounceTimerRef.current);
+        }
+        
+        debounceTimerRef.current = setTimeout(() => {
+          previousUserRef.current = user;
+          setAuthState({
+            user,
+            loading: false,
+            error: null
+          });
+        }, 100);
+      }
     });
 
-    // 컴포넌트 언마운트 시 구독 해제
-    return unsubscribe;
+    // 컴포넌트 언마운트 시 구독 해제 및 타이머 정리
+    return () => {
+      unsubscribe();
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
   }, []);
 
   return {
