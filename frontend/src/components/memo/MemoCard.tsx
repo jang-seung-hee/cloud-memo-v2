@@ -72,6 +72,22 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
     return memo.content.substring(0, maxLength) + '...';
   }, [memo.content, isDesktop]);
 
+  // 모바일용 텍스트 처리 함수 (줄바꿈 제거)
+  const getMobileContent = useMemo(() => {
+    if (isDesktop) return memo.content;
+    
+    if (isExpanded) {
+      // 펼쳐진 상태: 원본 텍스트 그대로 표시 (줄바꿈 유지)
+      return memo.content;
+    } else {
+      // 접힌 상태: 줄바꿈 제거하고 일렬로 붙여서 표시
+      const contentWithoutNewlines = memo.content.replace(/\n/g, ' ');
+      const maxLength = 150;
+      if (contentWithoutNewlines.length <= maxLength) return contentWithoutNewlines;
+      return contentWithoutNewlines.substring(0, maxLength) + '...';
+    }
+  }, [memo.content, isDesktop, isExpanded]);
+
   // 이벤트 핸들러들을 useCallback으로 최적화
   const handleClick = useCallback(() => {
     navigate(`/memo/${memo.id}`);
@@ -426,10 +442,10 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
           <>
             {/* 텍스트 영역 - flex-1로 남은 공간 차지 */}
             <div className="flex-1">
-              <p className={`text-muted-foreground mb-2 leading-normal whitespace-pre-wrap ${fontSizeClasses.content} ${isExpanded ? '' : 'line-clamp-6'}`}>
-                {isExpanded ? memo.content : truncatedContent}
+              <p className={`text-muted-foreground mb-2 leading-normal ${isExpanded ? 'whitespace-pre-wrap' : 'whitespace-normal'} ${fontSizeClasses.content} ${isExpanded ? '' : 'line-clamp-6'}`}>
+                {getMobileContent}
               </p>
-              {memo.content.length > 150 && (
+              {(memo.content.length > 150 || (memo.content.includes('\n') && !isDesktop)) && (
                 <div className="flex justify-end">
                   <button
                     onClick={(e) => {

@@ -34,7 +34,21 @@ export class GoogleCalendarService {
    */
   openCalendarEvent(memo: IMemo, dateTime: Date, durationMinutes: number = 60): void {
     const url = this.createCalendarEventUrl(memo, dateTime, durationMinutes);
-    window.open(url, '_blank', 'width=800,height=600');
+    
+    try {
+      // 팝업 차단 방지를 위한 더 안전한 방식
+      const popup = window.open(url, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+      
+      // 팝업이 차단되었는지 확인
+      if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+        // 팝업이 차단된 경우 새 탭으로 열기
+        window.open(url, '_blank');
+      }
+    } catch (error) {
+      console.warn('팝업 열기 실패, 새 탭으로 열기:', error);
+      // 에러 발생 시 새 탭으로 열기
+      window.open(url, '_blank');
+    }
   }
 
 

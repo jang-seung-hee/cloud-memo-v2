@@ -43,7 +43,7 @@ export const Layout: React.FC<LayoutProps> = ({
         memoCount={memos.length}
         templateCount={templates.length}
       />
-      <main className={`${isDesktop ? 'pt-4 pb-14' : 'pt-20 pb-12'} px-4 ${isDesktop ? 'max-w-none mx-0' : 'max-w-7xl mx-auto'}`}>
+      <main className={`${isDesktop ? 'pt-4 pb-14' : 'pt-20 pb-20'} px-4 ${isDesktop ? 'max-w-none mx-0' : 'max-w-7xl mx-auto'}`}>
         <div className={isDesktop ? 'mx-[150px]' : ''}>
           {children}
         </div>

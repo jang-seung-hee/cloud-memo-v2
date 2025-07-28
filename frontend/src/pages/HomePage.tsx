@@ -162,7 +162,7 @@ export const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#8bc0e0] to-[#6a9bd0] dark:bg-gradient-to-b dark:from-slate-800 dark:via-slate-900 dark:to-gray-950 flex flex-col">
       {/* 메인 콘텐츠 */}
-      <div className="flex-1 flex items-center justify-center px-6 py-8 pb-24">
+      <div className="flex-1 flex items-center justify-center px-6 py-8 pb-28">
         <div className="w-full max-w-md">
           {/* 로고 및 타이틀 */}
           <div className="text-center mb-8">

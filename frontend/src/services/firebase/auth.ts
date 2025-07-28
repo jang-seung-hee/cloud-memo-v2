@@ -1,6 +1,8 @@
 import { 
   GoogleAuthProvider, 
   signInWithPopup, 
+  signInWithRedirect,
+  getRedirectResult,
   signOut, 
   onAuthStateChanged,
   User,
@@ -17,15 +19,22 @@ const googleProvider = new GoogleAuthProvider();
 const isFirebaseConfigured = process.env.REACT_APP_FIREBASE_API_KEY && 
   process.env.REACT_APP_FIREBASE_API_KEY !== 'dummy-api-key';
 
-// Google 로그인 함수
+// Google 로그인 함수 (팝업 대신 리다이렉트 사용)
 export const signInWithGoogle = async (): Promise<User> => {
   if (!isFirebaseConfigured) {
     throw new Error('Firebase가 설정되지 않았습니다. 환경변수를 확인하세요.');
   }
 
   try {
-    const result = await signInWithPopup(auth, googleProvider);
-    return result.user;
+    // 팝업 대신 리다이렉트 사용
+    await signInWithRedirect(auth, googleProvider);
+    // 리다이렉트 후 결과 처리
+    const result = await getRedirectResult(auth);
+    if (result) {
+      return result.user;
+    } else {
+      throw new Error('인증이 취소되었습니다.');
+    }
   } catch (error) {
     console.error('Google 로그인 오류:', error);
     throw error as AuthError;

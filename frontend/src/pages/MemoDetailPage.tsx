@@ -395,8 +395,8 @@ export const MemoDetailPage: React.FC = () => {
                     {memo.content.length}자
                   </span>
                 </div>
-                <div className="p-4 bg-white dark:bg-gray-900 rounded-lg border-2 border-gray-200 dark:border-gray-700 min-h-[200px]">
-                  <div className={`whitespace-pre-wrap text-gray-700 dark:text-gray-300 leading-relaxed ${fontSizeClasses.content}`}>
+                <div className="p-4 bg-yellow-50 dark:bg-gray-800/60 rounded-lg border-0 min-h-[200px]">
+                  <div className={`whitespace-pre-wrap text-gray-700 dark:text-gray-300 leading-relaxed ${fontSizeClasses.content} bg-yellow-50 bg-[linear-gradient(transparent_0%,transparent_1.5rem,rgba(229,231,235,0.65)_1.5rem,rgba(229,231,235,0.65)_1.6rem)] bg-[length:100%_1.6rem] dark:bg-gray-800/60 dark:bg-[linear-gradient(transparent_0%,transparent_1.5rem,rgba(75,85,99,0.25)_1.5rem,rgba(75,85,99,0.25)_1.51rem)] dark:bg-[length:100%_1.6rem]`}>
                     {memo.content}
                   </div>
                 </div>
@@ -633,15 +633,19 @@ export const MemoDetailPage: React.FC = () => {
                   </AlertDialog>
                 </div>
               </div>
-              <div className={`flex-1 p-1.5 rounded-lg border ${
+              <div className={`flex-1 p-1.5 rounded-lg ${
                 isMobileLightMode 
-                  ? 'bg-gray-50 border-gray-200' 
-                  : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'
+                  ? 'bg-yellow-50 border-0' 
+                  : 'bg-gray-50 dark:bg-gray-800/60 border-gray-200 dark:border-0'
               }`}>
                 <div className={`whitespace-pre-wrap leading-relaxed ${fontSizeClasses.content} min-h-[200px] overflow-y-auto ${
                   isMobileLightMode 
                     ? 'text-gray-700' 
                     : 'text-gray-700 dark:text-gray-300'
+                } ${
+                  isMobileLightMode 
+                    ? 'bg-yellow-50 bg-[linear-gradient(transparent_0%,transparent_1.5rem,rgba(229,231,235,0.65)_1.5rem,rgba(229,231,235,0.65)_1.6rem)] bg-[length:100%_1.6rem]' 
+                    : 'dark:bg-gray-800/60 dark:bg-[linear-gradient(transparent_0%,transparent_1.5rem,rgba(75,85,99,0.25)_1.5rem,rgba(75,85,99,0.25)_1.51rem)] dark:bg-[length:100%_1.6rem]'
                 }`}>
                   {memo.content}
                 </div>
