@@ -20,8 +20,7 @@ import {
   Sparkles,
   Shield,
   Cloud,
-  ChevronRight,
-  RefreshCw
+  ChevronRight
 } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
@@ -33,10 +32,10 @@ export const HomePage: React.FC = () => {
   const { isDark } = useTheme();
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
 
-  // QR 코드 생성 (현재 페이지 URL)
+  // QR 코드 생성 (고정된 앱 링크)
   useEffect(() => {
-    const currentUrl = window.location.href;
-    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(currentUrl)}`;
+    const appUrl = 'https://cloud-memo-v2.netlify.app';
+    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(appUrl)}`;
     setQrCodeUrl(qrApiUrl);
   }, []);
 
@@ -149,9 +148,6 @@ export const HomePage: React.FC = () => {
                       alt="QR Code" 
                       className="w-20 h-20 border-2 border-gray-300 dark:border-gray-600 rounded-lg"
                     />
-                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-gray-600 rounded-full flex items-center justify-center">
-                      <RefreshCw className="w-2.5 h-2.5 text-white" />
-                    </div>
                   </div>
                 )}
               </div>
@@ -264,9 +260,6 @@ export const HomePage: React.FC = () => {
                       alt="QR Code" 
                       className="w-20 h-20 border-2 border-gray-300 dark:border-gray-600 rounded-lg"
                     />
-                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-gray-600 rounded-full flex items-center justify-center">
-                      <RefreshCw className="w-2.5 h-2.5 text-white" />
-                    </div>
                   </div>
                 )}
               </div>
