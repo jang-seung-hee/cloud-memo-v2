@@ -227,13 +227,13 @@ export const TemplateSidebar: React.FC<TemplateSidebarProps> = ({
                     {template.content}
                   </p>
                   
-                  {/* 클립보드 복사 버튼 - 본문 아래로 이동, 왼쪽정렬, 은은한 녹색 배경, 가로 길게 */}
+                  {/* 클립보드 복사 버튼 - 본문 아래로 이동, 왼쪽정렬, 진한 녹색 배경, 가로 길게 */}
                   <div className="mt-3 flex justify-start">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={(e) => handleCopyClick(e, template.content)}
-                      className="h-6 px-4 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/30 transition-colors"
+                      className="h-6 px-6 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 bg-green-200 hover:bg-green-300 dark:bg-green-800/50 dark:hover:bg-green-800/60 transition-colors"
                       title="클립보드에 복사"
                     >
                       <DocumentDuplicateIcon className="h-4 w-4" />
