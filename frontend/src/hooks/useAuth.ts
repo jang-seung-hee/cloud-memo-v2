@@ -68,7 +68,7 @@ export const useAuth = (): UseAuthReturn => {
       const hasChanged = user?.uid !== previousUserRef.current?.uid;
       
       if (hasChanged) {
-        // 디바운싱 적용 (100ms로 단축하여 반응성 향상)
+        // PC 브라우저에서 안정성을 위해 디바운싱 시간을 늘림
         if (debounceTimerRef.current) {
           clearTimeout(debounceTimerRef.current);
         }
@@ -80,7 +80,12 @@ export const useAuth = (): UseAuthReturn => {
             loading: false,
             error: null
           });
-        }, 100);
+          
+          // PC 브라우저에서 디버깅을 위한 로그
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Auth state changed:', user ? `User: ${user.email}` : 'No user');
+          }
+        }, 200); // PC 브라우저에서 더 안정적인 200ms로 조정
       }
     });
 

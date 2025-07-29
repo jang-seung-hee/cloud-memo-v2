@@ -308,9 +308,9 @@ export const MemoDetailPage: React.FC = () => {
                   <div className="flex items-center gap-3">
                     <CategoryBadge category={memo.category || 'temporary'} size="md" />
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      className="h-7 px-2 text-muted-foreground hover:text-blue-600 transition-colors"
+                      className="h-7 px-2 text-muted-foreground hover:text-blue-600 transition-colors border-blue-500 border"
                       onClick={() => {
                         const now = new Date();
                         googleCalendarService.openCalendarEvent(memo, now, 60);
@@ -520,9 +520,9 @@ export const MemoDetailPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <CategoryBadge category={memo.category || 'temporary'} size="sm" />
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
-                    className="h-7 px-2 text-muted-foreground hover:text-blue-600 transition-colors"
+                    className="h-7 px-2 text-muted-foreground hover:text-blue-600 transition-colors border-blue-500 border"
                     onClick={() => {
                       const now = new Date();
                       googleCalendarService.openCalendarEvent(memo, now, 60);

@@ -64,13 +64,19 @@ export class AuthService {
 
   // 인증 상태 변경 리스너 등록
   onAuthStateChanged(callback: (user: User | null) => void): () => void {
+    // 리스너 등록
     this.authStateListeners.push(callback);
     
-    // 현재 상태 즉시 호출
+    // 즉시 현재 상태 전달
     callback(this.getCurrentUser());
     
     // Firebase 인증 상태 변경 리스너 등록
     const unsubscribe = onAuthStateChange((user) => {
+      // PC 브라우저에서 안정성을 위해 상태 변경 전 로깅
+      if (process.env.NODE_ENV === 'development') {
+        console.log('AuthService: User state changed', user ? `from ${this.currentUser?.email} to ${user.email}` : 'to null');
+      }
+      
       this.currentUser = user;
       this.notifyAuthStateListeners(user);
     });

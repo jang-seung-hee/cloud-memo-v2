@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
@@ -26,6 +26,22 @@ const app = initializeApp(firebaseConfig);
 
 // Firebase 서비스 초기화
 export const auth = getAuth(app);
+
+// PC 브라우저에서 세션 지속성을 위해 persistence 설정
+// 초기화 후 즉시 설정하여 인증 상태 유지
+const initializeAuthPersistence = async () => {
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+    console.log('Firebase Auth persistence 설정 완료');
+  } catch (error) {
+    console.error('Firebase Auth persistence 설정 오류:', error);
+    // 오류가 발생해도 앱은 계속 실행
+  }
+};
+
+// 비동기로 persistence 설정 초기화
+initializeAuthPersistence();
+
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 

@@ -14,8 +14,6 @@ import { QuoteModal } from './components/common/QuoteModal';
 import { TemplateProvider } from './contexts/TemplateContext';
 import { useDevice } from './hooks/useDevice';
 import { measurePageLoad, monitorMemoryUsage, finalPerformanceValidation, checkOptimizationCompletion } from './utils/performanceTest';
-import { getRedirectResult } from 'firebase/auth';
-import { auth } from './services/firebase/config';
 
 function App() {
   // 환경 변수 확인용 로그 추가 (개발 환경에서만)
@@ -28,20 +26,6 @@ function App() {
   const [showQuoteModal, setShowQuoteModal] = useState(false);
 
   useEffect(() => {
-    // Firebase 리다이렉트 결과 처리
-    const handleRedirectResult = async () => {
-      try {
-        const result = await getRedirectResult(auth);
-        if (result) {
-          console.log('Firebase 리다이렉트 인증 성공:', result.user.email);
-        }
-      } catch (error) {
-        console.error('Firebase 리다이렉트 인증 오류:', error);
-      }
-    };
-
-    handleRedirectResult();
-
     // 성능 모니터링 초기화
     measurePageLoad();
     

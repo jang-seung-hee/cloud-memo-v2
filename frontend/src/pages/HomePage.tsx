@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useMemos, useTemplates } from '../hooks/useFirestore';
 import { useDevice } from '../hooks/useDevice';
@@ -7,6 +7,7 @@ import { useTheme } from '../hooks/useTheme';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
+import { TemplateSidebar } from '../components/ui/sidebar';
 import { 
   BookOpen, 
   FileText, 
@@ -25,12 +26,18 @@ import {
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isAuthenticated, login, logout } = useAuth();
   const { data: memos, loading: memosLoading } = useMemos();
   const { data: templates, loading: templatesLoading } = useTemplates();
   const { isMobile } = useDevice();
   const { isDark } = useTheme();
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const [isTemplateSidebarOpen, setIsTemplateSidebarOpen] = useState(false);
+  const [hasAutoRedirected, setHasAutoRedirected] = useState(() => {
+    // sessionStorage에서 자동 리다이렉트 상태 확인
+    return sessionStorage.getItem('hasAutoRedirected') === 'true';
+  });
 
   // QR 코드 생성 (고정된 앱 링크)
   useEffect(() => {
@@ -38,6 +45,16 @@ export const HomePage: React.FC = () => {
     const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(appUrl)}`;
     setQrCodeUrl(qrApiUrl);
   }, []);
+
+  // 로그인 후 메모 목록으로 자동 이동 (로그인 직후에만)
+  useEffect(() => {
+    if (isAuthenticated && !hasAutoRedirected && location.pathname === '/') {
+      // 로그인 직후에만 자동 이동하고, 이후에는 홈화면을 유지
+      setHasAutoRedirected(true);
+      sessionStorage.setItem('hasAutoRedirected', 'true');
+      navigate('/memos');
+    }
+  }, [isAuthenticated, navigate, hasAutoRedirected, location.pathname]);
 
   // 메모 및 템플릿 개수 계산
   const memoCount = memos?.length || 0;
@@ -54,6 +71,9 @@ export const HomePage: React.FC = () => {
   const handleLogout = async () => {
     try {
       await logout();
+      // 로그아웃 시 자동 리다이렉트 상태 초기화
+      setHasAutoRedirected(false);
+      sessionStorage.removeItem('hasAutoRedirected');
     } catch (error) {
       console.error('로그아웃 실패:', error);
     }
@@ -65,6 +85,27 @@ export const HomePage: React.FC = () => {
 
   const handleGoToTemplates = () => {
     navigate('/templates');
+  };
+
+  const handleCreateMemo = () => {
+    navigate('/create');
+  };
+
+  const handleTemplateSelect = (content: string) => {
+    // 템플릿 선택 시 클립보드에 복사
+    navigator.clipboard.writeText(content).then(() => {
+      console.log('템플릿이 클립보드에 복사되었습니다:', content);
+    }).catch((error) => {
+      console.error('클립보드 복사 실패:', error);
+    });
+  };
+
+  const handleTemplateCopy = (content: string) => {
+    navigator.clipboard.writeText(content).then(() => {
+      console.log('템플릿이 클립보드에 복사되었습니다:', content);
+    }).catch((error) => {
+      console.error('클립보드 복사 실패:', error);
+    });
   };
 
   // 로그인 전 홈 페이지
@@ -158,7 +199,7 @@ export const HomePage: React.FC = () => {
     );
   }
 
-    // 로그인 후 홈 페이지
+  // 로그인 후 홈 페이지
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#8bc0e0] to-[#6a9bd0] dark:bg-gradient-to-b dark:from-slate-800 dark:via-slate-900 dark:to-gray-950 flex flex-col">
       {/* 메인 콘텐츠 */}
@@ -293,7 +334,7 @@ export const HomePage: React.FC = () => {
           {/* 퀵 사용구 */}
           <div 
             className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={handleGoToTemplates}
+            onClick={() => setIsTemplateSidebarOpen(true)}
           >
             <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-lg flex items-center justify-center mb-1">
               <Sparkles className="w-3 h-3 text-gray-600 dark:text-gray-300" />
@@ -302,7 +343,10 @@ export const HomePage: React.FC = () => {
           </div>
 
           {/* 새메모 */}
-          <div className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity">
+          <div 
+            className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={handleCreateMemo}
+          >
             <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-lg flex items-center justify-center mb-1">
               <ArrowRight className="w-3 h-3 text-gray-600 dark:text-gray-300" />
             </div>
@@ -310,6 +354,15 @@ export const HomePage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* 상용구 사이드바 */}
+      <TemplateSidebar
+        isOpen={isTemplateSidebarOpen}
+        onClose={() => setIsTemplateSidebarOpen(false)}
+        templates={templates || []}
+        onTemplateSelect={handleTemplateSelect}
+        onTemplateCopy={handleTemplateCopy}
+      />
     </div>
   );
 }; 
