@@ -103,8 +103,14 @@ export const MemoDetailPage: React.FC = () => {
   const formatDate = (timestamp: any) => {
     const date = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp);
     const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    // 날짜만 비교하기 위해 시간을 제거
+    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const nowOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    // 날짜 차이 계산 (밀리초 단위)
+    const diffTime = nowOnly.getTime() - dateOnly.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     
     const timeString = date.toLocaleTimeString('ko-KR', {
       hour: '2-digit',
@@ -112,7 +118,9 @@ export const MemoDetailPage: React.FC = () => {
       hour12: false
     });
     
-    if (diffDays === 1) {
+    if (diffDays === 0) {
+      return `오늘 (${timeString})`;
+    } else if (diffDays === 1) {
       return `어제 (${timeString})`;
     } else if (diffDays < 7) {
       return `${diffDays}일 전 (${timeString})`;
