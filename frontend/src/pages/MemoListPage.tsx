@@ -242,8 +242,8 @@ export const MemoListPage: React.FC = () => {
             )}
           </div>
 
-          {/* 메모 리스트 - PC에서는 4개씩 그리드, 모바일에서는 세로 스택 */}
-          <div className={isDesktop ? "grid grid-cols-4 gap-4" : "space-y-3"}>
+          {/* 메모 리스트 - PC에서는 반응형 그리드, 모바일에서는 세로 스택 */}
+          <div className={isDesktop ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" : "space-y-3"}>
             {filteredMemos.map((memo) => (
               <MemoCard key={memo.id} memo={memo} onMemoUpdate={handleMemoUpdate} />
             ))}
