@@ -143,13 +143,16 @@ export const TemplateSidebar: React.FC<TemplateSidebarProps> = ({
         />
       )}
       
-      {/* 사이드바 - 동적 넓이 적용 */}
+      {/* 사이드바 - 동적 넓이 적용, 하단 메뉴 높이만큼 제외 */}
       <div 
         className={cn(
-          'fixed top-0 right-0 h-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 z-50 transform transition-all duration-300 ease-in-out flex flex-col',
+          'fixed top-0 right-0 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 z-50 transform transition-all duration-300 ease-in-out flex flex-col',
           isOpen ? 'translate-x-0' : 'translate-x-full'
         )}
-        style={{ width: `${sidebarWidth}px` }}
+        style={{ 
+          width: `${sidebarWidth}px`,
+          height: 'calc(100vh - 56px)' // 하단 메뉴 높이(56px)만큼 제외
+        }}
       >
         {/* 헤더 */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
@@ -206,18 +209,17 @@ export const TemplateSidebar: React.FC<TemplateSidebarProps> = ({
                 >
                   {/* 제목 */}
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className={`font-medium text-gray-900 dark:text-gray-100 ${fontSizeClasses.title}`}>
-                      {template.title}
-                    </h3>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => handleCopyClick(e, template.content)}
-                      className="h-6 w-6 p-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                      title="클립보드에 복사"
-                    >
-                      <DocumentDuplicateIcon className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <h3 className={`font-medium text-gray-900 dark:text-gray-100 ${fontSizeClasses.title}`}>
+                        {template.title}
+                      </h3>
+                      {/* 카테고리 뱃지 - 제목 옆으로 이동, 사이즈 작게 */}
+                      {template.category && (
+                        <span className={`inline-block px-1.5 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 rounded text-xs ${fontSizeClasses.text}`}>
+                          {template.category}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   
                   {/* 내용 미리보기 */}
@@ -225,14 +227,18 @@ export const TemplateSidebar: React.FC<TemplateSidebarProps> = ({
                     {template.content}
                   </p>
                   
-                  {/* 카테고리 */}
-                  {template.category && (
-                    <div className="mt-2">
-                      <span className={`inline-block px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 rounded ${fontSizeClasses.text}`}>
-                        {template.category}
-                      </span>
-                    </div>
-                  )}
+                  {/* 클립보드 복사 버튼 - 본문 아래로 이동, 왼쪽정렬, 은은한 녹색 배경, 가로 길게 */}
+                  <div className="mt-3 flex justify-start">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => handleCopyClick(e, template.content)}
+                      className="h-6 px-4 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/30 transition-colors"
+                      title="클립보드에 복사"
+                    >
+                      <DocumentDuplicateIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
                   
                   {/* 선택 표시 */}
                   <ChevronRightIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
