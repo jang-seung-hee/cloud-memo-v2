@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { LoginButton } from '../components/auth/LoginButton';
@@ -10,9 +10,24 @@ export const LoginPage: React.FC = () => {
   const { user, loading, isAuthenticated, error } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [loginTimeout, setLoginTimeout] = useState(false);
 
   // 이전 페이지 정보 가져오기
   const from = location.state?.from?.pathname || '/';
+
+  // 로그인 타임아웃 처리
+  useEffect(() => {
+    if (loading) {
+      const timeout = setTimeout(() => {
+        setLoginTimeout(true);
+        console.warn('로그인 확인 타임아웃 - 30초 초과');
+      }, 30000); // 30초 타임아웃
+
+      return () => clearTimeout(timeout);
+    } else {
+      setLoginTimeout(false);
+    }
+  }, [loading]);
 
   // 이미 인증된 경우 이전 페이지로 리다이렉트
   useEffect(() => {
@@ -25,8 +40,15 @@ export const LoginPage: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        <span className="ml-4 text-xl">로그인 확인 중...</span>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <span className="text-xl block mb-2">로그인 확인 중...</span>
+          {loginTimeout && (
+            <p className="text-sm text-muted-foreground">
+              로딩이 지연되고 있습니다. 페이지를 새로고침해보세요.
+            </p>
+          )}
+        </div>
       </div>
     );
   }

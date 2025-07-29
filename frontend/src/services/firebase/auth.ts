@@ -41,7 +41,14 @@ export const signInWithGoogle = async (): Promise<User> => {
     
     // PC 브라우저에서 더 안정적인 팝업 방식 사용
     const result = await signInWithPopup(auth, googleProvider);
-    return result.user;
+    
+    // 로그인 완료 후 즉시 사용자 정보 반환
+    if (result.user) {
+      console.log('Google 로그인 성공:', result.user.email);
+      return result.user;
+    } else {
+      throw new Error('로그인 후 사용자 정보를 가져올 수 없습니다.');
+    }
   } catch (error) {
     console.error('Google 로그인 오류:', error);
     throw error as AuthError;

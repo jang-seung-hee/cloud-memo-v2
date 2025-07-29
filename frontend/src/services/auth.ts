@@ -67,8 +67,14 @@ export class AuthService {
     // 리스너 등록
     this.authStateListeners.push(callback);
     
-    // 즉시 현재 상태 전달
-    callback(this.getCurrentUser());
+    // 즉시 현재 상태 전달 (Firebase Auth 초기화 지연 방지)
+    const currentUser = this.getCurrentUser();
+    if (currentUser) {
+      callback(currentUser);
+    } else {
+      // 현재 사용자가 없으면 null 전달하여 로딩 상태 해제
+      callback(null);
+    }
     
     // Firebase 인증 상태 변경 리스너 등록
     const unsubscribe = onAuthStateChange((user) => {

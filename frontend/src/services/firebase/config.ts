@@ -33,13 +33,21 @@ const initializeAuthPersistence = async () => {
   try {
     await setPersistence(auth, browserLocalPersistence);
     console.log('Firebase Auth persistence 설정 완료');
+    
+    // 초기화 완료 후 현재 사용자 상태 확인
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      console.log('Firebase Auth 초기화 완료 - 현재 사용자:', currentUser.email);
+    } else {
+      console.log('Firebase Auth 초기화 완료 - 로그인되지 않은 상태');
+    }
   } catch (error) {
     console.error('Firebase Auth persistence 설정 오류:', error);
     // 오류가 발생해도 앱은 계속 실행
   }
 };
 
-// 비동기로 persistence 설정 초기화
+// 비동기로 persistence 설정 초기화 (즉시 실행)
 initializeAuthPersistence();
 
 export const db = getFirestore(app);

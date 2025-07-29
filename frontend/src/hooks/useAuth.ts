@@ -24,8 +24,8 @@ export const useAuth = (): UseAuthReturn => {
     error: null
   });
   
-  // 디바운싱을 위한 타이머 ref
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // 타임아웃을 위한 타이머 ref
+  const timeoutTimerRef = useRef<NodeJS.Timeout | null>(null);
   // 이전 사용자 상태를 저장하여 불필요한 업데이트 방지
   const previousUserRef = useRef<User | null>(null);
 
@@ -61,42 +61,54 @@ export const useAuth = (): UseAuthReturn => {
     }
   }, []);
 
-  // 인증 상태 변경 리스너 설정 (디바운싱 적용)
+  // 인증 상태 변경 리스너 설정 (타임아웃 적용)
   useEffect(() => {
+    // Firebase Auth 초기화 지연을 위한 타임아웃 설정 (최대 10초)
+    const authTimeout = setTimeout(() => {
+      if (authState.loading) {
+        console.warn('Firebase Auth 초기화 타임아웃 - 강제로 로딩 상태 해제');
+        setAuthState(prev => ({ ...prev, loading: false }));
+      }
+    }, 10000);
+
     const unsubscribe = authService.onAuthStateChanged((user) => {
+      // 타임아웃 타이머 정리
+      if (timeoutTimerRef.current) {
+        clearTimeout(timeoutTimerRef.current);
+      }
+      clearTimeout(authTimeout);
+
       // 이전 사용자와 비교하여 실제 변경사항이 있는지 확인
       const hasChanged = user?.uid !== previousUserRef.current?.uid;
       
       if (hasChanged) {
-        // PC 브라우저에서 안정성을 위해 디바운싱 시간을 늘림
-        if (debounceTimerRef.current) {
-          clearTimeout(debounceTimerRef.current);
-        }
+        // 즉시 상태 업데이트 (디바운싱 제거로 반응성 향상)
+        previousUserRef.current = user;
+        setAuthState({
+          user,
+          loading: false,
+          error: null
+        });
         
-        debounceTimerRef.current = setTimeout(() => {
-          previousUserRef.current = user;
-          setAuthState({
-            user,
-            loading: false,
-            error: null
-          });
-          
-          // PC 브라우저에서 디버깅을 위한 로그
-          if (process.env.NODE_ENV === 'development') {
-            console.log('Auth state changed:', user ? `User: ${user.email}` : 'No user');
-          }
-        }, 200); // PC 브라우저에서 더 안정적인 200ms로 조정
+        // PC 브라우저에서 디버깅을 위한 로그
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Auth state changed:', user ? `User: ${user.email}` : 'No user');
+        }
+      } else if (authState.loading) {
+        // 사용자가 변경되지 않았지만 로딩 중인 경우 로딩 상태 해제
+        setAuthState(prev => ({ ...prev, loading: false }));
       }
     });
 
     // 컴포넌트 언마운트 시 구독 해제 및 타이머 정리
     return () => {
       unsubscribe();
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
+      if (timeoutTimerRef.current) {
+        clearTimeout(timeoutTimerRef.current);
       }
+      clearTimeout(authTimeout);
     };
-  }, []);
+  }, [authState.loading]);
 
   return {
     ...authState,
