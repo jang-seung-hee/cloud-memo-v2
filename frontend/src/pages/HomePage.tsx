@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useMemos, useTemplates } from '../hooks/useFirestore';
 import { useDevice } from '../hooks/useDevice';
 import { useTheme } from '../hooks/useTheme';
+import { useToast } from '../hooks/use-toast';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
@@ -32,6 +33,7 @@ export const HomePage: React.FC = () => {
   const { data: templates, loading: templatesLoading } = useTemplates();
   const { isMobile } = useDevice();
   const { isDark } = useTheme();
+  const { toast } = useToast();
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [isTemplateSidebarOpen, setIsTemplateSidebarOpen] = useState(false);
   const [hasAutoRedirected, setHasAutoRedirected] = useState(() => {
@@ -106,6 +108,27 @@ export const HomePage: React.FC = () => {
     }).catch((error) => {
       console.error('클립보드 복사 실패:', error);
     });
+  };
+
+  // QR 코드 클릭 핸들러
+  const handleQrCodeClick = async () => {
+    const appUrl = 'https://cloud-memo-v2.netlify.app';
+    try {
+      await navigator.clipboard.writeText(appUrl);
+      toast({
+        title: "URL이 복사되었습니다!",
+        description: "클립보드에 앱 링크가 복사되었습니다.",
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('클립보드 복사 실패:', error);
+      toast({
+        title: "복사 실패",
+        description: "URL 복사에 실패했습니다. 다시 시도해 주세요.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
   };
 
   // 로그인 전 홈 페이지
@@ -187,7 +210,9 @@ export const HomePage: React.FC = () => {
                     <img 
                       src={qrCodeUrl} 
                       alt="QR Code" 
-                      className="w-20 h-20 border-2 border-gray-300 dark:border-gray-600 rounded-lg"
+                      className="w-20 h-20 border-2 border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={handleQrCodeClick}
+                      title="클릭하여 URL 복사"
                     />
                   </div>
                 )}
@@ -299,7 +324,9 @@ export const HomePage: React.FC = () => {
                     <img 
                       src={qrCodeUrl} 
                       alt="QR Code" 
-                      className="w-20 h-20 border-2 border-gray-300 dark:border-gray-600 rounded-lg"
+                      className="w-20 h-20 border-2 border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={handleQrCodeClick}
+                      title="클릭하여 URL 복사"
                     />
                   </div>
                 )}

@@ -12,6 +12,7 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { QuoteModal } from './components/common/QuoteModal';
 import { TemplateProvider } from './contexts/TemplateContext';
+import { Toaster } from './components/ui/toaster';
 import { useDevice } from './hooks/useDevice';
 import { measurePageLoad, monitorMemoryUsage, finalPerformanceValidation, checkOptimizationCompletion } from './utils/performanceTest';
 
@@ -111,6 +112,7 @@ function App() {
           {/* 명언 모달 */}
           <QuoteModal isOpen={showQuoteModal} onClose={handleCloseQuoteModal} />
         </Router>
+        <Toaster />
       </ErrorBoundary>
     </TemplateProvider>
   );
