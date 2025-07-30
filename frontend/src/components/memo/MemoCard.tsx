@@ -80,6 +80,22 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
     return memo.content.substring(0, maxLength) + '...';
   }, [memo.content, isDesktop]);
 
+  // PC 모드용 제목 생성 함수 (본문 첫 줄 사용)
+  const getTitleForPC = useMemo(() => {
+    if (!isDesktop) return memo.title || '제목 없음';
+    
+    // 본문의 첫 줄 추출
+    const firstLine = memo.content.split('\n')[0].trim();
+    if (!firstLine) return '제목 없음';
+    
+    // 15자가 넘으면 ... 표시
+    if (firstLine.length > 15) {
+      return firstLine.substring(0, 21) + '...';
+    }
+    
+    return firstLine;
+  }, [memo.content, memo.title, isDesktop]);
+
   // 모바일용 텍스트 처리 함수 (줄바꿈 제거)
   const getMobileContent = useMemo(() => {
     if (isDesktop) return memo.content;
@@ -222,7 +238,7 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
               <div className="flex-1 min-w-0">
                 {/* 제목만 표시 */}
                 <h3 className={`font-semibold text-card-foreground line-clamp-2 group-hover:text-primary transition-colors ${fontSizeClasses.title}`}>
-                  {memo.title ? (isDesktop ? (memo.title.length > 12 ? memo.title.substring(0, 12) + '...' : memo.title) : memo.title) : '제목 없음'}
+                  {getTitleForPC}
                 </h3>
               </div>
             </div>
