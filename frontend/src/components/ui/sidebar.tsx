@@ -4,7 +4,8 @@ import { cn } from '../../lib/utils';
 import { 
   XMarkIcon, 
   DocumentDuplicateIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 import { useCategories } from '../../hooks/useCategories';
 import { useFontSize } from '../../hooks/useFontSize';
@@ -31,6 +32,8 @@ export const TemplateSidebar: React.FC<TemplateSidebarProps> = ({
   const { getTemplateSidebarWidth } = useDevice();
   const [selectedCategory, setSelectedCategory] = useState<string>('전체');
   const [sidebarWidth, setSidebarWidth] = useState(320);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [expandedTemplates, setExpandedTemplates] = useState<Set<string>>(new Set());
 
   // props 로깅
   useEffect(() => {
@@ -71,10 +74,14 @@ export const TemplateSidebar: React.FC<TemplateSidebarProps> = ({
     };
   }, [getTemplateSidebarWidth]);
 
-  // 카테고리 필터링
-  const filteredTemplates = selectedCategory === '전체' 
-    ? templates 
-    : templates.filter(template => template.category === selectedCategory);
+  // 카테고리 및 검색어 필터링
+  const filteredTemplates = templates.filter(template => {
+    const categoryMatch = selectedCategory === '전체' || template.category === selectedCategory;
+    const searchMatch = !searchTerm || 
+      template.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      template.content.toLowerCase().includes(searchTerm.toLowerCase());
+    return categoryMatch && searchMatch;
+  });
 
   // 사용 가능한 카테고리 목록 생성
   const availableCategories = ['전체', ...activeCategories.map(cat => cat.name)];
@@ -87,9 +94,10 @@ export const TemplateSidebar: React.FC<TemplateSidebarProps> = ({
       filteredTemplates,
       filteredLength: filteredTemplates?.length,
       selectedCategory,
+      searchTerm,
       availableCategories
     });
-  }, [templates, filteredTemplates, selectedCategory, availableCategories]);
+  }, [templates, filteredTemplates, selectedCategory, searchTerm, availableCategories]);
 
   const handleTemplateClick = (template: IFirebaseTemplate) => {
     console.log('🔍 TemplateSidebar handleTemplateClick 호출됨:', {
@@ -132,6 +140,21 @@ export const TemplateSidebar: React.FC<TemplateSidebarProps> = ({
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
   };
+
+  const handleToggleExpand = (e: React.MouseEvent, templateId: string) => {
+    e.stopPropagation();
+    setExpandedTemplates(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(templateId)) {
+        newSet.delete(templateId);
+      } else {
+        newSet.add(templateId);
+      }
+      return newSet;
+    });
+  };
+
+  const isExpanded = (templateId: string) => expandedTemplates.has(templateId);
 
   return (
     <>
@@ -187,15 +210,31 @@ export const TemplateSidebar: React.FC<TemplateSidebarProps> = ({
           </div>
         </div>
 
+        {/* 검색 필드 */}
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+          <div className="relative">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="상용구 검색..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={`w-full pl-10 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${fontSizeClasses.text}`}
+            />
+          </div>
+        </div>
+
         {/* 상용구 목록 - 스크롤 가능한 영역 */}
         <div className="flex-1 overflow-y-auto p-4">
           {filteredTemplates.length === 0 ? (
             <div className="text-center py-8">
               <DocumentDuplicateIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
               <p className={`text-gray-500 dark:text-gray-400 ${fontSizeClasses.text}`}>
-                {selectedCategory === '전체' 
+                {selectedCategory === '전체' && !searchTerm
                   ? '등록된 상용구가 없습니다'
-                  : `'${selectedCategory}' 카테고리의 상용구가 없습니다`
+                  : searchTerm
+                    ? `'${searchTerm}' 검색 결과가 없습니다`
+                    : `'${selectedCategory}' 카테고리의 상용구가 없습니다`
                 }
               </p>
             </div>
@@ -223,9 +262,27 @@ export const TemplateSidebar: React.FC<TemplateSidebarProps> = ({
                   </div>
                   
                   {/* 내용 미리보기 */}
-                  <p className={`text-gray-600 dark:text-gray-400 line-clamp-3 ${fontSizeClasses.content}`}>
-                    {template.content}
-                  </p>
+                  <div className="relative">
+                    <p className={`text-gray-600 dark:text-gray-400 ${fontSizeClasses.content} ${
+                      isExpanded(template.id) ? '' : 'line-clamp-3'
+                    }`}>
+                      {template.content}
+                    </p>
+                    
+                    {/* 더보기/접기 버튼 - 오른쪽 정렬 */}
+                    {template.content.length > 150 && (
+                      <div className="flex justify-end mt-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => handleToggleExpand(e, template.id)}
+                          className="h-6 px-3 text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                        >
+                          {isExpanded(template.id) ? '접기' : '더보기'}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                   
                   {/* 클립보드 복사 버튼 - 본문 아래로 이동, 왼쪽정렬, 진한 녹색 배경, 가로 길게 */}
                   <div className="mt-3 flex justify-start">

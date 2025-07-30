@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { BookmarkIcon, ChevronDownIcon, DocumentDuplicateIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { BookmarkIcon, ChevronDownIcon, DocumentDuplicateIcon, TrashIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { ITemplate } from '../../types/template';
 import { firestoreService } from '../../services/firebase/firestore';
 import { useAuth } from '../../hooks/useAuth';
@@ -28,6 +28,8 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('전체');
   const [templates, setTemplates] = useState<ITemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [expandedTemplates, setExpandedTemplates] = useState<Set<string>>(new Set());
 
   // 템플릿 데이터 로드
   useEffect(() => {
@@ -97,9 +99,14 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
   const categories = ['전체', ...Array.from(new Set(templates.map(t => t.category)))];
 
-  const filteredTemplates = selectedCategory === '전체' 
-    ? templates 
-    : templates.filter(t => t.category === selectedCategory);
+  // 카테고리 및 검색어 필터링
+  const filteredTemplates = templates.filter(template => {
+    const categoryMatch = selectedCategory === '전체' || template.category === selectedCategory;
+    const searchMatch = !searchTerm || 
+      template.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      template.content.toLowerCase().includes(searchTerm.toLowerCase());
+    return categoryMatch && searchMatch;
+  });
 
   const handleTemplateSelect = (template: ITemplate) => {
     onTemplateSelect(template);
@@ -148,6 +155,22 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
     }
   };
 
+  // 더보기/접기 토글 기능
+  const handleToggleExpand = (e: React.MouseEvent, templateId: string) => {
+    e.stopPropagation();
+    setExpandedTemplates(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(templateId)) {
+        newSet.delete(templateId);
+      } else {
+        newSet.add(templateId);
+      }
+      return newSet;
+    });
+  };
+
+  const isExpanded = (templateId: string) => expandedTemplates.has(templateId);
+
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
@@ -185,6 +208,20 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
             ))}
           </div>
 
+          {/* 검색 필드 */}
+          <div className="flex-shrink-0">
+            <div className="relative">
+              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="상용구 검색..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
           {/* 상용구 목록 - 스크롤 가능한 영역 */}
           <div className="flex-1 overflow-y-auto pr-2">
             {isLoading ? (
@@ -195,11 +232,13 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
               <div className="text-center text-muted-foreground py-8">
                 <BookmarkIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p className="mb-2">
-                  {selectedCategory === '전체' 
+                  {selectedCategory === '전체' && !searchTerm
                     ? '등록된 상용구가 없습니다.' 
-                    : '선택된 카테고리에 상용구가 없습니다.'}
+                    : searchTerm
+                      ? `'${searchTerm}' 검색 결과가 없습니다.`
+                      : '선택된 카테고리에 상용구가 없습니다.'}
                 </p>
-                {selectedCategory === '전체' && (
+                {selectedCategory === '전체' && !searchTerm && (
                   <p className="text-sm">
                     상용구 관리에서 자주 사용하는 문구를 등록해보세요!
                   </p>
@@ -242,9 +281,27 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                       </div>
                     </CardHeader>
                     <CardContent className="pt-0">
-                      <p className={`text-muted-foreground line-clamp-3 ${fontSizeClasses.content}`}>
-                        {template.content}
-                      </p>
+                      <div className="relative">
+                        <p className={`text-muted-foreground ${fontSizeClasses.content} ${
+                          isExpanded(template.id) ? '' : 'line-clamp-3'
+                        }`}>
+                          {template.content}
+                        </p>
+                        
+                        {/* 더보기/접기 버튼 - 오른쪽 정렬 */}
+                        {template.content.length > 150 && (
+                          <div className="flex justify-end mt-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => handleToggleExpand(e, template.id)}
+                              className="h-6 px-3 text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                            >
+                              {isExpanded(template.id) ? '접기' : '더보기'}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
