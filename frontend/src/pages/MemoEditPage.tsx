@@ -24,7 +24,7 @@ import { IFirebaseTemplate } from '../types/firebase';
 export const MemoEditPage: React.FC = () => {
   const navigate = useNavigate();
   const { memoId } = useParams<{ memoId: string }>();
-  const { user } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const { getMemoById, updateMemo, loading: isSaving } = useMemos();
   const { data: templates, loading: templatesLoading } = useTemplates();
@@ -122,6 +122,12 @@ export const MemoEditPage: React.FC = () => {
         return;
       }
 
+      // 인증 상태 체크 - 인증이 완료되지 않았으면 대기
+      if (authLoading || !isAuthenticated || !user) {
+        console.log('⏳ 인증 상태 대기 중...', { authLoading, isAuthenticated, user: !!user });
+        return;
+      }
+
       try {
         setIsLoading(true);
         console.log('📡 getMemoById 호출 중...');
@@ -162,7 +168,7 @@ export const MemoEditPage: React.FC = () => {
     };
 
     loadMemo();
-  }, [memoId, getMemoById, toast]);
+  }, [memoId, getMemoById, toast, authLoading, isAuthenticated, user]);
 
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setFormData(prev => ({ ...prev, content: e.target.value }));
