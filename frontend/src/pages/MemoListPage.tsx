@@ -22,6 +22,7 @@ export const MemoListPage: React.FC = () => {
   const { isDark } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<CategoryType | 'all'>('all');
+  const [showArchivedOnly, setShowArchivedOnly] = useState(false);
   const navigate = useNavigate();
 
   // 모바일 + 라이트 모드일 때의 스타일 조건
@@ -32,10 +33,32 @@ export const MemoListPage: React.FC = () => {
     return memos.filter(memo => {
       const matchesSearch = memo.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            memo.content.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // 검색 중일 때는 모든 메모를 검색 대상으로 포함
+      if (searchQuery.trim()) {
+        return matchesSearch;
+      }
+      
+      // 보관 메모만 보기 모드일 때
+      if (showArchivedOnly) {
+        return memo.category === 'archive';
+      }
+      
+      // 일반 모드일 때는 보관 메모 제외
       const matchesCategory = selectedCategory === 'all' || memo.category === selectedCategory;
-      return matchesSearch && matchesCategory;
+      return matchesSearch && matchesCategory && memo.category !== 'archive';
     });
-  }, [memos, searchQuery, selectedCategory]);
+  }, [memos, searchQuery, selectedCategory, showArchivedOnly]);
+
+  // 보관 메모 개수 계산
+  const archivedMemosCount = useMemo(() => {
+    return memos.filter(memo => memo.category === 'archive').length;
+  }, [memos]);
+
+  // 일반 메모 개수 계산 (보관 제외)
+  const normalMemosCount = useMemo(() => {
+    return memos.filter(memo => memo.category !== 'archive').length;
+  }, [memos]);
 
   // 이벤트 핸들러들을 useCallback으로 최적화
   const handleNewMemo = useCallback(() => {
@@ -44,6 +67,12 @@ export const MemoListPage: React.FC = () => {
 
   const handleCategoryChange = useCallback((category: CategoryType | 'all') => {
     setSelectedCategory(category);
+    setShowArchivedOnly(false); // 카테고리 변경 시 보관 모드 해제
+  }, []);
+
+  const handleArchivedToggle = useCallback(() => {
+    setShowArchivedOnly(prev => !prev);
+    setSelectedCategory('all'); // 보관 모드 토글 시 카테고리를 전체로 리셋
   }, []);
 
   // 메모 업데이트 후 목록 새로고침
@@ -143,8 +172,8 @@ export const MemoListPage: React.FC = () => {
                 ? 'bg-white border border-gray-200' 
                 : 'bg-gradient-to-r from-sky-400 via-blue-500 to-cyan-500 dark:bg-slate-800 dark:from-slate-800 dark:via-slate-800 dark:to-slate-800 shadow-md'
             }`}>
-              {/* 왼쪽: 카테고리 드롭다운 */}
-              <div className="flex items-center">
+              {/* 왼쪽: 카테고리 드롭다운과 보관메모 버튼 */}
+              <div className="flex items-center gap-2">
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value as CategoryType | 'all')}
@@ -157,8 +186,40 @@ export const MemoListPage: React.FC = () => {
                   <option value="all" className="text-gray-800">전체</option>
                   <option value="temporary" className="text-gray-800">임시</option>
                   <option value="memory" className="text-gray-800">기억</option>
-                  <option value="archive" className="text-gray-800">보관</option>
                 </select>
+                
+                {/* 보관메모/일반메모 토글 버튼 */}
+                <Button
+                  variant={showArchivedOnly ? "default" : "outline"}
+                  size="sm"
+                  onClick={handleArchivedToggle}
+                  className={`px-2 py-1 text-xs font-medium ${
+                    showArchivedOnly ? (
+                      isMobileLightMode 
+                        ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                        : 'bg-white text-blue-600 hover:bg-white/90'
+                    ) : (
+                      isMobileLightMode 
+                        ? 'border-gray-300 text-gray-700 hover:bg-gray-50' 
+                        : 'border-white/30 text-white hover:bg-white/10'
+                    )
+                  }`}
+                >
+                  {showArchivedOnly ? '일반메모' : '보관메모'}
+                  <span className={`ml-1 px-1 py-0.5 text-xs rounded-full ${
+                    showArchivedOnly ? (
+                      isMobileLightMode 
+                        ? 'bg-white/20 text-white' 
+                        : 'bg-white/20 text-white'
+                    ) : (
+                      isMobileLightMode 
+                        ? 'bg-blue-100 text-blue-700' 
+                        : 'bg-white/20 text-white'
+                    )
+                  }`}>
+                    {showArchivedOnly ? normalMemosCount : archivedMemosCount}
+                  </span>
+                </Button>
               </div>
               
               {/* 우측: 타이틀 라벨 */}
@@ -202,7 +263,6 @@ export const MemoListPage: React.FC = () => {
                   <option value="all">전체</option>
                   <option value="temporary">임시</option>
                   <option value="memory">기억</option>
-                  <option value="archive">보관</option>
                 </select>
                 
                 {/* 검색 필드 */}
@@ -216,6 +276,23 @@ export const MemoListPage: React.FC = () => {
                     className="pl-10 border-border/40 focus:border-ring focus:ring-ring/20 bg-white dark:bg-background h-10"
                   />
                 </div>
+                
+                {/* 보관메모/일반메모 토글 버튼 */}
+                <Button
+                  variant={showArchivedOnly ? "default" : "outline"}
+                  size="sm"
+                  onClick={handleArchivedToggle}
+                  className="px-3 py-2 text-sm"
+                >
+                  {showArchivedOnly ? '일반메모' : '보관메모'}
+                  <span className={`ml-2 px-1.5 py-0.5 text-xs rounded-full ${
+                    showArchivedOnly 
+                      ? 'bg-white/20 text-white' 
+                      : 'bg-primary/10 text-primary'
+                  }`}>
+                    {showArchivedOnly ? normalMemosCount : archivedMemosCount}
+                  </span>
+                </Button>
               </div>
             )}
             
@@ -271,6 +348,33 @@ export const MemoListPage: React.FC = () => {
                     ? 'text-gray-500' 
                     : 'text-muted-foreground/70'
                 }`}>다른 키워드로 검색해보세요.</p>
+              </div>
+            </div>
+          )}
+
+          {/* 보관 메모 모드일 때 안내 메시지 */}
+          {showArchivedOnly && filteredMemos.length === 0 && !searchQuery && (
+            <div className="text-center py-12">
+              <div className={`rounded-xl p-8 border ${
+                isMobileLightMode 
+                  ? 'bg-white border-gray-200 shadow-sm' 
+                  : 'bg-muted/50 border-border/50'
+              }`}>
+                <DocumentTextIcon className={`h-12 w-12 mx-auto mb-4 ${
+                  isMobileLightMode 
+                    ? 'text-gray-400' 
+                    : 'text-muted-foreground'
+                }`} />
+                <p className={`mb-2 font-medium ${
+                  isMobileLightMode 
+                    ? 'text-gray-600' 
+                    : 'text-muted-foreground'
+                }`}>보관된 메모가 없습니다.</p>
+                <p className={`text-sm ${
+                  isMobileLightMode 
+                    ? 'text-gray-500' 
+                    : 'text-muted-foreground/70'
+                }`}>메모를 보관으로 설정하면 여기에 표시됩니다.</p>
               </div>
             </div>
           )}

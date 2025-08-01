@@ -573,7 +573,7 @@ export const TemplateManagePage: React.FC = () => {
                     placeholder="상용구 내용을 입력하세요"
                     value={formData.content}
                     onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                    className={`min-h-[200px] resize-none ${
+                    className={`min-h-[200px] resize-y ${
                       isMobileLightMode 
                         ? 'border-gray-300 focus:border-blue-500 bg-white' 
                         : ''

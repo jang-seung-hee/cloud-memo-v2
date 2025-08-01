@@ -437,7 +437,7 @@ export const MemoCreatePage: React.FC = () => {
                     onChange={handleContentChange}
                     onPaste={handlePaste}
                     placeholder="메모 내용을 입력하세요..."
-                    className={`min-h-[350px] resize-none border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 transition-colors duration-200 ${fontSizeClasses.content}`}
+                    className={`min-h-[350px] resize-y border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 transition-colors duration-200 ${fontSizeClasses.content}`}
                   />
                 </div>
               </div>
