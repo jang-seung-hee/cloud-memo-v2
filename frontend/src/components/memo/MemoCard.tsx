@@ -64,14 +64,23 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
     } else if (diffDays < 7) {
       return `${diffDays}일 전 (${timeString})`;
     } else {
-      const dateString = date.toLocaleDateString('ko-KR', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
-      return `${dateString} (${timeString})`;
+      // 모바일 모드일 때는 YYYY/MM/DD 형식으로 표시하고 시간 제외
+      if (!isDesktop) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}/${month}/${day}`;
+      } else {
+        // 데스크톱 모드일 때는 기존 형식 유지
+        const dateString = date.toLocaleDateString('ko-KR', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+        return `${dateString} (${timeString})`;
+      }
     }
-  }, [memo.createdAt, memo.updatedAt]);
+  }, [memo.createdAt, memo.updatedAt, isDesktop]);
 
   // 텍스트 자르기 함수를 useMemo로 최적화
   const truncatedContent = useMemo(() => {
