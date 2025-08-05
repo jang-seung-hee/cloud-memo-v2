@@ -25,6 +25,7 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import { handleFirebaseError } from '../utils/errorHandler';
+import { formatLinksInText } from '../utils/linkFormatter';
 
 export const MemoDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -405,7 +406,7 @@ export const MemoDetailPage: React.FC = () => {
                 </div>
                 <div className="p-4 bg-yellow-50 dark:bg-gray-800/60 rounded-lg border-0 min-h-[200px]">
                   <div className={`whitespace-pre-wrap text-gray-700 dark:text-gray-300 leading-relaxed ${fontSizeClasses.content} bg-yellow-50 bg-[linear-gradient(transparent_0%,transparent_1.5rem,rgba(229,231,235,0.65)_1.5rem,rgba(229,231,235,0.65)_1.6rem)] bg-[length:100%_1.6rem] dark:bg-gray-800/60 dark:bg-[linear-gradient(transparent_0%,transparent_1.5rem,rgba(75,85,99,0.25)_1.5rem,rgba(75,85,99,0.25)_1.51rem)] dark:bg-[length:100%_1.6rem]`}>
-                    {memo.content}
+                    {formatLinksInText(memo.content)}
                   </div>
                 </div>
               </div>
@@ -655,7 +656,7 @@ export const MemoDetailPage: React.FC = () => {
                     ? 'bg-yellow-50 bg-[linear-gradient(transparent_0%,transparent_1.5rem,rgba(229,231,235,0.65)_1.5rem,rgba(229,231,235,0.65)_1.6rem)] bg-[length:100%_1.6rem]' 
                     : 'dark:bg-gray-800/60 dark:bg-[linear-gradient(transparent_0%,transparent_1.5rem,rgba(75,85,99,0.25)_1.5rem,rgba(75,85,99,0.25)_1.51rem)] dark:bg-[length:100%_1.6rem]'
                 }`}>
-                  {memo.content}
+                  {formatLinksInText(memo.content)}
                 </div>
               </div>
             </div>
