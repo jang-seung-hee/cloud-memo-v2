@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Layout } from '../components/common/Layout';
 import { MemoCard } from '../components/memo/MemoCard';
 import { useMemos } from '../hooks/useFirestore';
@@ -9,7 +9,7 @@ import { useOffline } from '../hooks/useOffline';
 import { useDevice } from '../hooks/useDevice';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CategoryType } from '../components/ui/category-badge';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
@@ -20,10 +20,31 @@ export const MemoListPage: React.FC = () => {
   const { isDesktop, getTemplateSidebarWidth } = useDevice();
   const { user } = useAuth();
   const { isDark } = useTheme();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<CategoryType | 'all'>('all');
-  const [showArchivedOnly, setShowArchivedOnly] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // URL 파라미터에서 검색 상태 복원
+  const searchQuery = searchParams.get('search') || '';
+  const selectedCategory = (searchParams.get('category') as CategoryType | 'all') || 'all';
+  const showArchivedOnly = searchParams.get('archived') === 'true';
+  
+  // 검색 입력을 위한 로컬 상태 (실시간 반영)
+  const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
+  
+  // URL 파라미터가 변경될 때 로컬 검색 상태 동기화
+  useEffect(() => {
+    setLocalSearchQuery(searchQuery);
+  }, [searchQuery]);
+  
+  // 컴포넌트 언마운트 시 타이머 정리
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // 모바일 + 라이트 모드일 때의 스타일 조건
   const isMobileLightMode = !isDesktop && !isDark;
@@ -60,20 +81,57 @@ export const MemoListPage: React.FC = () => {
     return memos.filter(memo => memo.category !== 'archive').length;
   }, [memos]);
 
+  // URL 파라미터 업데이트 함수들
+  const updateSearchParams = useCallback((updates: Record<string, string | null>) => {
+    setSearchParams(prevParams => {
+      const newSearchParams = new URLSearchParams(prevParams);
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value === null) {
+          newSearchParams.delete(key);
+        } else {
+          newSearchParams.set(key, value);
+        }
+      });
+      return newSearchParams;
+    });
+  }, [setSearchParams]);
+
   // 이벤트 핸들러들을 useCallback으로 최적화
   const handleNewMemo = useCallback(() => {
     navigate('/create');
   }, [navigate]);
 
   const handleCategoryChange = useCallback((category: CategoryType | 'all') => {
-    setSelectedCategory(category);
-    setShowArchivedOnly(false); // 카테고리 변경 시 보관 모드 해제
-  }, []);
+    updateSearchParams({
+      category: category === 'all' ? null : category,
+      archived: null // 카테고리 변경 시 보관 모드 해제
+    });
+  }, [updateSearchParams]);
 
   const handleArchivedToggle = useCallback(() => {
-    setShowArchivedOnly(prev => !prev);
-    setSelectedCategory('all'); // 보관 모드 토글 시 카테고리를 전체로 리셋
-  }, []);
+    const newArchivedValue = !showArchivedOnly;
+    updateSearchParams({
+      archived: newArchivedValue ? 'true' : null,
+      category: null // 보관 모드 토글 시 카테고리를 전체로 리셋
+    });
+  }, [showArchivedOnly, updateSearchParams]);
+
+  const handleSearchChange = useCallback((query: string) => {
+    // 로컬 상태 즉시 업데이트 (실시간 반영)
+    setLocalSearchQuery(query);
+    
+    // 이전 타이머가 있으면 취소
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    // 디바운싱 적용 (300ms 후에 URL 업데이트)
+    searchTimeoutRef.current = setTimeout(() => {
+      updateSearchParams({
+        search: query || null
+      });
+    }, 300);
+  }, [updateSearchParams]);
 
   // 메모 업데이트 후 목록 새로고침
   const handleMemoUpdate = useCallback(() => {
@@ -176,7 +234,7 @@ export const MemoListPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <select
                   value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value as CategoryType | 'all')}
+                  onChange={(e) => handleCategoryChange(e.target.value as CategoryType | 'all')}
                   className={`border rounded px-2 py-1 text-xs font-medium focus:outline-none focus:ring-2 ${
                     isMobileLightMode 
                       ? 'bg-white text-gray-700 border-gray-300 focus:ring-blue-500/50' 
@@ -257,7 +315,7 @@ export const MemoListPage: React.FC = () => {
                 {/* 카테고리 드롭다운 */}
                 <select
                   value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value as CategoryType | 'all')}
+                  onChange={(e) => handleCategoryChange(e.target.value as CategoryType | 'all')}
                   className="px-3 py-2 text-sm border border-border/40 rounded-md bg-white dark:bg-background focus:border-ring focus:ring-ring/20 focus:outline-none min-w-[120px]"
                 >
                   <option value="all">전체</option>
@@ -271,8 +329,8 @@ export const MemoListPage: React.FC = () => {
                   <Input
                     type="text"
                     placeholder="메모 검색..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    value={localSearchQuery}
+                    onChange={(e) => handleSearchChange(e.target.value)}
                     className="pl-10 border-border/40 focus:border-ring focus:ring-ring/20 bg-white dark:bg-background h-10"
                   />
                 </div>
@@ -307,8 +365,8 @@ export const MemoListPage: React.FC = () => {
                 <Input
                   type="text"
                   placeholder="메모 검색..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={localSearchQuery}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                   className={`pl-10 py-3 ${
                     isMobileLightMode 
                       ? 'border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 bg-white' 

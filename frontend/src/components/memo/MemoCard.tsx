@@ -38,8 +38,11 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
 
   // 날짜 포맷팅 함수를 useMemo로 최적화
   const formattedDate = useMemo(() => {
-    const timestamp = memo.createdAt || memo.updatedAt;
-    const date = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp);
+    // 작성일자와 수정일자 중 최신 날짜 선택
+    const createdAt = memo.createdAt?.toDate ? memo.createdAt.toDate() : new Date(memo.createdAt);
+    const updatedAt = memo.updatedAt?.toDate ? memo.updatedAt.toDate() : new Date(memo.updatedAt);
+    const timestamp = updatedAt > createdAt ? updatedAt : createdAt;
+    const date = timestamp;
     const now = new Date();
     
     // 날짜만 비교하기 위해 시간을 제거
@@ -123,7 +126,24 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
 
   // 이벤트 핸들러들을 useCallback으로 최적화
   const handleClick = useCallback(() => {
-    navigate(`/memo/${memo.id}`);
+    // 현재 URL의 검색 파라미터를 유지하면서 메모 상세 페이지로 이동
+    const currentSearchParams = new URLSearchParams(window.location.search);
+    const searchParams = new URLSearchParams();
+    
+    // 검색 관련 파라미터들만 복사
+    if (currentSearchParams.get('search')) {
+      searchParams.set('search', currentSearchParams.get('search')!);
+    }
+    if (currentSearchParams.get('category')) {
+      searchParams.set('category', currentSearchParams.get('category')!);
+    }
+    if (currentSearchParams.get('archived')) {
+      searchParams.set('archived', currentSearchParams.get('archived')!);
+    }
+    
+    const queryString = searchParams.toString();
+    const url = `/memo/${memo.id}${queryString ? `?${queryString}` : ''}`;
+    navigate(url);
   }, [navigate, memo.id]);
 
   const handleExpandToggle = useCallback((e: React.MouseEvent) => {
@@ -533,6 +553,15 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
             <Badge variant="outline" className={`bg-background/50 dark:bg-background/30 ${fontSizeClasses.text}`}>
               {memo.content.length}자
             </Badge>
+            {/* 모바일에서 날짜 표시 */}
+            {!isDesktop && (
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <ClockIcon className="h-3 w-3" />
+                <span className={`text-xs ${fontSizeClasses.date}`}>
+                  {formattedDate}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </CardContent>

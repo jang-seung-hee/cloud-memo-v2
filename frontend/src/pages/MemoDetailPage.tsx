@@ -225,7 +225,24 @@ export const MemoDetailPage: React.FC = () => {
   };
 
   const handleBack = () => {
-    navigate('/memos');
+    // 현재 URL의 검색 파라미터를 유지하면서 메모 목록으로 이동
+    const currentSearchParams = new URLSearchParams(window.location.search);
+    const searchParams = new URLSearchParams();
+    
+    // 검색 관련 파라미터들만 복사
+    if (currentSearchParams.get('search')) {
+      searchParams.set('search', currentSearchParams.get('search')!);
+    }
+    if (currentSearchParams.get('category')) {
+      searchParams.set('category', currentSearchParams.get('category')!);
+    }
+    if (currentSearchParams.get('archived')) {
+      searchParams.set('archived', currentSearchParams.get('archived')!);
+    }
+    
+    const queryString = searchParams.toString();
+    const url = `/memos${queryString ? `?${queryString}` : ''}`;
+    navigate(url);
   };
 
   const handleImageClick = (imageUrl: string) => {
