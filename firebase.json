@@ -1,0 +1,11 @@
+{
+  "storage": {
+    "rules": "backend/security/storage.rules"
+  },
+  "firestore": {
+    "database": "(default)",
+    "location": "asia-northeast3",
+    "rules": "backend/security/firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}

@@ -12,11 +12,6 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
     
-    // === 문서 소유자 확인 함수 ===
-    function isDocumentOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-    
     // === 관리자 확인 함수 (향후 확장용) ===
     function isAdmin() {
       return isAuthenticated() && 
@@ -46,17 +41,34 @@ service cloud.firestore {
       
       // 생성: 인증된 사용자만 (본인 ID로만)
       allow create: if isAuthenticated() && 
-        request.resource.data.userId == request.auth.uid &&
-        request.resource.data.createdAt == request.time &&
-        request.resource.data.updatedAt == request.time;
+        request.resource.data.userId == request.auth.uid;
       
       // 업데이트: 본인 메모만
       allow update: if isAuthenticated() && 
         resource.data.userId == request.auth.uid &&
-        request.resource.data.userId == request.auth.uid &&
-        request.resource.data.updatedAt == request.time;
+        request.resource.data.userId == request.auth.uid;
       
       // 삭제: 본인 메모만
+      allow delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // === 카테고리 컬렉션 ===
+    match /categories/{categoryId} {
+      // 읽기: 본인 카테고리만
+      allow read: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      
+      // 생성: 인증된 사용자만 (본인 ID로만)
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // 업데이트: 본인 카테고리만
+      allow update: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.userId == request.auth.uid;
+      
+      // 삭제: 본인 카테고리만
       allow delete: if isAuthenticated() && 
         resource.data.userId == request.auth.uid;
     }
@@ -71,16 +83,12 @@ service cloud.firestore {
       
       // 생성: 인증된 사용자만 (본인 ID로만)
       allow create: if isAuthenticated() && 
-        request.resource.data.userId == request.auth.uid &&
-        request.resource.data.createdAt == request.time &&
-        request.resource.data.updatedAt == request.time &&
-        request.resource.data.usageCount == 0;
+        request.resource.data.userId == request.auth.uid;
       
       // 업데이트: 본인 템플릿만
       allow update: if isAuthenticated() && 
         resource.data.userId == request.auth.uid &&
-        request.resource.data.userId == request.auth.uid &&
-        request.resource.data.updatedAt == request.time;
+        request.resource.data.userId == request.auth.uid;
       
       // 삭제: 본인 템플릿만
       allow delete: if isAuthenticated() && 
