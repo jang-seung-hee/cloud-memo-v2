@@ -22,6 +22,18 @@ export interface IUserProfile extends FirebaseDocument {
   };
 }
 
+// 공유 사용자 인터페이스
+export interface ISharedUser {
+  uid: string;
+  email: string;
+  displayName: string;
+  photoURL?: string;
+  permissions: {
+    edit: boolean;
+    delete: boolean;
+  };
+}
+
 // 메모 인터페이스 (Firebase용)
 export interface IFirebaseMemo {
   id: string;
@@ -37,6 +49,8 @@ export interface IFirebaseMemo {
   createdAt: any; // Firebase Timestamp
   updatedAt: any; // Firebase Timestamp
   userId: string;
+  sharedWith?: ISharedUser[]; // 공유 상세 정보
+  sharedWithUids?: string[]; // 쿼리용 UID 목록
 }
 
 // 템플릿 인터페이스 (Firebase용)
@@ -70,6 +84,8 @@ export interface IMemoCreateData {
   tags: string[];
   category: 'temporary' | 'memory' | 'archive';
   templateId?: string;
+  sharedWith?: ISharedUser[];
+  sharedWithUids?: string[];
 }
 
 // 템플릿 생성 데이터 인터페이스
@@ -93,6 +109,8 @@ export interface IMemoUpdateData {
   isImportant?: boolean;
   isPinned?: boolean;
   isArchived?: boolean;
+  sharedWith?: ISharedUser[];
+  sharedWithUids?: string[];
 }
 
 // 템플릿 업데이트 데이터 인터페이스

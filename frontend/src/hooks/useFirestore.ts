@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './useAuth';
 import { firestoreService } from '../services/firebase/firestore';
-import { 
-  IFirebaseMemo, 
+import {
+  IFirebaseMemo,
   IFirebaseTemplate,
   IMemoCreateData,
   ITemplateCreateData,
@@ -35,14 +35,7 @@ interface UseMemosReturn extends UseFirestoreReturn<IFirebaseMemo> {
   getMemoById: (id: string) => Promise<IFirebaseMemo | null>;
 }
 
-// 템플릿 전용 훅 반환 타입
-interface UseTemplatesReturn extends UseFirestoreReturn<IFirebaseTemplate> {
-  createTemplate: (data: ITemplateCreateData) => Promise<string>;
-  updateTemplate: (id: string, data: ITemplateUpdateData) => Promise<void>;
-  getTemplateById: (id: string) => Promise<IFirebaseTemplate | null>;
-  getPublicTemplates: (options?: IQueryOptions) => Promise<IFirebaseTemplate[]>;
-  incrementUsage: (id: string) => Promise<void>;
-}
+// 템플릿 관련 훅
 
 // === 메모 관리 훅 ===
 export const useMemos = (options?: IQueryOptions): UseMemosReturn => {
@@ -52,7 +45,7 @@ export const useMemos = (options?: IQueryOptions): UseMemosReturn => {
     loading: true,
     error: null
   });
-  
+
   // 디바운싱을 위한 타이머 ref
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   // 이전 데이터를 저장하여 불필요한 업데이트 방지
@@ -68,13 +61,13 @@ export const useMemos = (options?: IQueryOptions): UseMemosReturn => {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
       const memos = await firestoreService.getMemosByUserId(user.uid, options);
-      
+
       // 기존 메모에 카테고리 필드가 없는 경우 기본값 설정
       const processedMemos = memos.map(memo => ({
         ...memo,
         category: memo.category || 'temporary'
       }));
-      
+
       setState({ data: processedMemos, loading: false, error: null });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '메모 로드 실패';
@@ -95,10 +88,10 @@ export const useMemos = (options?: IQueryOptions): UseMemosReturn => {
         ...memo,
         category: memo.category || 'temporary'
       }));
-      
+
       // 이전 데이터와 비교하여 실제 변경사항이 있는지 확인
       const hasChanged = JSON.stringify(processedMemos) !== JSON.stringify(previousDataRef.current);
-      
+
       if (hasChanged) {
         // 즉시 업데이트 (디바운싱 제거로 반응성 향상)
         previousDataRef.current = processedMemos;
@@ -108,10 +101,6 @@ export const useMemos = (options?: IQueryOptions): UseMemosReturn => {
 
     return () => {
       unsubscribe();
-      // 컴포넌트 언마운트 시 타이머 정리
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
     };
   }, [isAuthenticated, user]);
 
@@ -120,7 +109,7 @@ export const useMemos = (options?: IQueryOptions): UseMemosReturn => {
     if (process.env.NODE_ENV === 'development') {
       console.log('🔍 useMemos.createMemo 호출됨:', { isAuthenticated, user: user?.uid, data });
     }
-    
+
     if (!isAuthenticated || !user) {
       if (process.env.NODE_ENV === 'development') {
         console.error('❌ 인증되지 않음:', { isAuthenticated, user: user?.uid });
@@ -183,10 +172,10 @@ export const useMemos = (options?: IQueryOptions): UseMemosReturn => {
         ...prev,
         error: '메모 삭제 실패'
       }));
-      
+
       // 실패 시 목록을 다시 로드하여 정확한 상태 복원
       await loadMemos();
-      
+
       const errorMessage = error instanceof Error ? error.message : '메모 삭제 실패';
       throw error;
     }
@@ -236,6 +225,42 @@ export const useMemos = (options?: IQueryOptions): UseMemosReturn => {
   };
 };
 
+// === 공유받은 메모 관리 훅 ===
+export const useSharedMemos = (): FirestoreState<IFirebaseMemo> => {
+  const { user, isAuthenticated } = useAuth();
+  const [state, setState] = useState<FirestoreState<IFirebaseMemo>>({
+    data: [],
+    loading: true,
+    error: null
+  });
+  const previousDataRef = useRef<IFirebaseMemo[]>([]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !user) {
+      setState(prev => ({ ...prev, loading: false, data: [] }));
+      return;
+    }
+
+    const unsubscribe = firestoreService.onSharedMemosSnapshot(user.uid, (memos) => {
+      const processedMemos = memos.map(memo => ({
+        ...memo,
+        category: memo.category || 'temporary'
+      }));
+
+      const hasChanged = JSON.stringify(processedMemos) !== JSON.stringify(previousDataRef.current);
+
+      if (hasChanged) {
+        previousDataRef.current = processedMemos;
+        setState(prev => ({ ...prev, data: processedMemos, loading: false, error: null }));
+      }
+    });
+
+    return () => unsubscribe();
+  }, [isAuthenticated, user]);
+
+  return state;
+};
+
 // === 템플릿 관리 훅 ===
 export const useTemplates = (): {
   data: IFirebaseTemplate[];
@@ -264,20 +289,20 @@ export const useTemplates = (): {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
       const templates = await firestoreService.getTemplatesByUserId(user.uid);
-      
+
       // 클라이언트에서 정렬 (제목 기준, 같은 제목이면 최신순)
       const sortedTemplates = templates.sort((a, b) => {
         // 먼저 제목으로 정렬 (가나다순)
         const titleComparison = a.title.localeCompare(b.title, 'ko');
-        
+
         // 제목이 같으면 최신글이 위로
         if (titleComparison === 0) {
           return b.updatedAt.toDate().getTime() - a.updatedAt.toDate().getTime();
         }
-        
+
         return titleComparison;
       });
-      
+
       setState({ data: sortedTemplates, loading: false, error: null });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '템플릿 로드 실패';
@@ -297,15 +322,15 @@ export const useTemplates = (): {
       const sortedTemplates = templates.sort((a, b) => {
         // 먼저 제목으로 정렬 (가나다순)
         const titleComparison = a.title.localeCompare(b.title, 'ko');
-        
+
         // 제목이 같으면 최신글이 위로
         if (titleComparison === 0) {
           return b.updatedAt.toDate().getTime() - a.updatedAt.toDate().getTime();
         }
-        
+
         return titleComparison;
       });
-      
+
       setState(prev => ({ ...prev, data: sortedTemplates, loading: false, error: null }));
     });
 

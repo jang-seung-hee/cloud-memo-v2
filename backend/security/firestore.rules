@@ -20,37 +20,37 @@ service cloud.firestore {
     
     // === 사용자 프로필 컬렉션 ===
     match /users/{userId} {
-      // 읽기: 본인만
-      allow read: if isOwner(userId);
-      
-      // 생성: 본인만 (회원가입 시)
-      allow create: if isOwner(userId);
-      
-      // 업데이트: 본인만
-      allow update: if isOwner(userId);
-      
-      // 삭제: 본인만 (계정 삭제 시)
-      allow delete: if isOwner(userId);
+      // 모든 인증된 유저는 검색을 위해 타인의 프로필을 읽을 수 있음
+      allow read: if request.auth != null;
+      // 생성 및 수정은 본인 UID와 문서 ID가 일치할 때만 허용
+      allow create, update: if request.auth != null && request.auth.uid == userId;
+      // 프로필 삭제는 기본적으로 금지
+      allow delete: if false;
     }
     
     // === 메모 컬렉션 ===
     match /memos/{memoId} {
-      // 읽기: 본인 메모만
-      allow read: if isAuthenticated() && 
-        resource.data.userId == request.auth.uid;
+      // 읽기: 본인 메모 또는 나에게 공유된 메모
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        (resource.data.sharedWithUids != null && request.auth.uid in resource.data.sharedWithUids)
+      );
       
       // 생성: 인증된 사용자만 (본인 ID로만)
       allow create: if isAuthenticated() && 
         request.resource.data.userId == request.auth.uid;
       
-      // 업데이트: 본인 메모만
-      allow update: if isAuthenticated() && 
-        resource.data.userId == request.auth.uid &&
-        request.resource.data.userId == request.auth.uid;
+      // 업데이트: 본인 메모이거나 공유받은 목록에 포함된 경우
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        (resource.data.sharedWithUids != null && request.auth.uid in resource.data.sharedWithUids)
+      );
       
-      // 삭제: 본인 메모만
-      allow delete: if isAuthenticated() && 
-        resource.data.userId == request.auth.uid;
+      // 삭제: 본인 메모이거나 공유받은 목록에 포함된 경우
+      allow delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        (resource.data.sharedWithUids != null && request.auth.uid in resource.data.sharedWithUids)
+      );
     }
     
     // === 카테고리 컬렉션 ===

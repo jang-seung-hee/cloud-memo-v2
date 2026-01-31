@@ -1,50 +1,49 @@
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  getDoc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
-  orderBy, 
+import {
+  collection,
+  doc,
+  getDocs,
+  getDoc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
   limit,
+  or,
   onSnapshot,
-  QuerySnapshot,
-  DocumentSnapshot,
   WriteBatch,
   writeBatch,
   Timestamp,
   QueryConstraint,
   Unsubscribe,
   increment as firestoreIncrement,
-  DocumentData
+  setDoc
 } from 'firebase/firestore';
+import { User } from 'firebase/auth';
 import { db } from './config';
 import { storageService } from './storage';
 import { compressImage } from '../../utils/imageCompression';
 import { logDebug, logInfo, logError } from '../../utils/logger';
-import { 
-  IFirebaseMemo, 
-  IFirebaseTemplate, 
-  IUserProfile, 
-  IMemoCreateData, 
+import {
+  IFirebaseMemo,
+  IFirebaseTemplate,
+  IUserProfile,
+  IMemoCreateData,
   ITemplateCreateData,
-  IMemoUpdateData, 
-  ITemplateUpdateData, 
-  IQueryOptions, 
-  FirestoreListener, 
+  IMemoUpdateData,
+  ITemplateUpdateData,
+  IQueryOptions,
+  FirestoreListener,
   IBatchOperation,
-  COLLECTIONS, 
-  CollectionName,
+  COLLECTIONS,
   IFirebaseCategory
 } from '../../types/firebase';
 
 export class FirestoreService {
   private static instance: FirestoreService;
 
-  private constructor() {}
+  private constructor() { }
 
   public static getInstance(): FirestoreService {
     if (!FirestoreService.instance) {
@@ -65,7 +64,7 @@ export class FirestoreService {
         isArray: Array.isArray(data.images),
         type: typeof data.images
       });
-      
+
       // 이미지 업로드 처리
       const imageUrls: string[] = [];
       if (data.images && data.images.length > 0) {
@@ -77,7 +76,7 @@ export class FirestoreService {
               size: imageFile.size,
               type: imageFile.type
             });
-            
+
             // 이미지 압축 (1MB 이하로 더 강하게 압축)
             logDebug('이미지 압축 시작...');
             const compressedImage = await compressImage(imageFile, { maxSizeMB: 1 });
@@ -85,7 +84,7 @@ export class FirestoreService {
               name: compressedImage.name,
               size: compressedImage.size
             });
-            
+
             // Firebase Storage에 업로드
             logDebug('Firebase Storage 업로드 시작...');
             const imageUrl = await storageService.uploadImage(compressedImage, userId);
@@ -99,7 +98,7 @@ export class FirestoreService {
       } else {
         logDebug('업로드할 이미지 없음');
       }
-      
+
       logDebug('최종 이미지 URL 목록:', imageUrls);
 
       // 기본 데이터 객체 생성
@@ -111,16 +110,18 @@ export class FirestoreService {
         tags: data.tags || [],
         isPinned: false,
         isArchived: false,
+        sharedWith: data.sharedWith || [], // 공유 상세 정보
+        sharedWithUids: data.sharedWithUids || [], // 검색용 UID 목록
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now()
       };
 
       // undefined가 아닌 선택적 필드들만 추가
       const finalData: any = { ...baseData };
-      
+
       // 카테고리는 필수 필드이므로 항상 추가
       finalData.category = data.category;
-      
+
       // templateId는 선택적 필드
       if (data.templateId) {
         finalData.templateId = data.templateId;
@@ -140,7 +141,7 @@ export class FirestoreService {
     try {
       const docRef = doc(db, COLLECTIONS.MEMOS, memoId);
       const docSnap = await getDoc(docRef);
-      
+
       if (docSnap.exists()) {
         return { id: docSnap.id, ...docSnap.data() } as IFirebaseMemo;
       }
@@ -177,22 +178,42 @@ export class FirestoreService {
 
       const q = query(collection(db, COLLECTIONS.MEMOS), ...constraints);
       const querySnapshot = await getDocs(q);
-      
+
       let memos = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as IFirebaseMemo[];
-      
+
       // 클라이언트에서 정렬 (항상 실행)
       memos = memos.sort((a, b) => {
         const aTime = a.updatedAt?.toDate?.() || new Date();
         const bTime = b.updatedAt?.toDate?.() || new Date();
         return bTime.getTime() - aTime.getTime();
       });
-      
+
       return memos;
     } catch (error) {
       console.error('사용자별 메모 조회 오류:', error);
+      throw this.createFirestoreError(error);
+    }
+  }
+
+  // 나에게 공유된 메모 목록 조회
+  async getSharedMemos(userId: string): Promise<IFirebaseMemo[]> {
+    try {
+      logDebug('getSharedMemos 호출됨:', userId);
+      const q = query(
+        collection(db, COLLECTIONS.MEMOS),
+        where('sharedWithUids', 'array-contains', userId)
+      );
+
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as IFirebaseMemo[];
+    } catch (error) {
+      logError('공유된 메모 조회 오류:', error);
       throw this.createFirestoreError(error);
     }
   }
@@ -241,11 +262,11 @@ export class FirestoreService {
 
       // undefined가 아닌 선택적 필드들만 추가
       const finalData: any = { ...baseData };
-      
+
       if (data.category !== undefined && data.category !== null && data.category !== '') {
         finalData.category = data.category;
       }
-      
+
       if (data.description !== undefined && data.description !== null && data.description !== '') {
         finalData.description = data.description;
       }
@@ -264,7 +285,7 @@ export class FirestoreService {
     try {
       const docRef = doc(db, COLLECTIONS.TEMPLATES, templateId);
       const docSnap = await getDoc(docRef);
-      
+
       if (docSnap.exists()) {
         return { id: docSnap.id, ...docSnap.data() } as IFirebaseTemplate;
       }
@@ -299,7 +320,7 @@ export class FirestoreService {
 
       const q = query(collection(db, COLLECTIONS.TEMPLATES), ...constraints);
       const querySnapshot = await getDocs(q);
-      
+
       return querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -334,19 +355,19 @@ export class FirestoreService {
 
       const q = query(collection(db, COLLECTIONS.TEMPLATES), ...constraints);
       const querySnapshot = await getDocs(q);
-      
+
       let templates = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as IFirebaseTemplate[];
-      
+
       // 클라이언트에서 정렬 (항상 실행)
       templates = templates.sort((a, b) => {
         const aUsage = a.usageCount || 0;
         const bUsage = b.usageCount || 0;
         return bUsage - aUsage;
       });
-      
+
       return templates;
     } catch (error) {
       console.error('공개 템플릿 조회 오류:', error);
@@ -399,7 +420,7 @@ export class FirestoreService {
   async createCategory(userId: string, data: { name: string; isActive: boolean; order: number }): Promise<string> {
     try {
       console.log('🔍 createCategory 호출됨:', { userId, data });
-      
+
       const categoryData = {
         userId,
         name: data.name.trim(),
@@ -423,7 +444,7 @@ export class FirestoreService {
     try {
       const docRef = doc(db, COLLECTIONS.CATEGORIES, categoryId);
       const docSnap = await getDoc(docRef);
-      
+
       if (docSnap.exists()) {
         return { id: docSnap.id, ...docSnap.data() } as IFirebaseCategory;
       }
@@ -438,20 +459,20 @@ export class FirestoreService {
   async getCategoriesByUserId(userId: string): Promise<IFirebaseCategory[]> {
     try {
       console.log('🔍 getCategoriesByUserId 호출됨:', userId);
-      
+
       const q = query(
         collection(db, COLLECTIONS.CATEGORIES),
         where('userId', '==', userId),
         orderBy('order', 'asc')
       );
-      
+
       const querySnapshot = await getDocs(q);
       const categories: IFirebaseCategory[] = [];
-      
+
       querySnapshot.forEach((doc) => {
         categories.push({ id: doc.id, ...doc.data() } as IFirebaseCategory);
       });
-      
+
       // 신규 유저라면 기본값 자동 생성
       if (categories.length === 0) {
         const defaultNames = ['개인', '업무', '지정안함', '지정안함', '지정안함'];
@@ -473,12 +494,12 @@ export class FirestoreService {
           categories.push({ id: doc.id, ...doc.data() } as IFirebaseCategory);
         });
       }
-      
+
       // '지정안함'은 무조건 비활성 처리
       categories.forEach(cat => {
         if (cat.name === '지정안함') cat.isActive = false;
       });
-      
+
       console.log('✅ 카테고리 목록 조회 완료:', categories.length, '개');
       return categories;
     } catch (error) {
@@ -491,18 +512,18 @@ export class FirestoreService {
   async updateCategory(categoryId: string, data: { name?: string; isActive?: boolean; order?: number }): Promise<void> {
     try {
       console.log('🔍 updateCategory 호출됨:', { categoryId, data });
-      
+
       const updateData: any = {
         updatedAt: Timestamp.now()
       };
-      
+
       if (data.name !== undefined) updateData.name = data.name.trim();
       if (data.isActive !== undefined) updateData.isActive = data.isActive;
       if (data.order !== undefined) updateData.order = data.order;
-      
+
       const docRef = doc(db, COLLECTIONS.CATEGORIES, categoryId);
       await updateDoc(docRef, updateData);
-      
+
       console.log('✅ 카테고리 업데이트 완료');
     } catch (error) {
       console.error('❌ 카테고리 업데이트 실패:', error);
@@ -514,10 +535,10 @@ export class FirestoreService {
   async deleteCategory(categoryId: string): Promise<void> {
     try {
       console.log('🔍 deleteCategory 호출됨:', categoryId);
-      
+
       const docRef = doc(db, COLLECTIONS.CATEGORIES, categoryId);
       await deleteDoc(docRef);
-      
+
       console.log('✅ 카테고리 삭제 완료');
     } catch (error) {
       console.error('❌ 카테고리 삭제 실패:', error);
@@ -529,19 +550,19 @@ export class FirestoreService {
   onCategoriesSnapshot(userId: string, callback: FirestoreListener<IFirebaseCategory>): Unsubscribe {
     try {
       console.log('🔍 onCategoriesSnapshot 설정됨:', userId);
-      
+
       const q = query(
         collection(db, COLLECTIONS.CATEGORIES),
         where('userId', '==', userId),
         orderBy('order', 'asc')
       );
-      
+
       return onSnapshot(q, (snapshot) => {
         const categories: IFirebaseCategory[] = [];
         snapshot.forEach((doc) => {
           categories.push({ id: doc.id, ...doc.data() } as IFirebaseCategory);
         });
-        
+
         console.log('✅ 카테고리 실시간 업데이트:', categories.length, '개');
         callback(categories);
       }, (error) => {
@@ -561,21 +582,23 @@ export class FirestoreService {
       collection(db, COLLECTIONS.MEMOS),
       where('userId', '==', userId)
     );
-    
+
     return onSnapshot(q, (querySnapshot) => {
       const memos = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as IFirebaseMemo[];
-      
+
       // 클라이언트에서 정렬 (인덱스 없이도 작동)
       const sortedMemos = memos.sort((a, b) => {
         const aTime = a.updatedAt?.toDate?.() || new Date();
         const bTime = b.updatedAt?.toDate?.() || new Date();
         return bTime.getTime() - aTime.getTime();
       });
-      
+
       callback(sortedMemos);
+    }, (error) => {
+      console.error('❌ 메모 실시간 리스너 오류:', error);
     });
   }
 
@@ -585,21 +608,50 @@ export class FirestoreService {
       collection(db, COLLECTIONS.TEMPLATES),
       where('userId', '==', userId)
     );
-    
+
     return onSnapshot(q, (querySnapshot) => {
       const templates = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as IFirebaseTemplate[];
-      
+
       // 클라이언트에서 정렬 (인덱스 없이도 작동)
       const sortedTemplates = templates.sort((a, b) => {
         const aTime = a.updatedAt?.toDate?.() || new Date();
         const bTime = b.updatedAt?.toDate?.() || new Date();
         return bTime.getTime() - aTime.getTime();
       });
-      
+
       callback(sortedTemplates);
+    }, (error) => {
+      console.error('❌ 템플릿 실시간 리스너 오류:', error);
+    });
+  }
+
+  // 공유받은 메모 실시간 리스너
+  onSharedMemosSnapshot(userId: string, callback: FirestoreListener<IFirebaseMemo>): Unsubscribe {
+    logDebug('onSharedMemosSnapshot 설정됨:', userId);
+    const q = query(
+      collection(db, COLLECTIONS.MEMOS),
+      where('sharedWithUids', 'array-contains', userId)
+    );
+
+    return onSnapshot(q, (querySnapshot) => {
+      const memos = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as IFirebaseMemo[];
+
+      // 클라이언트에서 정렬
+      const sortedMemos = memos.sort((a, b) => {
+        const aTime = a.updatedAt?.toDate?.() || new Date();
+        const bTime = b.updatedAt?.toDate?.() || new Date();
+        return bTime.getTime() - aTime.getTime();
+      });
+
+      callback(sortedMemos);
+    }, (error) => {
+      console.error('❌ 공유 메모 실시간 리스너 오류:', error);
     });
   }
 
@@ -614,10 +666,10 @@ export class FirestoreService {
   async executeBatch(operations: IBatchOperation[]): Promise<void> {
     try {
       const batch = this.createBatch();
-      
+
       operations.forEach(operation => {
         const docRef = doc(db, operation.collection, operation.docId || '');
-        
+
         switch (operation.type) {
           case 'create':
             batch.set(docRef, {
@@ -637,10 +689,95 @@ export class FirestoreService {
             break;
         }
       });
-      
+
       await batch.commit();
     } catch (error) {
       console.error('배치 작업 실행 오류:', error);
+      throw this.createFirestoreError(error);
+    }
+  }
+
+  // === 사용자 관련 메서드 ===
+
+  async syncUserProfile(user: User): Promise<void> {
+    if (!user || !user.email) return;
+
+    try {
+      console.log('🔄 [Firestore] 프로필 동기화 시도 중...', user.email);
+      const userDocRef = doc(db, COLLECTIONS.USERS, user.uid);
+
+      // 사용자 데이터 준비 (기본 정보 업데이트)
+      const userData = {
+        userId: user.uid,
+        email: user.email.toLowerCase(),
+        displayName: user.displayName || user.email.split('@')[0],
+        photoURL: user.photoURL || '',
+        emailVerified: user.emailVerified,
+        lastLoginAt: Timestamp.now(),
+        updatedAt: Timestamp.now()
+      };
+
+      // 처음 생성되는 경우에만 들어갈 데이터와 함께 병합(Merge)
+      // setDoc { merge: true }는 문서가 없으면 생성하고, 있으면 지정한 필드만 덮어씁니다.
+      await setDoc(userDocRef, {
+        ...userData,
+        // 기존 데이터가 없을 때만 아래 값들이 유효하도록 구성 가능하지만, 
+        // 여기서는 기본 설정을 항상 보장하도록 단순 merge 전략을 취합니다.
+        settings: {
+          theme: 'light',
+          language: 'ko',
+          notifications: true
+        }
+      }, { merge: true });
+
+      console.log('✅ [Firestore] 프로필 동기화 성공:', user.email);
+    } catch (error) {
+      console.error('❌ [Firestore] 프로필 동기화 실패:', error);
+    }
+  }
+
+  async searchUsers(searchQuery: string): Promise<IUserProfile[]> {
+    try {
+      if (!searchQuery || searchQuery.length < 2) return [];
+
+      const lowerQuery = searchQuery.toLowerCase();
+
+      // 1. 이메일로 시작하는 사용자 검색 쿼리
+      const emailQ = query(
+        collection(db, COLLECTIONS.USERS),
+        where('email', '>=', lowerQuery),
+        where('email', '<=', lowerQuery + '\uf8ff'),
+        limit(5)
+      );
+
+      // 2. 이름으로 시작하는 사용자 검색 쿼리
+      const nameQ = query(
+        collection(db, COLLECTIONS.USERS),
+        where('displayName', '>=', searchQuery),
+        where('displayName', '<=', searchQuery + '\uf8ff'),
+        limit(5)
+      );
+
+      // 두 쿼리를 동시에 실행
+      const [emailSnap, nameSnap] = await Promise.all([
+        getDocs(emailQ),
+        getDocs(nameQ)
+      ]);
+
+      // 결과 합침 및 중복 제거
+      const userMap = new Map<string, IUserProfile>();
+
+      emailSnap.docs.forEach(doc => {
+        userMap.set(doc.id, { id: doc.id, ...doc.data() } as IUserProfile);
+      });
+
+      nameSnap.docs.forEach(doc => {
+        userMap.set(doc.id, { id: doc.id, ...doc.data() } as IUserProfile);
+      });
+
+      return Array.from(userMap.values()).slice(0, 10);
+    } catch (error) {
+      console.error('사용자 검색 오류:', error);
       throw this.createFirestoreError(error);
     }
   }

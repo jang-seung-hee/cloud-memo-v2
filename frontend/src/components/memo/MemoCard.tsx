@@ -7,19 +7,22 @@ import { CategoryBadge } from '../ui/category-badge';
 import { IFirebaseMemo } from '../../types/firebase';
 import { useNavigate } from 'react-router-dom';
 import { useDevice } from '../../hooks/useDevice';
+import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/use-toast';
 import { useFontSize } from '../../hooks/useFontSize';
 import { firestoreService } from '../../services/firebase/firestore';
 import { storageService } from '../../services/firebase/storage';
-import { 
-  PhotoIcon, 
-  ClockIcon, 
+import {
+  PhotoIcon,
+  ClockIcon,
   DocumentTextIcon,
   StarIcon,
   EyeIcon,
   DocumentDuplicateIcon,
   PencilIcon,
-  TrashIcon
+  TrashIcon,
+  ShareIcon,
+  UsersIcon
 } from '@heroicons/react/24/outline';
 import { handleFirebaseError } from '../../utils/errorHandler';
 
@@ -33,8 +36,18 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
   const { isDesktop, getTemplateSidebarWidth } = useDevice();
   const { toast } = useToast();
   const { fontSizeClasses } = useFontSize();
+  const { user } = useAuth();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // 공유 상태 확인
+  const isSentShare = useMemo(() => {
+    return user && memo.userId === user.uid && memo.sharedWithUids && memo.sharedWithUids.length > 0;
+  }, [user, memo.userId, memo.sharedWithUids]);
+
+  const isReceivedShare = useMemo(() => {
+    return user && memo.userId !== user.uid;
+  }, [user, memo.userId]);
 
   // 날짜 포맷팅 함수를 useMemo로 최적화
   const formattedDate = useMemo(() => {
@@ -44,22 +57,22 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
     const timestamp = updatedAt > createdAt ? updatedAt : createdAt;
     const date = timestamp;
     const now = new Date();
-    
+
     // 날짜만 비교하기 위해 시간을 제거
     const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     const nowOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
+
     // 날짜 차이 계산 (밀리초 단위)
     const diffTime = nowOnly.getTime() - dateOnly.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
+
     // 시간 포맷팅 (HH:MM)
     const timeString = date.toLocaleTimeString('ko-KR', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false
     });
-    
+
     if (diffDays === 0) {
       return `오늘 (${timeString})`;
     } else if (diffDays === 1) {
@@ -95,23 +108,23 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
   // PC 모드용 제목 생성 함수 (본문 첫 줄 사용)
   const getTitleForPC = useMemo(() => {
     if (!isDesktop) return memo.title || '제목 없음';
-    
+
     // 본문의 첫 줄 추출
     const firstLine = memo.content.split('\n')[0].trim();
     if (!firstLine) return '제목 없음';
-    
+
     // 15자가 넘으면 ... 표시
     if (firstLine.length > 15) {
       return firstLine.substring(0, 21) + '...';
     }
-    
+
     return firstLine;
   }, [memo.content, memo.title, isDesktop]);
 
   // 모바일용 텍스트 처리 함수 (줄바꿈 제거)
   const getMobileContent = useMemo(() => {
     if (isDesktop) return memo.content;
-    
+
     if (isExpanded) {
       // 펼쳐진 상태: 원본 텍스트 그대로 표시 (줄바꿈 유지)
       return memo.content;
@@ -129,7 +142,7 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
     // 현재 URL의 검색 파라미터를 유지하면서 메모 상세 페이지로 이동
     const currentSearchParams = new URLSearchParams(window.location.search);
     const searchParams = new URLSearchParams();
-    
+
     // 검색 관련 파라미터들만 복사
     if (currentSearchParams.get('search')) {
       searchParams.set('search', currentSearchParams.get('search')!);
@@ -140,7 +153,7 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
     if (currentSearchParams.get('archived')) {
       searchParams.set('archived', currentSearchParams.get('archived')!);
     }
-    
+
     const queryString = searchParams.toString();
     const url = `/memo/${memo.id}${queryString ? `?${queryString}` : ''}`;
     navigate(url);
@@ -159,7 +172,7 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
         await navigator.clipboard.writeText(text);
         return true;
       }
-      
+
       // 2. fallback: document.execCommand 사용 (구형 브라우저, 모바일)
       const textArea = document.createElement('textarea');
       textArea.value = text;
@@ -169,10 +182,10 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
       document.body.appendChild(textArea);
       textArea.focus();
       textArea.select();
-      
+
       const successful = document.execCommand('copy');
       document.body.removeChild(textArea);
-      
+
       return successful;
     } catch (error) {
       console.error('클립보드 복사 실패:', error);
@@ -186,7 +199,7 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
     try {
       const textToCopy = memo.content;
       const success = await copyToClipboard(textToCopy);
-      
+
       if (success) {
         toast({
           title: "복사 완료",
@@ -231,7 +244,7 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
 
       // 메모 삭제
       await firestoreService.deleteMemo(memo.id);
-      
+
       toast({
         title: "삭제 완료",
         description: "메모가 성공적으로 삭제되었습니다."
@@ -255,7 +268,7 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
   }, [memo.id, memo.images, onMemoUpdate, toast]);
 
   return (
-    <Card 
+    <Card
       className={`group cursor-pointer hover:shadow-lg transition-all duration-300 bg-white dark:bg-card border border-border/40 hover:border-border/60 rounded-lg overflow-hidden ${isDesktop ? 'h-[364px]' : 'min-h-[220px]'}`}
       onClick={handleClick}
     >
@@ -271,20 +284,35 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
                 </h3>
               </div>
             </div>
-            
+
             {/* PC 모드: 제목 아래 새로운 행에 카테고리 뱃지, 액션 버튼, 작성시간 배치 */}
             <div className="flex items-center justify-between mt-2 bg-muted/30 dark:bg-muted/20 rounded px-2 py-1.5">
               {/* 왼쪽: 카테고리 뱃지와 작성시간 */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <CategoryBadge category={memo.category || 'temporary'} size="sm" />
-                <div className="flex items-center gap-1 text-muted-foreground">
+
+                {/* 공유 상태 뱃지 (PC) */}
+                {isSentShare && (
+                  <Badge variant="outline" className="h-5 px-1.5 bg-blue-50 text-blue-600 border-blue-200 gap-1 flex items-center">
+                    <UsersIcon className="h-3 w-3" />
+                    <span className="text-[10px] font-bold">공유</span>
+                  </Badge>
+                )}
+                {isReceivedShare && (
+                  <Badge variant="outline" className="h-5 px-1.5 bg-green-50 text-green-600 border-green-200 gap-1 flex items-center">
+                    <ShareIcon className="h-3 w-3" />
+                    <span className="text-[10px] font-bold">받음</span>
+                  </Badge>
+                )}
+
+                <div className="flex items-center gap-1 text-muted-foreground ml-1">
                   <ClockIcon className="h-3 w-3" />
                   <span className={`text-xs ${fontSizeClasses.date}`}>
                     {formattedDate}
                   </span>
                 </div>
               </div>
-              
+
               {/* 오른쪽: 액션 버튼들 */}
               <div className="flex items-center gap-1">
                 <Button
@@ -321,7 +349,7 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
                     <AlertDialogHeader>
                       <AlertDialogTitle>메모 삭제</AlertDialogTitle>
                       <AlertDialogDescription>
-                        이 메모를 삭제하시겠습니까? 
+                        이 메모를 삭제하시겠습니까?
                         {memo.images && memo.images.length > 0 && (
                           <span className="block mt-2 text-destructive">
                             첨부된 이미지 {memo.images.length}개도 함께 삭제됩니다.
@@ -332,7 +360,7 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel onClick={(e) => e.stopPropagation()}>취소</AlertDialogCancel>
-                      <AlertDialogAction 
+                      <AlertDialogAction
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDelete();
@@ -352,16 +380,31 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
           // 모바일 모드: 카테고리 뱃지와 액션 버튼을 같은 줄에 배치
           <div className="flex items-center justify-between mb-2 bg-muted/30 dark:bg-muted/20 rounded px-2 py-1.5">
             {/* 왼쪽: 카테고리 뱃지와 작성시간 */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <CategoryBadge category={memo.category || 'temporary'} size="sm" />
-              <div className="flex items-center gap-1 text-muted-foreground">
+
+              {/* 공유 상태 뱃지 (모바일) */}
+              {isSentShare && (
+                <Badge variant="outline" className="h-5 px-1.5 bg-blue-50 text-blue-600 border-blue-200 gap-1 flex items-center">
+                  <UsersIcon className="h-3 w-3" />
+                  <span className="text-[10px] font-bold">공유</span>
+                </Badge>
+              )}
+              {isReceivedShare && (
+                <Badge variant="outline" className="h-5 px-1.5 bg-green-50 text-green-600 border-green-200 gap-1 flex items-center">
+                  <ShareIcon className="h-3 w-3" />
+                  <span className="text-[10px] font-bold">받음</span>
+                </Badge>
+              )}
+
+              <div className="flex items-center gap-1 text-muted-foreground ml-1">
                 <ClockIcon className="h-3 w-3" />
                 <span className={`text-xs ${fontSizeClasses.date}`}>
                   {formattedDate}
                 </span>
               </div>
             </div>
-            
+
             {/* 오른쪽: 액션 버튼들 */}
             <div className="flex items-center gap-1">
               <Button
@@ -398,7 +441,7 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
                   <AlertDialogHeader>
                     <AlertDialogTitle>메모 삭제</AlertDialogTitle>
                     <AlertDialogDescription>
-                      이 메모를 삭제하시겠습니까? 
+                      이 메모를 삭제하시겠습니까?
                       {memo.images && memo.images.length > 0 && (
                         <span className="block mt-2 text-destructive">
                           첨부된 이미지 {memo.images.length}개도 함께 삭제됩니다.
@@ -409,7 +452,7 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel onClick={(e) => e.stopPropagation()}>취소</AlertDialogCancel>
-                    <AlertDialogAction 
+                    <AlertDialogAction
                       onClick={(e) => {
                         e.stopPropagation();
                         handleDelete();
@@ -454,14 +497,14 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
                     </p>
                   </div>
                 </div>
-                
+
                 {/* 이미지 표시 - 절대 위치로 하단에 고정 */}
                 <div className="absolute bottom-10 left-0 right-0 bg-white dark:bg-card rounded-lg border border-border/30 p-2 shadow-sm">
                   <div className="flex gap-2 overflow-hidden justify-start">
                     {memo.images.slice(0, 3).map((imageUrl, index) => (
                       <div key={index} className="flex-shrink-0">
-                        <img 
-                          src={imageUrl} 
+                        <img
+                          src={imageUrl}
                           alt={`이미지 ${index + 1}`}
                           className="w-16 h-16 object-cover rounded-md border border-border/30"
                           onError={(e) => {
@@ -512,7 +555,7 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
                 </div>
               )}
             </div>
-            
+
             {/* 이미지 표시 - 하단에 배치 */}
             {memo.images.length > 0 && (
               <div className="mb-2 bg-muted/30 dark:bg-muted/20 rounded-lg border border-border/30 p-1.5">
@@ -523,8 +566,8 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
                 <div className="flex gap-2 overflow-hidden">
                   {memo.images.slice(0, 3).map((imageUrl, index) => (
                     <div key={index} className="flex-shrink-0">
-                      <img 
-                        src={imageUrl} 
+                      <img
+                        src={imageUrl}
                         alt={`이미지 ${index + 1}`}
                         className="w-12 h-12 object-cover rounded-md border border-border/30"
                         onError={(e) => {

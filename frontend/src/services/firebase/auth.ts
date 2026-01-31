@@ -1,9 +1,9 @@
-import { 
-  GoogleAuthProvider, 
-  signInWithPopup, 
+import {
+  GoogleAuthProvider,
+  signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
-  signOut, 
+  signOut,
   onAuthStateChanged,
   User,
   AuthError,
@@ -26,7 +26,7 @@ googleProvider.setCustomParameters({
 
 
 // 환경변수 확인
-const isFirebaseConfigured = process.env.REACT_APP_FIREBASE_API_KEY && 
+const isFirebaseConfigured = process.env.REACT_APP_FIREBASE_API_KEY &&
   process.env.REACT_APP_FIREBASE_API_KEY !== 'dummy-api-key';
 
 // Google 로그인 함수 (PC 브라우저 호환성을 위해 팝업 사용)
@@ -38,10 +38,10 @@ export const signInWithGoogle = async (): Promise<User> => {
   try {
     // PC 브라우저에서 세션 지속성을 위해 persistence 설정
     await setPersistence(auth, browserLocalPersistence);
-    
+
     // PC 브라우저에서 더 안정적인 팝업 방식 사용
     const result = await signInWithPopup(auth, googleProvider);
-    
+
     // 로그인 완료 후 즉시 사용자 정보 반환
     if (result.user) {
       console.log('Google 로그인 성공:', result.user.email);
@@ -74,7 +74,7 @@ export const onAuthStateChange = (callback: (user: User | null) => void) => {
   if (!isFirebaseConfigured) {
     // Firebase가 설정되지 않은 경우 즉시 null 호출
     callback(null);
-    return () => {}; // 빈 구독 해제 함수
+    return () => { }; // 빈 구독 해제 함수
   }
 
   return onAuthStateChanged(auth, callback);

@@ -76,3 +76,5 @@ secrets.json
 config.json
 firebase-key.json
 service-account.json 
+# Local Netlify folder
+.netlify
