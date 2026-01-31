@@ -256,6 +256,9 @@ export const MemoDetailPage: React.FC = () => {
     if (currentSearchParams.get('archived')) {
       searchParams.set('archived', currentSearchParams.get('archived')!);
     }
+    if (currentSearchParams.get('shared')) {
+      searchParams.set('shared', currentSearchParams.get('shared')!);
+    }
 
     const queryString = searchParams.toString();
     const url = `/memos${queryString ? `?${queryString}` : ''}`;
@@ -607,21 +610,25 @@ export const MemoDetailPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* 카테고리와 작성일 */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CategoryBadge category={memo.category || 'temporary'} size="sm" />
+              {/* 카테고리, 공유, 캘린더, 작성일 (모바일용 2줄 레이아웃) */}
+              <div className="flex flex-col gap-2.5">
+                {/* 첫 번째 줄: 뱃지들 (우측 맞춤) */}
+                <div className="flex items-center justify-end gap-2">
+                  <CategoryBadge
+                    category={memo.category || 'temporary'}
+                    size="sm"
+                    className="h-7 px-2 flex items-center justify-center text-[10px]"
+                  />
 
                   {/* 공유 상태 뱃지 (모바일) */}
                   {user?.uid === memo.userId && (
                     <ShareSettingsBadge
                       sharedCount={sharedWith.length}
                       onClick={() => setIsShareModalOpen(true)}
-                      className="scale-90 origin-left"
                     />
                   )}
                   {isReceivedShare && (
-                    <Badge variant="outline" className="h-8 px-2 bg-green-50 text-green-600 border-green-200 gap-1 flex items-center">
+                    <Badge variant="outline" className="h-7 px-2 bg-green-50 text-green-600 border-green-200 gap-1 flex items-center">
                       <ShareIcon className="h-3.5 w-3.5" />
                       <span className="text-[10px] font-bold">받음</span>
                     </Badge>
@@ -638,15 +645,17 @@ export const MemoDetailPage: React.FC = () => {
                     title="구글 캘린더에 등록"
                   >
                     <CalendarIcon className="h-3.5 w-3.5 mr-1" />
-                    <span className="text-xs">캘린더</span>
+                    <span className="text-[10px] font-semibold">캘린더등록</span>
                   </Button>
                 </div>
-                <div className={`flex items-center gap-2 px-3 py-1 rounded-md ${isMobileLightMode
-                  ? 'text-gray-600 bg-gray-50'
+
+                {/* 두 번째 줄: 날짜 정보 (우측 맞춤) */}
+                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg w-fit self-end ${isMobileLightMode
+                  ? 'text-gray-600 bg-gray-50/80 border border-gray-100'
                   : 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800'
                   }`}>
                   <CalendarIcon className="h-4 w-4" />
-                  <span className={`text-xs ${fontSizeClasses.date}`}>
+                  <span className={`text-xs font-medium ${fontSizeClasses.date}`}>
                     {formatFullDate(memo.updatedAt > memo.createdAt ? memo.updatedAt : memo.createdAt)}
                   </span>
                 </div>

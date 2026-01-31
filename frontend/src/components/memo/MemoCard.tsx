@@ -153,6 +153,9 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
     if (currentSearchParams.get('archived')) {
       searchParams.set('archived', currentSearchParams.get('archived')!);
     }
+    if (currentSearchParams.get('shared')) {
+      searchParams.set('shared', currentSearchParams.get('shared')!);
+    }
 
     const queryString = searchParams.toString();
     const url = `/memo/${memo.id}${queryString ? `?${queryString}` : ''}`;
