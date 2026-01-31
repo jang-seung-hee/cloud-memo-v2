@@ -1,13 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '../components/common/Layout';
 import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardHeader } from '../components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../components/ui/alert-dialog';
 import { CategoryBadge } from '../components/ui/category-badge';
 import { SimpleImageGallery } from '../components/ui/SimpleImage';
-import { IFirebaseMemo } from '../types/firebase';
+import { IFirebaseMemo, ISharedUser } from '../types/firebase';
 import { firestoreService } from '../services/firebase/firestore';
+import { ShareSettingsModal } from '../components/memo/ShareSettingsModal';
+import { ShareSettingsBadge } from '../components/ui/share-settings-badge';
 import { googleCalendarService } from '../services/google/calendar';
 import { storageService } from '../services/firebase/storage';
 import { useAuth } from '../hooks/useAuth';
@@ -15,14 +18,16 @@ import { useToast } from '../hooks/use-toast';
 import { useFontSize } from '../hooks/useFontSize';
 import { useDevice } from '../hooks/useDevice';
 import { useTheme } from '../hooks/useTheme';
-import { 
-  ArrowLeftIcon, 
-  CalendarIcon, 
-  PhotoIcon, 
+import {
+  ArrowLeftIcon,
+  CalendarIcon,
+  PhotoIcon,
   DocumentDuplicateIcon,
   PencilIcon,
   TrashIcon,
-  XMarkIcon
+  XMarkIcon,
+  ShareIcon,
+  UsersIcon
 } from '@heroicons/react/24/outline';
 import { handleFirebaseError } from '../utils/errorHandler';
 import { formatLinksInText } from '../utils/linkFormatter';
@@ -39,6 +44,17 @@ export const MemoDetailPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [sharedWith, setSharedWith] = useState<ISharedUser[]>([]);
+
+  // 공유 상태 확인
+  const isSentShare = useMemo(() => {
+    return user && memo?.userId === user.uid && memo?.sharedWithUids && memo?.sharedWithUids.length > 0;
+  }, [user, memo?.userId, memo?.sharedWithUids]);
+
+  const isReceivedShare = useMemo(() => {
+    return user && memo && memo.userId !== user.uid;
+  }, [user, memo?.userId]);
 
   // 모바일 + 라이트 모드일 때의 스타일 조건
   const isMobileLightMode = !isDesktop && !isDark;
@@ -51,7 +67,7 @@ export const MemoDetailPage: React.FC = () => {
         await navigator.clipboard.writeText(text);
         return true;
       }
-      
+
       // 2. fallback: document.execCommand 사용 (구형 브라우저, 모바일)
       const textArea = document.createElement('textarea');
       textArea.value = text;
@@ -61,10 +77,10 @@ export const MemoDetailPage: React.FC = () => {
       document.body.appendChild(textArea);
       textArea.focus();
       textArea.select();
-      
+
       const successful = document.execCommand('copy');
       document.body.removeChild(textArea);
-      
+
       return successful;
     } catch (error) {
       console.error('클립보드 복사 실패:', error);
@@ -75,11 +91,11 @@ export const MemoDetailPage: React.FC = () => {
   // 메모 복사 함수
   const handleCopy = async () => {
     if (!memo) return;
-    
+
     try {
       const textToCopy = memo.content;
       const success = await copyToClipboard(textToCopy);
-      
+
       if (success) {
         toast({
           title: "복사 완료",
@@ -104,21 +120,21 @@ export const MemoDetailPage: React.FC = () => {
   const formatDate = (timestamp: any) => {
     const date = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp);
     const now = new Date();
-    
+
     // 날짜만 비교하기 위해 시간을 제거
     const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     const nowOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
+
     // 날짜 차이 계산 (밀리초 단위)
     const diffTime = nowOnly.getTime() - dateOnly.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
+
     const timeString = date.toLocaleTimeString('ko-KR', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false
     });
-    
+
     if (diffDays === 0) {
       return `오늘 (${timeString})`;
     } else if (diffDays === 1) {
@@ -156,8 +172,9 @@ export const MemoDetailPage: React.FC = () => {
 
       try {
         const memoData = await firestoreService.getMemo(id);
-        if (memoData && memoData.userId === user.uid) {
+        if (memoData && (memoData.userId === user.uid || (memoData.sharedWithUids && memoData.sharedWithUids.includes(user.uid)))) {
           setMemo(memoData);
+          setSharedWith(memoData.sharedWith || []);
         } else {
           toast({
             title: "메모를 찾을 수 없습니다",
@@ -189,7 +206,7 @@ export const MemoDetailPage: React.FC = () => {
 
   const handleDelete = async () => {
     if (!memo) return;
-    
+
     setIsDeleting(true);
     try {
       // 이미지가 있으면 먼저 삭제
@@ -205,7 +222,7 @@ export const MemoDetailPage: React.FC = () => {
 
       // 메모 삭제
       await firestoreService.deleteMemo(memo.id);
-      
+
       toast({
         title: "삭제 완료",
         description: "메모가 성공적으로 삭제되었습니다."
@@ -228,7 +245,7 @@ export const MemoDetailPage: React.FC = () => {
     // 현재 URL의 검색 파라미터를 유지하면서 메모 목록으로 이동
     const currentSearchParams = new URLSearchParams(window.location.search);
     const searchParams = new URLSearchParams();
-    
+
     // 검색 관련 파라미터들만 복사
     if (currentSearchParams.get('search')) {
       searchParams.set('search', currentSearchParams.get('search')!);
@@ -239,7 +256,7 @@ export const MemoDetailPage: React.FC = () => {
     if (currentSearchParams.get('archived')) {
       searchParams.set('archived', currentSearchParams.get('archived')!);
     }
-    
+
     const queryString = searchParams.toString();
     const url = `/memos${queryString ? `?${queryString}` : ''}`;
     navigate(url);
@@ -251,6 +268,39 @@ export const MemoDetailPage: React.FC = () => {
 
   const handleCloseImageModal = () => {
     setSelectedImage(null);
+  };
+
+  const handleUpdateSharedWith = async (newSharedWith: ISharedUser[]) => {
+    if (!memo || !id) return;
+
+    try {
+      setSharedWith(newSharedWith);
+
+      // 즉시 Firestore 업데이트
+      await firestoreService.updateMemo(id, {
+        sharedWith: newSharedWith,
+        sharedWithUids: newSharedWith.map(u => u.uid)
+      });
+
+      // 로컬 상태 업데이트
+      setMemo(prev => prev ? {
+        ...prev,
+        sharedWith: newSharedWith,
+        sharedWithUids: newSharedWith.map(u => u.uid)
+      } : null);
+
+      toast({
+        title: "공유 설정 반영됨",
+        description: "공유 설정이 성공적으로 업데이트되었습니다."
+      });
+    } catch (error) {
+      console.error('공유 설정 업데이트 오류:', error);
+      toast({
+        title: "업데이트 실패",
+        description: "공유 설정을 저장하는 중 오류가 발생했습니다.",
+        variant: "destructive"
+      });
+    }
   };
 
   if (isLoading) {
@@ -327,12 +377,27 @@ export const MemoDetailPage: React.FC = () => {
                     메모정보
                   </h2>
                 </div>
-                
+
                 {/* 카테고리, 작성일, 액션 버튼 */}
                 <div className="flex items-center justify-between mt-3">
                   {/* 왼쪽: 카테고리와 작성일 */}
                   <div className="flex items-center gap-3">
                     <CategoryBadge category={memo.category || 'temporary'} size="md" />
+
+                    {/* 공유 상태 뱃지 (PC) */}
+                    {user?.uid === memo.userId && (
+                      <ShareSettingsBadge
+                        sharedCount={sharedWith.length}
+                        onClick={() => setIsShareModalOpen(true)}
+                      />
+                    )}
+                    {isReceivedShare && (
+                      <Badge variant="outline" className="h-8 px-2.5 bg-green-50 text-green-600 border-green-200 gap-1.5 flex items-center">
+                        <ShareIcon className="h-4 w-4" />
+                        <span className="text-xs font-bold">받음</span>
+                      </Badge>
+                    )}
+
                     <Button
                       variant="outline"
                       size="sm"
@@ -351,7 +416,7 @@ export const MemoDetailPage: React.FC = () => {
                       <span className={fontSizeClasses.date}>{formatFullDate(memo.updatedAt > memo.createdAt ? memo.updatedAt : memo.createdAt)}</span>
                     </div>
                   </div>
-                  
+
                   {/* 오른쪽: 액션 버튼들 */}
                   <div className="flex items-center gap-1">
                     <Button
@@ -387,7 +452,7 @@ export const MemoDetailPage: React.FC = () => {
                         <AlertDialogHeader>
                           <AlertDialogTitle>메모 삭제</AlertDialogTitle>
                           <AlertDialogDescription>
-                            이 메모를 삭제하시겠습니까? 
+                            이 메모를 삭제하시겠습니까?
                             {memo.images && memo.images.length > 0 && (
                               <span className="block mt-2 text-destructive">
                                 첨부된 이미지 {memo.images.length}개도 함께 삭제됩니다.
@@ -467,7 +532,15 @@ export const MemoDetailPage: React.FC = () => {
           </div>
         )}
 
-
+        {/* 공유 설정 모달 */}
+        {memo && (
+          <ShareSettingsModal
+            isOpen={isShareModalOpen}
+            onClose={() => setIsShareModalOpen(false)}
+            sharedWith={sharedWith}
+            onUpdateSharedWith={handleUpdateSharedWith}
+          />
+        )}
       </Layout>
     );
   }
@@ -477,74 +550,83 @@ export const MemoDetailPage: React.FC = () => {
     <Layout title="메모 상세보기" showNewButton={false}>
       <div className="flex flex-col h-full space-y-2">
         {/* 헤더 - 새로운 타이틀 스타일 */}
-        <div className={`flex items-center justify-between px-4 py-1.5 rounded-lg shadow-sm ${
-          isMobileLightMode 
-            ? 'bg-white border border-gray-200' 
-            : 'bg-gradient-to-r from-sky-400 via-blue-500 to-cyan-500 dark:bg-slate-800 dark:from-slate-800 dark:via-slate-800 dark:to-slate-800 shadow-md'
-        }`}>
+        <div className={`flex items-center justify-between px-4 py-1.5 rounded-lg shadow-sm ${isMobileLightMode
+          ? 'bg-white border border-gray-200'
+          : 'bg-gradient-to-r from-sky-400 via-blue-500 to-cyan-500 dark:bg-slate-800 dark:from-slate-800 dark:via-slate-800 dark:to-slate-800 shadow-md'
+          }`}>
           <Button
             variant="ghost"
             size="sm"
             onClick={handleBack}
-            className={`flex items-center gap-1.5 rounded-md transition-all duration-200 h-8 ${
-              isMobileLightMode 
-                ? 'text-gray-700 hover:text-gray-900 hover:bg-gray-50' 
-                : 'text-white hover:text-blue-100 hover:bg-white/10'
-            }`}
+            className={`flex items-center gap-1.5 rounded-md transition-all duration-200 h-8 ${isMobileLightMode
+              ? 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+              : 'text-white hover:text-blue-100 hover:bg-white/10'
+              }`}
           >
             <ArrowLeftIcon className="h-4 w-4" />
             <span className="text-sm font-medium">뒤로가기</span>
           </Button>
-          
+
           {/* 메모 상세보기 라벨 */}
           <div className="flex items-center">
-            <div className={`w-1 h-1 rounded-full mr-2 ${
-              isMobileLightMode 
-                ? 'bg-gray-400' 
-                : 'bg-white'
-            }`}></div>
-            <span className={`text-sm font-semibold tracking-wide ${
-              isMobileLightMode 
-                ? 'text-gray-700' 
-                : 'text-white'
-            }`}>메모 상세보기</span>
+            <div className={`w-1 h-1 rounded-full mr-2 ${isMobileLightMode
+              ? 'bg-gray-400'
+              : 'bg-white'
+              }`}></div>
+            <span className={`text-sm font-semibold tracking-wide ${isMobileLightMode
+              ? 'text-gray-700'
+              : 'text-white'
+              }`}>메모 상세보기</span>
           </div>
         </div>
 
         {/* 메모 제목과 액션 버튼 */}
-        <Card className={`shadow-sm border-2 ${
-          isMobileLightMode 
-            ? 'border-gray-200 bg-white' 
-            : 'border-gray-200 dark:border-gray-700'
-        }`}>
+        <Card className={`shadow-sm border-2 ${isMobileLightMode
+          ? 'border-gray-200 bg-white'
+          : 'border-gray-200 dark:border-gray-700'
+          }`}>
           <CardContent className="p-4">
             <div className="space-y-3">
               <div className="flex items-start justify-between">
-                <h2 className={`font-semibold flex-1 pr-3 ${fontSizeClasses.title} ${
-                  isMobileLightMode 
-                    ? 'text-gray-900' 
-                    : 'text-gray-900 dark:text-gray-100'
-                }`}>
+                <h2 className={`font-semibold flex-1 pr-3 ${fontSizeClasses.title} ${isMobileLightMode
+                  ? 'text-gray-900'
+                  : 'text-gray-900 dark:text-gray-100'
+                  }`}>
                   메모정보
                 </h2>
-                
+
                 {/* 글자수와 사진 갯수 */}
-                <div className={`flex items-center gap-2 text-xs ${
-                  isMobileLightMode 
-                    ? 'text-gray-600' 
-                    : 'text-gray-600 dark:text-gray-400'
-                }`}>
+                <div className={`flex items-center gap-2 text-xs ${isMobileLightMode
+                  ? 'text-gray-600'
+                  : 'text-gray-600 dark:text-gray-400'
+                  }`}>
                   <span>{memo.content.length}자</span>
                   {memo.images.length > 0 && (
                     <span>• {memo.images.length}개 사진</span>
                   )}
                 </div>
               </div>
-              
+
               {/* 카테고리와 작성일 */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <CategoryBadge category={memo.category || 'temporary'} size="sm" />
+
+                  {/* 공유 상태 뱃지 (모바일) */}
+                  {user?.uid === memo.userId && (
+                    <ShareSettingsBadge
+                      sharedCount={sharedWith.length}
+                      onClick={() => setIsShareModalOpen(true)}
+                      className="scale-90 origin-left"
+                    />
+                  )}
+                  {isReceivedShare && (
+                    <Badge variant="outline" className="h-8 px-2 bg-green-50 text-green-600 border-green-200 gap-1 flex items-center">
+                      <ShareIcon className="h-3.5 w-3.5" />
+                      <span className="text-[10px] font-bold">받음</span>
+                    </Badge>
+                  )}
+
                   <Button
                     variant="outline"
                     size="sm"
@@ -559,11 +641,10 @@ export const MemoDetailPage: React.FC = () => {
                     <span className="text-xs">캘린더</span>
                   </Button>
                 </div>
-                <div className={`flex items-center gap-2 px-3 py-1 rounded-md ${
-                  isMobileLightMode 
-                    ? 'text-gray-600 bg-gray-50' 
-                    : 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800'
-                }`}>
+                <div className={`flex items-center gap-2 px-3 py-1 rounded-md ${isMobileLightMode
+                  ? 'text-gray-600 bg-gray-50'
+                  : 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800'
+                  }`}>
                   <CalendarIcon className="h-4 w-4" />
                   <span className={`text-xs ${fontSizeClasses.date}`}>
                     {formatFullDate(memo.updatedAt > memo.createdAt ? memo.updatedAt : memo.createdAt)}
@@ -575,19 +656,17 @@ export const MemoDetailPage: React.FC = () => {
         </Card>
 
         {/* 메모 내용 */}
-        <Card className={`flex-1 shadow-sm border-2 ${
-          isMobileLightMode 
-            ? 'border-gray-200 bg-white' 
-            : 'border-gray-200 dark:border-gray-700'
-        }`}>
+        <Card className={`flex-1 shadow-sm border-2 ${isMobileLightMode
+          ? 'border-gray-200 bg-white'
+          : 'border-gray-200 dark:border-gray-700'
+          }`}>
           <CardContent className="p-4 h-full">
             <div className="flex flex-col h-full">
               <div className="flex items-center justify-between mb-3">
-                <label className={`font-medium ${fontSizeClasses.text} ${
-                  isMobileLightMode 
-                    ? 'text-gray-700' 
-                    : 'text-gray-700 dark:text-gray-300'
-                }`}>
+                <label className={`font-medium ${fontSizeClasses.text} ${isMobileLightMode
+                  ? 'text-gray-700'
+                  : 'text-gray-700 dark:text-gray-300'
+                  }`}>
                   메모 내용
                 </label>
                 {/* 액션 버튼들 */}
@@ -595,11 +674,10 @@ export const MemoDetailPage: React.FC = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className={`h-8 w-8 p-0 transition-colors ${
-                      isMobileLightMode 
-                        ? 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' 
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
+                    className={`h-8 w-8 p-0 transition-colors ${isMobileLightMode
+                      ? 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      : 'text-muted-foreground hover:text-foreground'
+                      }`}
                     onClick={handleCopy}
                     title="복사"
                   >
@@ -608,11 +686,10 @@ export const MemoDetailPage: React.FC = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className={`h-8 w-8 p-0 transition-colors ${
-                      isMobileLightMode 
-                        ? 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' 
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
+                    className={`h-8 w-8 p-0 transition-colors ${isMobileLightMode
+                      ? 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      : 'text-muted-foreground hover:text-foreground'
+                      }`}
                     onClick={handleEdit}
                     title="수정"
                   >
@@ -623,11 +700,10 @@ export const MemoDetailPage: React.FC = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className={`h-8 w-8 p-0 transition-colors ${
-                          isMobileLightMode 
-                            ? 'text-gray-600 hover:text-red-600 hover:bg-red-50' 
-                            : 'text-muted-foreground hover:text-destructive'
-                        }`}
+                        className={`h-8 w-8 p-0 transition-colors ${isMobileLightMode
+                          ? 'text-gray-600 hover:text-red-600 hover:bg-red-50'
+                          : 'text-muted-foreground hover:text-destructive'
+                          }`}
                         title="삭제"
                       >
                         <TrashIcon className="h-4 w-4" />
@@ -637,7 +713,7 @@ export const MemoDetailPage: React.FC = () => {
                       <AlertDialogHeader>
                         <AlertDialogTitle>메모 삭제</AlertDialogTitle>
                         <AlertDialogDescription>
-                          이 메모를 삭제하시겠습니까? 
+                          이 메모를 삭제하시겠습니까?
                           {memo.images && memo.images.length > 0 && (
                             <span className="block mt-2 text-destructive">
                               첨부된 이미지 {memo.images.length}개도 함께 삭제됩니다.
@@ -659,20 +735,17 @@ export const MemoDetailPage: React.FC = () => {
                   </AlertDialog>
                 </div>
               </div>
-              <div className={`flex-1 p-1.5 rounded-lg ${
-                isMobileLightMode 
-                  ? 'bg-yellow-50 border-0' 
-                  : 'bg-gray-50 dark:bg-gray-800/60 border-gray-200 dark:border-0'
-              }`}>
-                <div className={`whitespace-pre-wrap leading-relaxed ${fontSizeClasses.content} min-h-[200px] overflow-y-auto ${
-                  isMobileLightMode 
-                    ? 'text-gray-700' 
-                    : 'text-gray-700 dark:text-gray-300'
-                } ${
-                  isMobileLightMode 
-                    ? 'bg-yellow-50 bg-[linear-gradient(transparent_0%,transparent_1.5rem,rgba(229,231,235,0.65)_1.5rem,rgba(229,231,235,0.65)_1.6rem)] bg-[length:100%_1.6rem]' 
-                    : 'dark:bg-gray-800/60 dark:bg-[linear-gradient(transparent_0%,transparent_1.5rem,rgba(75,85,99,0.25)_1.5rem,rgba(75,85,99,0.25)_1.51rem)] dark:bg-[length:100%_1.6rem]'
+              <div className={`flex-1 p-1.5 rounded-lg ${isMobileLightMode
+                ? 'bg-yellow-50 border-0'
+                : 'bg-gray-50 dark:bg-gray-800/60 border-gray-200 dark:border-0'
                 }`}>
+                <div className={`whitespace-pre-wrap leading-relaxed ${fontSizeClasses.content} min-h-[200px] overflow-y-auto ${isMobileLightMode
+                  ? 'text-gray-700'
+                  : 'text-gray-700 dark:text-gray-300'
+                  } ${isMobileLightMode
+                    ? 'bg-yellow-50 bg-[linear-gradient(transparent_0%,transparent_1.5rem,rgba(229,231,235,0.65)_1.5rem,rgba(229,231,235,0.65)_1.6rem)] bg-[length:100%_1.6rem]'
+                    : 'dark:bg-gray-800/60 dark:bg-[linear-gradient(transparent_0%,transparent_1.5rem,rgba(75,85,99,0.25)_1.5rem,rgba(75,85,99,0.25)_1.51rem)] dark:bg-[length:100%_1.6rem]'
+                  }`}>
                   {formatLinksInText(memo.content)}
                 </div>
               </div>
@@ -682,32 +755,28 @@ export const MemoDetailPage: React.FC = () => {
 
         {/* 이미지 갤러리 */}
         {memo.images.length > 0 && (
-          <Card className={`shadow-sm border-2 ${
-            isMobileLightMode 
-              ? 'border-gray-200 bg-white' 
-              : 'border-gray-200 dark:border-gray-700'
-          }`}>
+          <Card className={`shadow-sm border-2 ${isMobileLightMode
+            ? 'border-gray-200 bg-white'
+            : 'border-gray-200 dark:border-gray-700'
+            }`}>
             <CardContent className="p-4">
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <PhotoIcon className={`h-4 w-4 ${
-                    isMobileLightMode 
-                      ? 'text-gray-600' 
-                      : 'text-gray-600 dark:text-gray-400'
-                  }`} />
-                  <span className={`font-medium ${fontSizeClasses.text} ${
-                    isMobileLightMode 
-                      ? 'text-gray-700' 
-                      : 'text-gray-700 dark:text-gray-300'
-                  }`}>
+                  <PhotoIcon className={`h-4 w-4 ${isMobileLightMode
+                    ? 'text-gray-600'
+                    : 'text-gray-600 dark:text-gray-400'
+                    }`} />
+                  <span className={`font-medium ${fontSizeClasses.text} ${isMobileLightMode
+                    ? 'text-gray-700'
+                    : 'text-gray-700 dark:text-gray-300'
+                    }`}>
                     첨부된 이미지 ({memo.images.length}개)
                   </span>
                 </div>
-                <div className={`p-3 rounded-lg border-2 border-dashed ${
-                  isMobileLightMode 
-                    ? 'bg-gray-50 border-gray-300' 
-                    : 'bg-gray-50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600'
-                }`}>
+                <div className={`p-3 rounded-lg border-2 border-dashed ${isMobileLightMode
+                  ? 'bg-gray-50 border-gray-300'
+                  : 'bg-gray-50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600'
+                  }`}>
                   <SimpleImageGallery images={memo.images} onImageClick={handleImageClick} />
                 </div>
               </div>
@@ -737,7 +806,15 @@ export const MemoDetailPage: React.FC = () => {
         </div>
       )}
 
-
+      {/* 공유 설정 모달 */}
+      {memo && (
+        <ShareSettingsModal
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          sharedWith={sharedWith}
+          onUpdateSharedWith={handleUpdateSharedWith}
+        />
+      )}
     </Layout>
   );
 }; 
