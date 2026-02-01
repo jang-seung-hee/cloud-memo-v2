@@ -10,6 +10,8 @@ import { CategorySelector, CategoryType } from '../components/ui/category-badge'
 import { TemplateSidebar } from '../components/ui/sidebar';
 import { IMemoFormData } from '../types/memo';
 import { useMemos, useTemplates } from '../hooks/useFirestore';
+import { useAuth } from '../hooks/useAuth';
+import { firestoreService } from '../services/firebase/firestore';
 import { useToast } from '../hooks/use-toast';
 import { useDevice } from '../hooks/useDevice';
 import { useDynamicTextareaHeight } from '../hooks/useDynamicTextareaHeight';
@@ -22,6 +24,7 @@ import { ShareSettingsModal } from '../components/memo/ShareSettingsModal';
 
 export const MemoCreatePage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { toast } = useToast();
   const { createMemo, loading: isSaving } = useMemos();
   const { data: templates, loading: templatesLoading } = useTemplates();
@@ -312,7 +315,7 @@ export const MemoCreatePage: React.FC = () => {
       const title = extractTitle(formData.content);
 
       // Firebase Firestore에 메모 저장 (전체 content 저장)
-      await createMemo({
+      const newMemoId = await createMemo({
         title,
         content: formData.content.trim(), // 전체 content를 그대로 저장
         images: formData.images,
@@ -321,6 +324,25 @@ export const MemoCreatePage: React.FC = () => {
         sharedWith,
         sharedWithUids: sharedWith.map(u => u.uid)
       });
+
+      // 공유된 사용자에게 알림 전송
+      if (newMemoId && sharedWith.length > 0 && user) {
+        try {
+          await Promise.all(sharedWith.map(targetUser =>
+            firestoreService.createNotification({
+              type: 'share',
+              title: '새로운 메모 공유',
+              body: `${user.displayName || user.email?.split('@')[0]}님이 메모를 공유했습니다.`,
+              senderId: user.uid,
+              senderName: user.displayName || user.email?.split('@')[0] || '익명',
+              receiverId: targetUser.uid,
+              memoId: newMemoId
+            })
+          ));
+        } catch (error) {
+          console.error('알림 전송 중 오류 발생:', error);
+        }
+      }
 
       console.log('🎉 메모 저장 성공!');
       toast({
@@ -538,6 +560,7 @@ export const MemoCreatePage: React.FC = () => {
           onClose={() => setIsShareModalOpen(false)}
           sharedWith={sharedWith}
           onUpdateSharedWith={setSharedWith}
+          currentUser={null} // CreatePage에서는 저장 시점에 발송하므로 여기서는 null 또는 생략 가능
         />
       </Layout>
     );
@@ -851,6 +874,7 @@ export const MemoCreatePage: React.FC = () => {
           onClose={() => setIsShareModalOpen(false)}
           sharedWith={sharedWith}
           onUpdateSharedWith={setSharedWith}
+          currentUser={null} // CreatePage에서는 저장 시점에 발송하므로 여기서는 null 또는 생략 가능
         />
       </div>
     </Layout>

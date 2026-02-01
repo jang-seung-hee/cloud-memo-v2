@@ -20,6 +20,20 @@ export interface IUserProfile extends FirebaseDocument {
     language: 'ko' | 'en';
     notifications: boolean;
   };
+  fcmTokens?: string[];
+}
+
+// 알림 인터페이스
+export interface INotification extends FirebaseDocument {
+  type: 'share' | 'update' | 'system';
+  title: string;
+  body: string;
+  senderId: string;
+  senderName: string;
+  receiverId: string;
+  memoId?: string;
+  isRead: boolean;
+  data?: any;
 }
 
 // 공유 사용자 인터페이스
@@ -142,7 +156,8 @@ export const COLLECTIONS = {
   USERS: 'users',
   MEMOS: 'memos',
   TEMPLATES: 'templates',
-  CATEGORIES: 'categories'
+  CATEGORIES: 'categories',
+  NOTIFICATIONS: 'notifications'
 } as const;
 
 // 컬렉션 이름 타입

@@ -542,6 +542,20 @@ export const MemoDetailPage: React.FC = () => {
             onClose={() => setIsShareModalOpen(false)}
             sharedWith={sharedWith}
             onUpdateSharedWith={handleUpdateSharedWith}
+            memoId={memo.id}
+            memoTitle={memo.title}
+            currentUser={user ? {
+              userId: user.uid,
+              displayName: user.displayName || user.email?.split('@')[0] || '익명',
+              email: user.email || '',
+              photoURL: user.photoURL || '',
+              emailVerified: user.emailVerified,
+              lastLoginAt: {} as any, // 임시
+              createdAt: {} as any,
+              updatedAt: {} as any,
+              id: user.uid,
+              settings: { theme: 'light', language: 'ko', notifications: true }
+            } : null}
           />
         )}
       </Layout>

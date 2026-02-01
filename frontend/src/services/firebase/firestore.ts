@@ -36,8 +36,10 @@ import {
   IQueryOptions,
   FirestoreListener,
   IBatchOperation,
+  FirebaseDocument,
   COLLECTIONS,
-  IFirebaseCategory
+  IFirebaseCategory,
+  INotification
 } from '../../types/firebase';
 
 export class FirestoreService {
@@ -780,6 +782,102 @@ export class FirestoreService {
       console.error('사용자 검색 오류:', error);
       throw this.createFirestoreError(error);
     }
+  }
+
+  // === 알림 관련 메서드 ===
+
+  // FCM 토큰 업데이트
+  async updateFcmToken(userId: string, token: string): Promise<void> {
+    try {
+      const userDocRef = doc(db, COLLECTIONS.USERS, userId);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data() as IUserProfile;
+        const tokens = userData.fcmTokens || [];
+
+        if (!tokens.includes(token)) {
+          await updateDoc(userDocRef, {
+            fcmTokens: [...tokens, token],
+            updatedAt: Timestamp.now()
+          });
+        }
+      }
+    } catch (error) {
+      console.error('FCM 토큰 업데이트 오류:', error);
+    }
+  }
+
+  // 알림 생성
+  async createNotification(data: Omit<INotification, keyof FirebaseDocument | 'isRead'>): Promise<string> {
+    try {
+      const notificationData = {
+        ...data,
+        isRead: false,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now()
+      };
+
+      const docRef = await addDoc(collection(db, COLLECTIONS.NOTIFICATIONS), notificationData);
+      return docRef.id;
+    } catch (error) {
+      console.error('알림 생성 오류:', error);
+      throw this.createFirestoreError(error);
+    }
+  }
+
+  // 사용자별 알림 목록 조회
+  async getNotifications(userId: string): Promise<INotification[]> {
+    try {
+      const q = query(
+        collection(db, COLLECTIONS.NOTIFICATIONS),
+        where('receiverId', '==', userId),
+        orderBy('createdAt', 'desc'),
+        limit(50)
+      );
+
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as INotification[];
+    } catch (error) {
+      console.error('알림 조회 오류:', error);
+      throw this.createFirestoreError(error);
+    }
+  }
+
+  // 알림 읽음 표시
+  async markNotificationAsRead(notificationId: string): Promise<void> {
+    try {
+      const docRef = doc(db, COLLECTIONS.NOTIFICATIONS, notificationId);
+      await updateDoc(docRef, {
+        isRead: true,
+        updatedAt: Timestamp.now()
+      });
+    } catch (error) {
+      console.error('알림 읽음 표시 오류:', error);
+    }
+  }
+
+  // 알림 실시간 리스너
+  onNotificationsSnapshot(userId: string, callback: FirestoreListener<INotification>): Unsubscribe {
+    const q = query(
+      collection(db, COLLECTIONS.NOTIFICATIONS),
+      where('receiverId', '==', userId),
+      orderBy('createdAt', 'desc'),
+      limit(50)
+    );
+
+    return onSnapshot(q, (snapshot) => {
+      const notifications = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as INotification[];
+      callback(notifications);
+    }, (error) => {
+      console.error('알림 실시간 리스너 오류:', error);
+    });
   }
 
   // === 유틸리티 메서드 ===

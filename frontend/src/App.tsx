@@ -14,6 +14,8 @@ import { QuoteModal } from './components/common/QuoteModal';
 import { TemplateProvider } from './contexts/TemplateContext';
 import { Toaster } from './components/ui/toaster';
 import { useDevice } from './hooks/useDevice';
+import { useAuth } from './hooks/useAuth';
+import { useNotifications } from './hooks/useNotifications';
 import { measurePageLoad, monitorMemoryUsage, finalPerformanceValidation, checkOptimizationCompletion } from './utils/performanceTest';
 
 function App() {
@@ -24,6 +26,8 @@ function App() {
   }
   
   const { isDesktop } = useDevice();
+  const { user } = useAuth();
+  const { notifications, unreadCount } = useNotifications(user?.uid);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
 
   useEffect(() => {

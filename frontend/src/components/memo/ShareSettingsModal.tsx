@@ -22,13 +22,19 @@ interface ShareSettingsModalProps {
     onClose: () => void;
     sharedWith: ISharedUser[];
     onUpdateSharedWith: (sharedWith: ISharedUser[]) => void;
+    memoId?: string;
+    memoTitle?: string;
+    currentUser?: IUserProfile | null;
 }
 
 export const ShareSettingsModal: React.FC<ShareSettingsModalProps> = ({
     isOpen,
     onClose,
     sharedWith,
-    onUpdateSharedWith
+    onUpdateSharedWith,
+    memoId,
+    memoTitle,
+    currentUser
 }) => {
     const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState('');
@@ -107,9 +113,34 @@ export const ShareSettingsModal: React.FC<ShareSettingsModalProps> = ({
         ));
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
+        // 새로 추가된 사용자 찾기
+        const newlyAddedUsers = localSharedWith.filter(
+            newUser => !sharedWith.some(oldUser => oldUser.uid === newUser.uid)
+        );
+
         onUpdateSharedWith(localSharedWith);
         onClose();
+
+        // 새 사용자에게 알림 전송
+        if (memoId && currentUser && newlyAddedUsers.length > 0) {
+            try {
+                await Promise.all(newlyAddedUsers.map(targetUser =>
+                    firestoreService.createNotification({
+                        type: 'share',
+                        title: '새로운 메모 공유',
+                        body: `${currentUser.displayName}님이 '${memoTitle || '제목 없음'}' 메모를 공유했습니다.`,
+                        senderId: currentUser.userId,
+                        senderName: currentUser.displayName,
+                        receiverId: targetUser.uid,
+                        memoId: memoId
+                    })
+                ));
+            } catch (error) {
+                console.error('알림 전송 중 오류 발생:', error);
+            }
+        }
+
         toast({
             title: "공유 설정 변경됨",
             description: "메모를 저장할 때 공유 설정이 반영됩니다."

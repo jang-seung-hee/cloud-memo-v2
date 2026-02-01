@@ -7,5 +7,9 @@
     "location": "asia-northeast3",
     "rules": "backend/security/firestore.rules",
     "indexes": "firestore.indexes.json"
+  },
+  "functions": {
+    "source": "functions",
+    "runtime": "nodejs20"
   }
 }

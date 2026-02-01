@@ -992,6 +992,20 @@ export const MemoEditPage: React.FC = () => {
         onClose={() => setIsShareModalOpen(false)}
         sharedWith={sharedWith}
         onUpdateSharedWith={setSharedWith}
+        memoId={memoId}
+        memoTitle={extractTitle(formData.content)}
+        currentUser={user ? {
+          userId: user.uid,
+          displayName: user.displayName || user.email?.split('@')[0] || '익명',
+          email: user.email || '',
+          photoURL: user.photoURL || '',
+          emailVerified: user.emailVerified,
+          lastLoginAt: {} as any,
+          createdAt: {} as any,
+          updatedAt: {} as any,
+          id: user.uid,
+          settings: { theme: 'light', language: 'ko', notifications: true }
+        } : null}
       />
     </Layout>
   );

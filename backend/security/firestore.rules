@@ -95,6 +95,25 @@ service cloud.firestore {
         resource.data.userId == request.auth.uid;
     }
     
+    // === 알림 컬렉션 ===
+    match /notifications/{notificationId} {
+      // 읽기: 수신자 본인만
+      allow read: if isAuthenticated() && 
+        resource.data.receiverId == request.auth.uid;
+      
+      // 생성: 모든 인증된 사용자 (공유 시 알림 전송을 위해)
+      allow create: if isAuthenticated();
+      
+      // 업데이트: 수신자 본인이 읽음 처리하는 경우만 허용
+      allow update: if isAuthenticated() && 
+        resource.data.receiverId == request.auth.uid &&
+        request.resource.data.receiverId == request.auth.uid;
+      
+      // 삭제: 수신자 본인만
+      allow delete: if isAuthenticated() && 
+        resource.data.receiverId == request.auth.uid;
+    }
+    
     // === 향후 확장을 위한 규칙들 ===
     
     // === 공개 데이터 컬렉션 (향후 확장용) ===
