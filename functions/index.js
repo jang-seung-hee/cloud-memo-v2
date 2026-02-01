@@ -1,6 +1,10 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-admin.initializeApp();
+
+// 명시적으로 프로젝트 ID 지정
+admin.initializeApp({
+    projectId: 'cloud-memo-v2'
+});
 
 /**
  * Firestore의 'notifications' 컬렉션에 새 문서가 생성될 때 실행됩니다.
