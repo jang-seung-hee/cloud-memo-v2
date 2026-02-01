@@ -40,47 +40,63 @@ exports.sendShareNotification = functions.firestore
                 return null;
             }
 
-            // 2. FCM 메시지 구성
-            const message = {
-                notification: {
-                    title: notification.title || '새 알림',
-                    body: notification.body || '',
-                },
-                data: {
-                    memoId: notification.memoId || '',
-                    type: notification.type || 'system',
-                    click_action: 'FLUTTER_NOTIFICATION_CLICK', // 웹/앱 호환용
-                },
-                tokens: tokens,
-            };
-
-            console.log('메시지 발송 시도:', message);
-
-            // 3. 여러 기기로 푸시 발송
-            const response = await admin.messaging().sendMulticast(message);
+            // 2. FCM 메시지 구성 - 각 토큰별로 개별 발송
+            console.log('FCM 토큰 수:', tokens.length);
             
-            console.log('FCM 발송 결과:', response.successCount, '성공 /', response.failureCount, '실패');
+            const sendPromises = tokens.map(token => {
+                const message = {
+                    notification: {
+                        title: notification.title || '새 알림',
+                        body: notification.body || '',
+                    },
+                    data: {
+                        memoId: notification.memoId || '',
+                        type: notification.type || 'system',
+                    },
+                    token: token,
+                };
+                
+                console.log('메시지 발송 시도 (token):', token.substring(0, 20) + '...');
+                return admin.messaging().send(message);
+            });
 
-            // 4. 유효하지 않은 토큰 정리
-            if (response.failureCount > 0) {
-                const failedTokens = [];
-                response.responses.forEach((resp, idx) => {
-                    if (!resp.success) {
-                        console.log('발송 실패 토큰:', tokens[idx], resp.error.code);
-                        // 토큰이 유효하지 않은 경우 (NotRegistered, InvalidRegistration 등)
-                        if (resp.error.code === 'messaging/invalid-registration-token' ||
-                            resp.error.code === 'messaging/registration-token-not-registered') {
-                            failedTokens.push(tokens[idx]);
-                        }
+            // 3. 모든 메시지 발송 시도
+            const results = await Promise.allSettled(sendPromises);
+            
+            // 4. 결과 집계
+            let successCount = 0;
+            let failureCount = 0;
+            const failedTokens = [];
+            
+            results.forEach((result, idx) => {
+                if (result.status === 'fulfilled') {
+                    successCount++;
+                    console.log('발송 성공:', tokens[idx].substring(0, 20) + '...');
+                } else {
+                    failureCount++;
+                    console.log('발송 실패:', tokens[idx].substring(0, 20) + '...', result.reason);
+                    
+                    // 유효하지 않은 토큰 확인
+                    const error = result.reason;
+                    if (error && error.code && (
+                        error.code === 'messaging/invalid-registration-token' ||
+                        error.code === 'messaging/registration-token-not-registered'
+                    )) {
+                        failedTokens.push(tokens[idx]);
                     }
-                });
-
-                if (failedTokens.length > 0) {
-                    await admin.firestore().collection('users').doc(receiverId).update({
-                        fcmTokens: admin.firestore.FieldValue.arrayRemove(...failedTokens)
-                    });
-                    console.log('유효하지 않은 토큰 제거 완료:', failedTokens.length, '개');
                 }
+            });
+            
+            console.log('FCM 발송 결과:', successCount, '성공 /', failureCount, '실패');
+            
+            const response = { successCount, failureCount, responses: results };
+            
+            // 5. 유효하지 않은 토큰 정리
+            if (failedTokens.length > 0) {
+                await admin.firestore().collection('users').doc(receiverId).update({
+                    fcmTokens: admin.firestore.FieldValue.arrayRemove(...failedTokens)
+                });
+                console.log('유효하지 않은 토큰 제거 완료:', failedTokens.length, '개');
             }
 
             return response;

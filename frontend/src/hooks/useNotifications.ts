@@ -40,12 +40,29 @@ export const useNotifications = (userId: string | undefined) => {
     const unsubscribe = onMessage(messaging, (payload) => {
       console.log('포그라운드 메시지 수신:', payload);
       
+      // 메모 ID 추출
+      const memoId = payload.data?.memoId;
+      
       // 토스트 알림 표시
       if (payload.notification) {
+        const title = payload.notification.title || '';
+        const body = payload.notification.body || '';
+        const description = memoId 
+          ? `${body}\n\n📝 메모 보기: /memo/${memoId}` 
+          : body;
+        
         toast({
-          title: payload.notification.title,
-          description: payload.notification.body,
+          title,
+          description,
+          duration: 5000, // 5초 동안 표시
         });
+        
+        // 메모 ID가 있으면 자동으로 이동 (선택사항)
+        // if (memoId) {
+        //   setTimeout(() => {
+        //     window.location.href = `/memo/${memoId}`;
+        //   }, 1000);
+        // }
       }
     });
 
