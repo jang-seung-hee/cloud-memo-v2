@@ -40,16 +40,22 @@ service cloud.firestore {
       allow create: if isAuthenticated() && 
         request.resource.data.userId == request.auth.uid;
       
-      // 업데이트: 본인 메모이거나 공유받은 목록에 포함된 경우
+      // 업데이트: 본인 메모이거나 공유받은 권한 중 수정 권한이 있는 경우
       allow update: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
-        (resource.data.sharedWithUids != null && request.auth.uid in resource.data.sharedWithUids)
+        (resource.data.sharedWith != null && 
+         resource.data.sharedWith.filter(u, u.uid == request.auth.uid && u.permissions.edit == true).size() > 0 &&
+         // 공유받은 사용자는 소유자나 공유 설정을 변경할 수 없음
+         request.resource.data.userId == resource.data.userId &&
+         (request.resource.data.sharedWith == resource.data.sharedWith || !('sharedWith' in request.resource.data)) &&
+         (request.resource.data.sharedWithUids == resource.data.sharedWithUids || !('sharedWithUids' in request.resource.data)))
       );
       
-      // 삭제: 본인 메모이거나 공유받은 목록에 포함된 경우
+      // 삭제: 본인 메모이거나 공유받은 권한 중 삭제 권한이 있는 경우
       allow delete: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
-        (resource.data.sharedWithUids != null && request.auth.uid in resource.data.sharedWithUids)
+        (resource.data.sharedWith != null && 
+         resource.data.sharedWith.filter(u, u.uid == request.auth.uid && u.permissions.delete == true).size() > 0)
       );
     }
     

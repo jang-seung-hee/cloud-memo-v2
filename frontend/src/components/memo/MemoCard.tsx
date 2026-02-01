@@ -49,6 +49,22 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
     return user && memo.userId !== user.uid;
   }, [user, memo.userId]);
 
+  // 삭제 권한 확인
+  const canDelete = useMemo(() => {
+    if (!user || !memo) return false;
+    if (memo.userId === user.uid) return true;
+    const sharedUser = memo.sharedWith?.find(u => u.uid === user.uid);
+    return sharedUser?.permissions.delete === true;
+  }, [user, memo]);
+
+  // 수정 권한 확인
+  const canEdit = useMemo(() => {
+    if (!user || !memo) return false;
+    if (memo.userId === user.uid) return true;
+    const sharedUser = memo.sharedWith?.find(u => u.uid === user.uid);
+    return sharedUser?.permissions.edit === true;
+  }, [user, memo]);
+
   // 날짜 포맷팅 함수를 useMemo로 최적화
   const formattedDate = useMemo(() => {
     // 작성일자와 수정일자 중 최신 날짜 선택
@@ -327,55 +343,59 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
                 >
                   <DocumentDuplicateIcon className="h-3.5 w-3.5" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground transition-colors"
-                  onClick={handleEdit}
-                  title="수정"
-                >
-                  <PencilIcon className="h-3.5 w-3.5" />
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive transition-colors"
-                      onClick={(e) => e.stopPropagation()}
-                      title="삭제"
-                    >
-                      <TrashIcon className="h-3.5 w-3.5" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>메모 삭제</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        이 메모를 삭제하시겠습니까?
-                        {memo.images && memo.images.length > 0 && (
-                          <span className="block mt-2 text-destructive">
-                            첨부된 이미지 {memo.images.length}개도 함께 삭제됩니다.
-                          </span>
-                        )}
-                        이 작업은 되돌릴 수 없습니다.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel onClick={(e) => e.stopPropagation()}>취소</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete();
-                        }}
-                        disabled={isDeleting}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+                {canEdit && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={handleEdit}
+                    title="수정"
+                  >
+                    <PencilIcon className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+                {canDelete && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                        title="삭제"
                       >
-                        {isDeleting ? '삭제 중...' : '삭제'}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                        <TrashIcon className="h-3.5 w-3.5" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>메모 삭제</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          이 메모를 삭제하시겠습니까?
+                          {memo.images && memo.images.length > 0 && (
+                            <span className="block mt-2 text-destructive">
+                              첨부된 이미지 {memo.images.length}개도 함께 삭제됩니다.
+                            </span>
+                          )}
+                          이 작업은 되돌릴 수 없습니다.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel onClick={(e) => e.stopPropagation()}>취소</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete();
+                          }}
+                          disabled={isDeleting}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+                        >
+                          {isDeleting ? '삭제 중...' : '삭제'}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
               </div>
             </div>
           </>

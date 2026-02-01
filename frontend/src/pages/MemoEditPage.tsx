@@ -140,6 +140,22 @@ export const MemoEditPage: React.FC = () => {
 
         if (memo) {
           console.log('✅ 메모 찾음:', memo);
+
+          // 권한 체크
+          const isOwner = memo.userId === user.uid;
+          const sharedUser = memo.sharedWith?.find(u => u.uid === user.uid);
+          const canEdit = isOwner || sharedUser?.permissions.edit === true;
+
+          if (!canEdit) {
+            toast({
+              title: "권한 없음",
+              description: "이 메모를 수정할 권한이 없습니다.",
+              variant: "destructive"
+            });
+            navigate('/memos');
+            return;
+          }
+
           // 본문만 편집 필드에 표시 (제목은 제외)
           setFormData({
             content: memo.content || '',
