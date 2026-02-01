@@ -325,9 +325,26 @@ export const MemoCreatePage: React.FC = () => {
         sharedWithUids: sharedWith.map(u => u.uid)
       });
 
-      // 공유된 사용자에게 알림 전송
-      // 주의: ShareSettingsModal에서도 알림을 보내므로 여기서는 보내지 않음
-      // (중복 알림 방지)
+      // 공유된 사용자에게 알림 전송 (메모 생성 시)
+      if (newMemoId && sharedWith.length > 0 && user) {
+        try {
+          console.log('📢 공유 알림 전송 중... 대상:', sharedWith.length, '명');
+          await Promise.all(sharedWith.map(targetUser =>
+            firestoreService.createNotification({
+              type: 'share',
+              title: '새로운 메모 공유',
+              body: `${user.displayName || user.email?.split('@')[0]}님이 메모를 공유했습니다.`,
+              senderId: user.uid,
+              senderName: user.displayName || user.email?.split('@')[0] || '익명',
+              receiverId: targetUser.uid,
+              memoId: newMemoId
+            })
+          ));
+          console.log('✅ 공유 알림 전송 완료');
+        } catch (error) {
+          console.error('알림 전송 중 오류 발생:', error);
+        }
+      }
 
       console.log('🎉 메모 저장 성공!');
       toast({
