@@ -68,8 +68,8 @@ export const SnippetsPage: React.FC = () => {
                                 key={category}
                                 onClick={() => setSelectedCategory(category)}
                                 className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${selectedCategory === category
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                     }`}
                             >
                                 {category === 'all' ? '전체' : category}
@@ -99,9 +99,22 @@ export const SnippetsPage: React.FC = () => {
                                 <div key={template.id} className="bg-white border boundary-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
                                     <div className="flex items-center gap-2 mb-2">
                                         <h3 className="font-semibold text-base truncate flex-1">{template.title}</h3>
-                                        <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-none font-normal shrink-0">
-                                            {template.category || '기타'}
-                                        </Badge>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-none font-normal">
+                                                {template.category || '기타'}
+                                            </Badge>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleCopy(template.content);
+                                                }}
+                                                className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-100 transition-colors"
+                                                title="클립보드 복사"
+                                            >
+                                                <DocumentDuplicateIcon className="h-3 w-3" />
+                                                복사
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <p className="text-gray-600 text-sm line-clamp-3 mb-3 whitespace-pre-wrap leading-relaxed">

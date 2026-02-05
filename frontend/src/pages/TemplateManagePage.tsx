@@ -6,14 +6,15 @@ import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../components/ui/alert-dialog';
-import { 
-  PlusIcon, 
-  MagnifyingGlassIcon, 
-  PencilIcon, 
+import {
+  PlusIcon,
+  MagnifyingGlassIcon,
+  PencilIcon,
   TrashIcon,
   BookmarkIcon,
   XMarkIcon,
-  Cog6ToothIcon
+  Cog6ToothIcon,
+  DocumentDuplicateIcon
 } from '@heroicons/react/24/outline';
 import { ITemplate, ITemplateFormData } from '../types/template';
 import { firestoreService } from '../services/firebase/firestore';
@@ -47,7 +48,7 @@ export const TemplateManagePage: React.FC = () => {
     content: '',
     category: ''
   });
-  
+
   // 모바일 + 라이트 모드일 때의 스타일 조건
   const isMobileLightMode = !isDesktop && !isDark;
 
@@ -61,18 +62,18 @@ export const TemplateManagePage: React.FC = () => {
 
       try {
         console.log('🔄 TemplateManagePage 템플릿 로드 시작...');
-        
+
         // 로컬 스토리지에서 상용구 관련 데이터 삭제
-        const keysToRemove = Object.keys(localStorage).filter(key => 
+        const keysToRemove = Object.keys(localStorage).filter(key =>
           key.includes('template') || key.includes('상용구') || key.includes('템플릿')
         );
         keysToRemove.forEach(key => {
           console.log('🗑️ 로컬 스토리지 데이터 삭제:', key);
           localStorage.removeItem(key);
         });
-        
+
         const userTemplates = await firestoreService.getTemplatesByUserId(user.uid);
-        
+
         if (userTemplates.length === 0) {
           // 사용자의 템플릿이 없으면 빈 배열로 설정
           console.log('📝 사용자 템플릿이 없습니다.');
@@ -87,12 +88,12 @@ export const TemplateManagePage: React.FC = () => {
             createdAt: template.createdAt.toDate(),
             updatedAt: template.updatedAt.toDate()
           }));
-          
+
           // 클라이언트에서 정렬 (최신순)
           const sortedTemplates = convertedTemplates.sort((a, b) => {
             return b.updatedAt.getTime() - a.updatedAt.getTime();
           });
-          
+
           setTemplates(sortedTemplates);
         }
       } catch (error) {
@@ -110,13 +111,32 @@ export const TemplateManagePage: React.FC = () => {
     loadTemplates();
   }, [user, toast]);
 
+  // 클립보드 복사 함수
+  const handleCopy = (content: string) => {
+    // HTML 엔티티 등이 포함될 수 있으므로 일반 텍스트로 처리
+    navigator.clipboard.writeText(content).then(() => {
+      toast({
+        title: "복사 완료",
+        description: "내용이 클립보드에 복사되었습니다.",
+        duration: 2000,
+      });
+    }).catch((err) => {
+      console.error('복사 실패:', err);
+      toast({
+        title: "복사 실패",
+        description: "클립보드 복사 중 오류가 발생했습니다.",
+        variant: "destructive"
+      });
+    });
+  };
+
   // 카테고리 목록 생성 (사용자 정의 카테고리 + 전체)
   const categories = ['전체', ...activeCategories.map(cat => cat.name)];
 
   // 필터링된 템플릿
   const filteredTemplates = templates.filter(template => {
     const matchesSearch = template.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         template.content.toLowerCase().includes(searchTerm.toLowerCase());
+      template.content.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === '전체' || template.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -159,11 +179,11 @@ export const TemplateManagePage: React.FC = () => {
             createdAt: template.createdAt.toDate(),
             updatedAt: template.updatedAt.toDate()
           }));
-          
+
           const sortedTemplates = convertedTemplates.sort((a, b) => {
             return b.updatedAt.getTime() - a.updatedAt.getTime();
           });
-          
+
           setTemplates(sortedTemplates);
         } catch (error) {
           console.error('템플릿 새로고침 실패:', error);
@@ -207,7 +227,7 @@ export const TemplateManagePage: React.FC = () => {
   // 폼 제출 처리
   const handleSubmit = async () => {
     if (!user) return;
-    
+
     if (!formData.title.trim() || !formData.content.trim() || !formData.category.trim()) {
       toast({
         title: "입력 오류",
@@ -226,19 +246,19 @@ export const TemplateManagePage: React.FC = () => {
           category: formData.category.trim()
         });
 
-        const updatedTemplates = templates.map(t => 
-          t.id === editingTemplate.id 
-            ? { 
-                ...t, 
-                title: formData.title.trim(),
-                content: formData.content.trim(),
-                category: formData.category.trim(),
-                updatedAt: new Date()
-              }
+        const updatedTemplates = templates.map(t =>
+          t.id === editingTemplate.id
+            ? {
+              ...t,
+              title: formData.title.trim(),
+              content: formData.content.trim(),
+              category: formData.category.trim(),
+              updatedAt: new Date()
+            }
             : t
         );
         setTemplates(updatedTemplates);
-        
+
         toast({
           title: "수정 완료",
           description: "상용구가 성공적으로 수정되었습니다."
@@ -260,13 +280,13 @@ export const TemplateManagePage: React.FC = () => {
           createdAt: new Date(),
           updatedAt: new Date()
         };
-        
+
         setTemplates(prevTemplates => {
           const updatedTemplates = [newTemplate, ...prevTemplates];
           console.log('📝 상용구 추가 후 목록:', updatedTemplates);
           return updatedTemplates;
         });
-        
+
         toast({
           title: "추가 완료",
           description: "상용구가 성공적으로 추가되었습니다."
@@ -359,54 +379,50 @@ export const TemplateManagePage: React.FC = () => {
               <DialogTrigger asChild>
                 <Button
                   onClick={handleAddTemplate}
-                  className={`flex items-center gap-2 ${
-                    isMobileLightMode 
-                      ? 'bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white shadow-md' 
+                  className={`flex items-center gap-2 ${isMobileLightMode
+                      ? 'bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white shadow-md'
                       : ''
-                  }`}
+                    }`}
                 >
                   <PlusIcon className="h-4 w-4" />
                   새 상용구
                 </Button>
               </DialogTrigger>
             </Dialog>
-            
+
             <Button
               onClick={() => setIsCategoryManagerOpen(true)}
               variant="outline"
-              className={`flex items-center gap-2 ${
-                isMobileLightMode 
-                  ? 'border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900' 
+              className={`flex items-center gap-2 ${isMobileLightMode
+                  ? 'border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                   : ''
-              }`}
+                }`}
             >
               <Cog6ToothIcon className="h-4 w-4" />
               카테고리관리
             </Button>
           </div>
-          
+
           {/* 검색 입력 */}
           <div className="flex-1 w-full sm:max-w-md">
             <div className="relative">
-              <MagnifyingGlassIcon className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 ${
-                isMobileLightMode 
-                  ? 'text-gray-400' 
+              <MagnifyingGlassIcon className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 ${isMobileLightMode
+                  ? 'text-gray-400'
                   : 'text-muted-foreground'
-              }`} />
+                }`} />
               <Input
                 type="text"
                 placeholder="상용구 검색..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className={`pl-10 ${
-                  isMobileLightMode 
-                    ? 'border-gray-300 focus:border-blue-500 bg-white' 
+                className={`pl-10 ${isMobileLightMode
+                    ? 'border-gray-300 focus:border-blue-500 bg-white'
                     : ''
-                }`}
+                  }`}
               />
             </div>
           </div>
-          
+
           {/* 카테고리 필터 */}
           {categories.length > 1 && (
             <div className="flex flex-wrap gap-1">
@@ -417,51 +433,47 @@ export const TemplateManagePage: React.FC = () => {
                   variant={selectedCategory === category ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSelectedCategory(category)}
-                  className={`px-2 py-1 text-xs flex-1 min-w-0 ${
-                    selectedCategory === category ? (
-                      isMobileLightMode 
-                        ? 'bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white shadow-md' 
+                  className={`px-2 py-1 text-xs flex-1 min-w-0 ${selectedCategory === category ? (
+                      isMobileLightMode
+                        ? 'bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white shadow-md'
                         : ''
                     ) : (
-                      isMobileLightMode 
-                        ? 'border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900' 
+                      isMobileLightMode
+                        ? 'border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                         : ''
                     )
-                  }`}
+                    }`}
                 >
                   <span className="truncate">{category}</span>
                 </Button>
               ))}
             </div>
           )}
-          
+
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogContent className={`max-w-2xl ${
-              isMobileLightMode 
-                ? 'bg-white border-gray-200 shadow-lg' 
+            <DialogContent className={`max-w-2xl ${isMobileLightMode
+                ? 'bg-white border-gray-200 shadow-lg'
                 : ''
-            }`}>
+              }`}>
               <DialogHeader>
-                <DialogTitle className={`${
-                  isMobileLightMode 
-                    ? 'text-gray-800' 
+                <DialogTitle className={`${isMobileLightMode
+                    ? 'text-gray-800'
                     : 'text-foreground'
-                }`}>
+                  }`}>
                   {editingTemplate ? '상용구 수정' : '새 상용구 추가'}
                 </DialogTitle>
               </DialogHeader>
               <div className="sr-only">
                 {editingTemplate ? '기존 상용구를 수정할 수 있습니다.' : '새로운 상용구를 추가할 수 있습니다.'}
               </div>
-              
+
               <div className="space-y-4">
                 {/* 제목 입력 */}
                 <div className="space-y-2">
-                  <label htmlFor="title" className={`text-sm font-medium ${
-                    isMobileLightMode 
-                      ? 'text-gray-700' 
+                  <label htmlFor="title" className={`text-sm font-medium ${isMobileLightMode
+                      ? 'text-gray-700'
                       : 'text-foreground'
-                  }`}>
+                    }`}>
                     제목
                   </label>
                   <Input
@@ -470,8 +482,8 @@ export const TemplateManagePage: React.FC = () => {
                     placeholder="상용구 제목을 입력하세요"
                     value={formData.title}
                     onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                    className={isMobileLightMode 
-                      ? 'border-gray-300 focus:border-blue-500 bg-white' 
+                    className={isMobileLightMode
+                      ? 'border-gray-300 focus:border-blue-500 bg-white'
                       : ''
                     }
                   />
@@ -479,11 +491,10 @@ export const TemplateManagePage: React.FC = () => {
 
                 {/* 카테고리 선택 */}
                 <div className="space-y-2">
-                  <label className={`text-sm font-medium ${
-                    isMobileLightMode 
-                      ? 'text-gray-700' 
+                  <label className={`text-sm font-medium ${isMobileLightMode
+                      ? 'text-gray-700'
                       : 'text-foreground'
-                  }`}>
+                    }`}>
                     카테고리
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -497,27 +508,25 @@ export const TemplateManagePage: React.FC = () => {
                             variant={formData.category === cat.name ? "default" : "outline"}
                             size="sm"
                             onClick={() => setFormData(prev => ({ ...prev, category: cat.name }))}
-                            className={`text-xs ${
-                              formData.category === cat.name ? (
-                                isMobileLightMode 
-                                  ? 'bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white shadow-md' 
+                            className={`text-xs ${formData.category === cat.name ? (
+                                isMobileLightMode
+                                  ? 'bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white shadow-md'
                                   : ''
                               ) : (
-                                isMobileLightMode 
-                                  ? 'border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900' 
+                                isMobileLightMode
+                                  ? 'border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                                   : ''
                               )
-                            }`}
+                              }`}
                           >
                             {cat.name}
                           </Button>
                         ))
                       ) : (
-                        <div className={`px-4 py-2 text-sm ${
-                          isMobileLightMode 
-                            ? 'text-gray-500' 
+                        <div className={`px-4 py-2 text-sm ${isMobileLightMode
+                            ? 'text-gray-500'
                             : 'text-muted-foreground'
-                        }`}>
+                          }`}>
                           카테고리가 없습니다
                         </div>
                       )
@@ -531,27 +540,25 @@ export const TemplateManagePage: React.FC = () => {
                             variant={formData.category === cat.name ? "default" : "outline"}
                             size="sm"
                             onClick={() => setFormData(prev => ({ ...prev, category: cat.name }))}
-                            className={`text-xs ${
-                              formData.category === cat.name ? (
-                                isMobileLightMode 
-                                  ? 'bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white shadow-md' 
+                            className={`text-xs ${formData.category === cat.name ? (
+                                isMobileLightMode
+                                  ? 'bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white shadow-md'
                                   : ''
                               ) : (
-                                isMobileLightMode 
-                                  ? 'border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900' 
+                                isMobileLightMode
+                                  ? 'border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                                   : ''
                               )
-                            }`}
+                              }`}
                           >
                             {cat.name}
                           </Button>
                         ))
                       ) : (
-                        <div className={`px-4 py-2 text-sm ${
-                          isMobileLightMode 
-                            ? 'text-gray-500' 
+                        <div className={`px-4 py-2 text-sm ${isMobileLightMode
+                            ? 'text-gray-500'
                             : 'text-muted-foreground'
-                        }`}>
+                          }`}>
                           활성 카테고리가 없습니다
                         </div>
                       )
@@ -561,11 +568,10 @@ export const TemplateManagePage: React.FC = () => {
 
                 {/* 내용 입력 */}
                 <div className="space-y-2">
-                  <label htmlFor="content" className={`text-sm font-medium ${
-                    isMobileLightMode 
-                      ? 'text-gray-700' 
+                  <label htmlFor="content" className={`text-sm font-medium ${isMobileLightMode
+                      ? 'text-gray-700'
                       : 'text-foreground'
-                  }`}>
+                    }`}>
                     내용
                   </label>
                   <Textarea
@@ -573,11 +579,10 @@ export const TemplateManagePage: React.FC = () => {
                     placeholder="상용구 내용을 입력하세요"
                     value={formData.content}
                     onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                    className={`min-h-[200px] resize-y ${
-                      isMobileLightMode 
-                        ? 'border-gray-300 focus:border-blue-500 bg-white' 
+                    className={`min-h-[200px] resize-y ${isMobileLightMode
+                        ? 'border-gray-300 focus:border-blue-500 bg-white'
                         : ''
-                    }`}
+                      }`}
                   />
                 </div>
 
@@ -587,22 +592,20 @@ export const TemplateManagePage: React.FC = () => {
                     type="button"
                     variant="outline"
                     onClick={handleCancel}
-                    className={`flex-1 ${
-                      isMobileLightMode 
-                        ? 'border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900' 
+                    className={`flex-1 ${isMobileLightMode
+                        ? 'border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                         : ''
-                    }`}
+                      }`}
                   >
                     취소
                   </Button>
                   <Button
                     type="button"
                     onClick={handleSubmit}
-                    className={`flex-1 ${
-                      isMobileLightMode 
-                        ? 'bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white shadow-md' 
+                    className={`flex-1 ${isMobileLightMode
+                        ? 'bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white shadow-md'
                         : ''
-                    }`}
+                      }`}
                   >
                     {editingTemplate ? '수정' : '추가'}
                   </Button>
@@ -616,45 +619,40 @@ export const TemplateManagePage: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredTemplates.length === 0 ? (
             <div className="col-span-full text-center py-12">
-              <div className={`mb-4 ${
-                isMobileLightMode 
-                  ? 'text-gray-600' 
+              <div className={`mb-4 ${isMobileLightMode
+                  ? 'text-gray-600'
                   : 'text-muted-foreground'
-              }`}>
-                <BookmarkIcon className={`h-12 w-12 mx-auto mb-4 opacity-50 ${
-                  isMobileLightMode 
-                    ? 'text-gray-400' 
-                    : 'text-muted-foreground'
-                }`} />
-                <p className={`text-lg font-medium ${
-                  isMobileLightMode 
-                    ? 'text-gray-700' 
-                    : 'text-foreground'
                 }`}>
-                  {searchTerm || selectedCategory !== '전체' 
-                    ? '검색 결과가 없습니다' 
+                <BookmarkIcon className={`h-12 w-12 mx-auto mb-4 opacity-50 ${isMobileLightMode
+                    ? 'text-gray-400'
+                    : 'text-muted-foreground'
+                  }`} />
+                <p className={`text-lg font-medium ${isMobileLightMode
+                    ? 'text-gray-700'
+                    : 'text-foreground'
+                  }`}>
+                  {searchTerm || selectedCategory !== '전체'
+                    ? '검색 결과가 없습니다'
                     : '상용구가 없습니다'
                   }
                 </p>
-                <p className={`text-sm ${
-                  isMobileLightMode 
-                    ? 'text-gray-500' 
+                <p className={`text-sm ${isMobileLightMode
+                    ? 'text-gray-500'
                     : 'text-muted-foreground'
-                }`}>
-                  {searchTerm || selectedCategory !== '전체' 
-                    ? '다른 검색어나 카테고리를 시도해보세요.' 
+                  }`}>
+                  {searchTerm || selectedCategory !== '전체'
+                    ? '다른 검색어나 카테고리를 시도해보세요.'
                     : '새 상용구를 추가해보세요!'
                   }
                 </p>
                 {!searchTerm && selectedCategory === '전체' && (
-                  <Button 
-                    onClick={handleAddTemplate} 
-                    size="sm" 
-                    className={`mt-4 ${
-                      isMobileLightMode 
-                        ? 'bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white shadow-md' 
+                  <Button
+                    onClick={handleAddTemplate}
+                    size="sm"
+                    className={`mt-4 ${isMobileLightMode
+                        ? 'bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white shadow-md'
                         : ''
-                    }`}
+                      }`}
                   >
                     <PlusIcon className="h-4 w-4 mr-2" />
                     첫 번째 상용구 추가하기
@@ -664,24 +662,38 @@ export const TemplateManagePage: React.FC = () => {
             </div>
           ) : (
             filteredTemplates.map((template) => (
-              <Card key={template.id} className={`group ${
-                isMobileLightMode 
-                  ? 'bg-white border-gray-200 shadow-sm hover:shadow-md' 
+              <Card key={template.id} className={`group ${isMobileLightMode
+                  ? 'bg-white border-gray-200 shadow-sm hover:shadow-md'
                   : ''
-              }`}>
+                }`}>
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <CardTitle className={`text-lg font-semibold line-clamp-2 ${
-                        isMobileLightMode 
-                          ? 'text-gray-800' 
+                      <CardTitle className={`text-lg font-semibold line-clamp-2 ${isMobileLightMode
+                          ? 'text-gray-800'
                           : 'text-foreground'
-                      }`}>
+                        }`}>
                         {template.title}
                       </CardTitle>
-                      <span className={getCategoryBadgeStyle(template.category)}>
-                        {getCategoryStatusText(template.category)}
-                      </span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={getCategoryBadgeStyle(template.category)}>
+                          {getCategoryStatusText(template.category)}
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCopy(template.content);
+                          }}
+                          className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded transition-colors ${isMobileLightMode
+                              ? 'bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-100'
+                              : 'bg-blue-900/30 text-blue-300 border border-blue-800/50 hover:bg-blue-900/50'
+                            }`}
+                          title="클립보드 복사"
+                        >
+                          <DocumentDuplicateIcon className="h-3 w-3" />
+                          복사
+                        </button>
+                      </div>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button
@@ -689,11 +701,10 @@ export const TemplateManagePage: React.FC = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleEditTemplate(template)}
-                        className={`h-8 w-8 p-0 ${
-                          isMobileLightMode 
-                            ? 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' 
+                        className={`h-8 w-8 p-0 ${isMobileLightMode
+                            ? 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                             : ''
-                        }`}
+                          }`}
                       >
                         <PencilIcon className="h-4 w-4" />
                       </Button>
@@ -702,11 +713,10 @@ export const TemplateManagePage: React.FC = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDeleteTemplate(template)}
-                        className={`h-8 w-8 p-0 text-red-600 hover:text-red-700 ${
-                          isMobileLightMode 
-                            ? 'hover:bg-red-50' 
+                        className={`h-8 w-8 p-0 text-red-600 hover:text-red-700 ${isMobileLightMode
+                            ? 'hover:bg-red-50'
                             : ''
-                        }`}
+                          }`}
                       >
                         <TrashIcon className="h-4 w-4" />
                       </Button>
@@ -714,20 +724,18 @@ export const TemplateManagePage: React.FC = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <p className={`text-sm line-clamp-3 mb-3 ${
-                    isMobileLightMode 
-                      ? 'text-gray-600' 
+                  <p className={`text-sm line-clamp-3 mb-3 ${isMobileLightMode
+                      ? 'text-gray-600'
                       : 'text-muted-foreground'
-                  }`}>
+                    }`}>
                     {template.content}
                   </p>
-                  <div className={`flex items-center justify-between text-xs ${
-                    isMobileLightMode 
-                      ? 'text-gray-500' 
+                  <div className={`flex items-center justify-between text-xs ${isMobileLightMode
+                      ? 'text-gray-500'
                       : 'text-muted-foreground'
-                  }`}>
+                    }`}>
                     <span>
-                      {template.updatedAt.getTime() > template.createdAt.getTime() 
+                      {template.updatedAt.getTime() > template.createdAt.getTime()
                         ? `수정: ${template.updatedAt.toLocaleDateString('ko-KR')} ${template.updatedAt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })}`
                         : `작성: ${template.createdAt.toLocaleDateString('ko-KR')} ${template.createdAt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })}`
                       }
@@ -738,26 +746,26 @@ export const TemplateManagePage: React.FC = () => {
             ))
           )}
         </div>
-        
+
         {/* 삭제 확인 다이얼로그 */}
         <AlertDialog open={!!deletingTemplate} onOpenChange={(open) => !open && setDeletingTemplate(null)}>
-          <AlertDialogContent className={isMobileLightMode 
-            ? 'bg-white border-gray-200 shadow-lg' 
+          <AlertDialogContent className={isMobileLightMode
+            ? 'bg-white border-gray-200 shadow-lg'
             : ''
           }>
             <AlertDialogHeader>
-              <AlertDialogTitle className={isMobileLightMode 
-                ? 'text-gray-800' 
+              <AlertDialogTitle className={isMobileLightMode
+                ? 'text-gray-800'
                 : 'text-foreground'
               }>상용구 삭제</AlertDialogTitle>
-              <AlertDialogDescription className={isMobileLightMode 
-                ? 'text-gray-600' 
+              <AlertDialogDescription className={isMobileLightMode
+                ? 'text-gray-600'
                 : 'text-muted-foreground'
               }>
                 "{deletingTemplate?.title}" 상용구를 삭제하시겠습니까?
                 <br />
-                <span className={isMobileLightMode 
-                  ? 'text-red-600' 
+                <span className={isMobileLightMode
+                  ? 'text-red-600'
                   : 'text-destructive'
                 }>
                   이 작업은 되돌릴 수 없습니다.
@@ -765,14 +773,14 @@ export const TemplateManagePage: React.FC = () => {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel className={isMobileLightMode 
-                ? 'border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900' 
+              <AlertDialogCancel className={isMobileLightMode
+                ? 'border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                 : ''
               }>취소</AlertDialogCancel>
               <AlertDialogAction
                 onClick={executeDeleteTemplate}
-                className={isMobileLightMode 
-                  ? 'bg-red-600 text-white hover:bg-red-700' 
+                className={isMobileLightMode
+                  ? 'bg-red-600 text-white hover:bg-red-700'
                   : 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
                 }
                 disabled={isDeleting}
@@ -782,7 +790,7 @@ export const TemplateManagePage: React.FC = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-        
+
         {/* 카테고리 관리 컴포넌트 */}
         <CategoryManager
           isOpen={isCategoryManagerOpen}
