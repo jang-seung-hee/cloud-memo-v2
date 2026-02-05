@@ -21,5 +21,19 @@
   "start_url": ".",
   "display": "standalone",
   "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "background_color": "#ffffff",
+  "shortcuts": [
+    {
+      "name": "Cloud Memo 상용구",
+      "short_name": "상용구",
+      "description": "자주 쓰는 상용구 목록을 엽니다",
+      "url": "/snippets",
+      "icons": [
+        {
+          "src": "logo192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
 }
