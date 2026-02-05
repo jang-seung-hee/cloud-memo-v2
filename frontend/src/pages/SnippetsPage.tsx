@@ -99,21 +99,22 @@ export const SnippetsPage: React.FC = () => {
                                 <div key={template.id} className="bg-white border boundary-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
                                     <div className="flex items-center gap-2 mb-2">
                                         <h3 className="font-semibold text-base truncate flex-1">{template.title}</h3>
-                                        <div className="flex items-center gap-2 shrink-0">
+                                        <div className="flex items-center gap-1 shrink-0">
                                             <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-none font-normal">
                                                 {template.category || '기타'}
                                             </Badge>
-                                            <button
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     handleCopy(template.content);
                                                 }}
-                                                className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-100 transition-colors"
-                                                title="클립보드 복사"
+                                                className="h-7 w-7 p-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                                title="복사"
                                             >
-                                                <DocumentDuplicateIcon className="h-3 w-3" />
-                                                복사
-                                            </button>
+                                                <DocumentDuplicateIcon className="h-4 w-4" />
+                                            </Button>
                                         </div>
                                     </div>
 
@@ -121,15 +122,7 @@ export const SnippetsPage: React.FC = () => {
                                         {template.content}
                                     </p>
 
-                                    <div className="flex items-center justify-between">
-                                        <Button
-                                            onClick={() => handleCopy(template.content)}
-                                            size="sm"
-                                            className="bg-green-100 text-green-700 hover:bg-green-200 border-none shadow-none gap-1.5 h-8 px-3"
-                                        >
-                                            <DocumentDuplicateIcon className="w-4 h-4" />
-                                            {/* Icon only on mobile maybe? kept text for clarity */}
-                                        </Button>
+                                    <div className="flex items-center justify-end">
                                         <button className="text-xs text-blue-600 font-medium hover:underline px-2 py-1">
                                             더보기
                                         </button>
