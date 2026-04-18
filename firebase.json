@@ -11,5 +11,20 @@
   "functions": {
     "source": "functions",
     "runtime": "nodejs20"
+  },
+  "emulators": {
+    "auth": {
+      "port": 9091
+    },
+    "firestore": {
+      "port": 8090
+    },
+    "storage": {
+      "port": 9191
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4099
+    }
   }
 }

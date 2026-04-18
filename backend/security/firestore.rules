@@ -2,103 +2,75 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // === 사용자 인증 확인 함수 ===
+    // ==========================================
+    // 공통 유틸리티 함수
+    // ==========================================
+    
+    // 사용자 인증 확인
     function isAuthenticated() {
       return request.auth != null;
     }
     
-    // === 사용자 본인 확인 함수 ===
+    // 사용자 본인 확인
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
     
-    // === 관리자 확인 함수 (향후 확장용) ===
-    function isAdmin() {
-      return isAuthenticated() && 
-        request.auth.token.admin == true;
+    // 데이터 타입 및 크기 검증 함수
+    function isValidString(data, field, min, max) {
+      return data[field] is string && 
+             data[field].size() >= min && 
+             data[field].size() <= max;
     }
+
+    // ==========================================
+    // 컬렉션별 보안 규칙
+    // ==========================================
     
     // === 사용자 프로필 컬렉션 ===
     match /users/{userId} {
-      // 모든 인증된 유저는 검색을 위해 타인의 프로필을 읽을 수 있음
-      allow read: if request.auth != null;
-      // 생성 및 수정은 본인 UID와 문서 ID가 일치할 때만 허용
-      allow create, update: if request.auth != null && request.auth.uid == userId;
-      // 프로필 삭제는 기본적으로 금지
-      allow delete: if false;
+      // 본인만 전체 프로필 읽기 및 수정 가능 (개인정보 보호)
+      allow read, write: if isOwner(userId);
+      
+      // [개선안] 공개 프로필 정보는 하위 컬렉션으로 분리하여 노출
+      match /public/profile {
+        // 인증된 모든 사용자는 검색을 위해 다른 사람의 공개 프로필을 읽을 수 있음
+        allow read: if isAuthenticated();
+        // 본인만 작성 및 수정 가능
+        allow write: if isOwner(userId);
+      }
     }
     
     // === 메모 컬렉션 ===
     match /memos/{memoId} {
-      // 읽기: 본인 메모 또는 나에게 공유된 메모
+      // 읽기 권한
       allow read: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
         (resource.data.sharedWithUids != null && request.auth.uid in resource.data.sharedWithUids)
       );
       
-      // 생성: 인증된 사용자만 (본인 ID로만)
+      // 생성 권한 및 스키마 검증
       allow create: if isAuthenticated() && 
-        request.resource.data.userId == request.auth.uid;
+        request.resource.data.userId == request.auth.uid &&
+        isValidString(request.resource.data, 'title', 1, 100) &&
+        isValidString(request.resource.data, 'content', 0, 10000);
       
-      // 업데이트: 본인 메모이거나 공유받은 권한 중 수정 권한이 있는 경우
+      // 업데이트 권한 및 검증
       allow update: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid ||
+        // 소유자 수정
+        (resource.data.userId == request.auth.uid && 
+         isValidString(request.resource.data, 'title', 1, 100)) ||
+        // 공유 받은 자의 수정 권한 확인
         (resource.data.sharedWith != null && 
          resource.data.sharedWith.filter(u, u.uid == request.auth.uid && u.permissions.edit == true).size() > 0 &&
-         // 공유받은 사용자는 소유자나 공유 설정을 변경할 수 없음
-         request.resource.data.userId == resource.data.userId &&
-         (request.resource.data.sharedWith == resource.data.sharedWith || !('sharedWith' in request.resource.data)) &&
-         (request.resource.data.sharedWithUids == resource.data.sharedWithUids || !('sharedWithUids' in request.resource.data)))
+         request.resource.data.userId == resource.data.userId)
       );
       
-      // 삭제: 본인 메모이거나 공유받은 권한 중 삭제 권한이 있는 경우
       allow delete: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
         (resource.data.sharedWith != null && 
          resource.data.sharedWith.filter(u, u.uid == request.auth.uid && u.permissions.delete == true).size() > 0)
       );
-    }
-    
-    // === 카테고리 컬렉션 ===
-    match /categories/{categoryId} {
-      // 읽기: 본인 카테고리만
-      allow read: if isAuthenticated() && 
-        resource.data.userId == request.auth.uid;
-      
-      // 생성: 인증된 사용자만 (본인 ID로만)
-      allow create: if isAuthenticated() && 
-        request.resource.data.userId == request.auth.uid;
-      
-      // 업데이트: 본인 카테고리만
-      allow update: if isAuthenticated() && 
-        resource.data.userId == request.auth.uid &&
-        request.resource.data.userId == request.auth.uid;
-      
-      // 삭제: 본인 카테고리만
-      allow delete: if isAuthenticated() && 
-        resource.data.userId == request.auth.uid;
-    }
-    
-    // === 템플릿 컬렉션 ===
-    match /templates/{templateId} {
-      // 읽기: 본인 템플릿 또는 공개 템플릿
-      allow read: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid ||
-        resource.data.isPublic == true
-      );
-      
-      // 생성: 인증된 사용자만 (본인 ID로만)
-      allow create: if isAuthenticated() && 
-        request.resource.data.userId == request.auth.uid;
-      
-      // 업데이트: 본인 템플릿만
-      allow update: if isAuthenticated() && 
-        resource.data.userId == request.auth.uid &&
-        request.resource.data.userId == request.auth.uid;
-      
-      // 삭제: 본인 템플릿만
-      allow delete: if isAuthenticated() && 
-        resource.data.userId == request.auth.uid;
     }
     
     // === 알림 컬렉션 ===
@@ -107,38 +79,45 @@ service cloud.firestore {
       allow read: if isAuthenticated() && 
         resource.data.receiverId == request.auth.uid;
       
-      // 생성: 모든 인증된 사용자 (공유 시 알림 전송을 위해)
-      allow create: if isAuthenticated();
+      // 생성: 보안 강화된 생성 조건
+      allow create: if isAuthenticated() && 
+        // 1. 발신자 본인 확인
+        request.resource.data.senderId == request.auth.uid &&
+        // 2. 해당 메모의 소유자이거나 관리 권한이 있는 경우에만 알림 생성 가능 (Abuse 방지)
+        get(/databases/$(database)/documents/memos/$(request.resource.data.memoId)).data.userId == request.auth.uid;
       
-      // 업데이트: 수신자 본인이 읽음 처리하는 경우만 허용
+      // 업데이트: 읽음 처리만 허용
       allow update: if isAuthenticated() && 
         resource.data.receiverId == request.auth.uid &&
-        request.resource.data.receiverId == request.auth.uid;
+        request.resource.data.isRead == true;
       
-      // 삭제: 수신자 본인만
       allow delete: if isAuthenticated() && 
         resource.data.receiverId == request.auth.uid;
     }
     
-    // === 향후 확장을 위한 규칙들 ===
-    
-    // === 공개 데이터 컬렉션 (향후 확장용) ===
-    match /public/{document=**} {
-      // 공개 데이터는 모든 인증된 사용자가 읽기 가능
-      allow read: if isAuthenticated();
-      
-      // 생성/수정/삭제는 관리자만
-      allow write: if isAdmin();
+    // === 카테고리 컬렉션 ===
+    match /categories/{categoryId} {
+      allow read, write: if isAuthenticated() && 
+        (resource == null || resource.data.userId == request.auth.uid) &&
+        (request.resource == null || request.resource.data.userId == request.auth.uid);
     }
     
-    // === 시스템 설정 컬렉션 (향후 확장용) ===
-    match /system/{document=**} {
-      // 시스템 설정은 관리자만 접근 가능
-      allow read, write: if isAdmin();
+    // === 템플릿 컬렉션 ===
+    match /templates/{templateId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.isPublic == true
+      );
+      
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid &&
+        isValidString(request.resource.data, 'title', 1, 100);
+        
+      allow update, delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
     }
     
     // === 기본 거부 규칙 ===
-    // 위의 규칙에 해당하지 않는 모든 요청 거부
     match /{document=**} {
       allow read, write: if false;
     }
