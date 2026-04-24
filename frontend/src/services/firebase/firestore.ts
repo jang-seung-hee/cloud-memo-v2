@@ -756,10 +756,11 @@ export class FirestoreService {
         }
       }, { merge: true });
 
-      // [New] 검색용 공개 프로필 동기화 (이메일 제외)
+      // [New] 검색용 공개 프로필 동기화 (이메일 포함 - 검색 편의성)
       const publicProfileRef = doc(db, COLLECTIONS.PUBLIC_PROFILES, user.uid);
       await setDoc(publicProfileRef, {
         userId: user.uid,
+        email: userData.email, // 이메일 검색을 위해 추가
         displayName: userData.displayName,
         photoURL: userData.photoURL,
         updatedAt: Timestamp.now()
@@ -774,9 +775,12 @@ export class FirestoreService {
 
   async searchUsers(searchQuery: string): Promise<IUserProfile[]> {
     try {
-      if (!searchQuery || searchQuery.length < 2) return [];
+      // 보안 및 성능을 위해 최소 4자 이상 입력 시 검색 실행
+      if (!searchQuery || searchQuery.length < 4) return [];
 
-      // 1. 이름으로 시작하는 사용자 검색 쿼리 (공개 프로필 컬렉션 사용)
+      const lowercaseQuery = searchQuery.toLowerCase();
+
+      // 1. 이름으로 시작하는 검색
       const nameQ = query(
         collection(db, COLLECTIONS.PUBLIC_PROFILES),
         where('displayName', '>=', searchQuery),
@@ -784,11 +788,32 @@ export class FirestoreService {
         limit(10)
       );
 
-      const querySnapshot = await getDocs(nameQ);
-      return querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as IUserProfile[];
+      // 2. 이메일로 시작하는 검색
+      const emailQ = query(
+        collection(db, COLLECTIONS.PUBLIC_PROFILES),
+        where('email', '>=', lowercaseQuery),
+        where('email', '<=', lowercaseQuery + '\uf8ff'),
+        limit(10)
+      );
+
+      const [nameSnapshot, emailSnapshot] = await Promise.all([
+        getDocs(nameQ),
+        getDocs(emailQ)
+      ]);
+
+      const resultsMap = new Map<string, IUserProfile>();
+
+      nameSnapshot.forEach(doc => {
+        resultsMap.set(doc.id, { id: doc.id, ...doc.data() } as IUserProfile);
+      });
+
+      emailSnapshot.forEach(doc => {
+        if (!resultsMap.has(doc.id)) {
+          resultsMap.set(doc.id, { id: doc.id, ...doc.data() } as IUserProfile);
+        }
+      });
+
+      return Array.from(resultsMap.values());
     } catch (error) {
       console.error('사용자 검색 오류:', error);
       throw this.createFirestoreError(error);

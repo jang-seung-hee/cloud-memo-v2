@@ -47,7 +47,7 @@ export const ShareSettingsModal: React.FC<ShareSettingsModalProps> = ({
     }, [sharedWith, isOpen]);
 
     const handleSearch = useCallback(async (query: string) => {
-        if (query.length < 2) {
+        if (query.length < 4) {
             setSearchResults([]);
             return;
         }
@@ -66,7 +66,7 @@ export const ShareSettingsModal: React.FC<ShareSettingsModalProps> = ({
     // 자동완성/추천 검색을 위한 디바운싱 처리
     useEffect(() => {
         const timer = setTimeout(() => {
-            if (searchQuery.length >= 2) {
+            if (searchQuery.length >= 4) {
                 handleSearch(searchQuery);
             } else {
                 setSearchResults([]);
