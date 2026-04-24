@@ -21,7 +21,7 @@ import {
   setDoc
 } from 'firebase/firestore';
 import { User } from 'firebase/auth';
-import { db } from './config';
+import { db, auth } from './config';
 import { storageService } from './storage';
 import { compressImage } from '../../utils/imageCompression';
 import { logDebug, logInfo, logError } from '../../utils/logger';
@@ -460,12 +460,18 @@ export class FirestoreService {
   // 사용자별 카테고리 목록 조회
   async getCategoriesByUserId(userId: string): Promise<IFirebaseCategory[]> {
     try {
-      console.log('🔍 getCategoriesByUserId 호출됨:', userId);
+      const authUid = auth.currentUser?.uid;
+      console.log(`🔍 [Firestore] getCategoriesByUserId 호출됨: 요청UID=${userId}, 현재인증UID=${authUid}`);
+      
+      if (!authUid) {
+        console.warn('⚠️ [Firestore] 현재 로그인된 사용자가 없습니다!');
+      } else if (authUid !== userId) {
+        console.warn(`⚠️ [Firestore] 요청 UID와 현재 인증 UID가 일치하지 않습니다! (요청: ${userId}, 인증: ${authUid})`);
+      }
 
       const q = query(
         collection(db, COLLECTIONS.CATEGORIES),
-        where('userId', '==', userId),
-        orderBy('order', 'asc')
+        where('userId', '==', userId)
       );
 
       const querySnapshot = await getDocs(q);
@@ -474,6 +480,9 @@ export class FirestoreService {
       querySnapshot.forEach((doc) => {
         categories.push({ id: doc.id, ...doc.data() } as IFirebaseCategory);
       });
+
+      // 클라이언트에서 정렬 (인덱스 의존성 제거)
+      categories.sort((a, b) => (a.order || 0) - (b.order || 0));
 
       // 신규 유저라면 기본값 자동 생성
       if (categories.length === 0) {
@@ -551,22 +560,31 @@ export class FirestoreService {
   // 카테고리 실시간 리스너
   onCategoriesSnapshot(userId: string, callback: FirestoreListener<IFirebaseCategory>): Unsubscribe {
     try {
-      console.log('🔍 onCategoriesSnapshot 설정됨:', userId);
+      const authUid = auth.currentUser?.uid;
+      console.log(`🔍 [Firestore] onCategoriesSnapshot 설정됨: 요청UID=${userId}, 현재인증UID=${authUid}`);
+      
+      if (!authUid) {
+        console.warn('⚠️ [Firestore] 현재 로그인된 사용자가 없습니다!');
+      } else if (authUid !== userId) {
+        console.warn(`⚠️ [Firestore] 요청 UID와 현재 인증 UID가 일치하지 않습니다! (요청: ${userId}, 인증: ${authUid})`);
+      }
 
       const q = query(
         collection(db, COLLECTIONS.CATEGORIES),
-        where('userId', '==', userId),
-        orderBy('order', 'asc')
+        where('userId', '==', userId)
       );
 
       return onSnapshot(q, (snapshot) => {
-        const categories: IFirebaseCategory[] = [];
-        snapshot.forEach((doc) => {
-          categories.push({ id: doc.id, ...doc.data() } as IFirebaseCategory);
-        });
+        const categories = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as IFirebaseCategory[];
 
-        console.log('✅ 카테고리 실시간 업데이트:', categories.length, '개');
-        callback(categories);
+        // 클라이언트에서 정렬 (인덱스 의존성 제거)
+        const sortedCategories = categories.sort((a, b) => (a.order || 0) - (b.order || 0));
+        
+        console.log('✅ 카테고리 실시간 업데이트:', sortedCategories.length, '개');
+        callback(sortedCategories);
       }, (error) => {
         console.error('❌ 카테고리 실시간 리스너 오류:', error);
       });
@@ -701,8 +719,16 @@ export class FirestoreService {
 
   // === 사용자 관련 메서드 ===
 
+  private lastSyncedUid: string | null = null;
+
   async syncUserProfile(user: User): Promise<void> {
     if (!user || !user.email) return;
+
+    // 이미 이번 세션에서 동기화가 진행 중이거나 완료된 경우 건너뜀
+    if (this.lastSyncedUid === user.uid) {
+      return;
+    }
+    this.lastSyncedUid = user.uid;
 
     try {
       console.log('🔄 [Firestore] 프로필 동기화 시도 중...', user.email);
@@ -723,8 +749,6 @@ export class FirestoreService {
       // setDoc { merge: true }는 문서가 없으면 생성하고, 있으면 지정한 필드만 덮어씁니다.
       await setDoc(userDocRef, {
         ...userData,
-        // 기존 데이터가 없을 때만 아래 값들이 유효하도록 구성 가능하지만, 
-        // 여기서는 기본 설정을 항상 보장하도록 단순 merge 전략을 취합니다.
         settings: {
           theme: 'light',
           language: 'ko',
@@ -732,7 +756,17 @@ export class FirestoreService {
         }
       }, { merge: true });
 
-      console.log('✅ [Firestore] 프로필 동기화 성공:', user.email);
+      // [New] 검색용 공개 프로필 동기화 (이메일 제외)
+      const publicProfileRef = doc(db, COLLECTIONS.PUBLIC_PROFILES, user.uid);
+      await setDoc(publicProfileRef, {
+        userId: user.uid,
+        displayName: userData.displayName,
+        photoURL: userData.photoURL,
+        updatedAt: Timestamp.now()
+      }, { merge: true });
+
+      // this.lastSyncedUid = user.uid; // 이미 시작 시 설정됨
+      console.log('✅ [Firestore] 프로필 및 공개 프로필 동기화 성공:', user.email);
     } catch (error) {
       console.error('❌ [Firestore] 프로필 동기화 실패:', error);
     }
@@ -742,42 +776,19 @@ export class FirestoreService {
     try {
       if (!searchQuery || searchQuery.length < 2) return [];
 
-      const lowerQuery = searchQuery.toLowerCase();
-
-      // 1. 이메일로 시작하는 사용자 검색 쿼리
-      const emailQ = query(
-        collection(db, COLLECTIONS.USERS),
-        where('email', '>=', lowerQuery),
-        where('email', '<=', lowerQuery + '\uf8ff'),
-        limit(5)
-      );
-
-      // 2. 이름으로 시작하는 사용자 검색 쿼리
+      // 1. 이름으로 시작하는 사용자 검색 쿼리 (공개 프로필 컬렉션 사용)
       const nameQ = query(
-        collection(db, COLLECTIONS.USERS),
+        collection(db, COLLECTIONS.PUBLIC_PROFILES),
         where('displayName', '>=', searchQuery),
         where('displayName', '<=', searchQuery + '\uf8ff'),
-        limit(5)
+        limit(10)
       );
 
-      // 두 쿼리를 동시에 실행
-      const [emailSnap, nameSnap] = await Promise.all([
-        getDocs(emailQ),
-        getDocs(nameQ)
-      ]);
-
-      // 결과 합침 및 중복 제거
-      const userMap = new Map<string, IUserProfile>();
-
-      emailSnap.docs.forEach(doc => {
-        userMap.set(doc.id, { id: doc.id, ...doc.data() } as IUserProfile);
-      });
-
-      nameSnap.docs.forEach(doc => {
-        userMap.set(doc.id, { id: doc.id, ...doc.data() } as IUserProfile);
-      });
-
-      return Array.from(userMap.values()).slice(0, 10);
+      const querySnapshot = await getDocs(nameQ);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as IUserProfile[];
     } catch (error) {
       console.error('사용자 검색 오류:', error);
       throw this.createFirestoreError(error);
@@ -865,8 +876,7 @@ export class FirestoreService {
     const q = query(
       collection(db, COLLECTIONS.NOTIFICATIONS),
       where('receiverId', '==', userId),
-      orderBy('createdAt', 'desc'),
-      limit(50)
+      limit(100) // 넉넉하게 100개까지 가져옴
     );
 
     return onSnapshot(q, (snapshot) => {
@@ -874,9 +884,17 @@ export class FirestoreService {
         id: doc.id,
         ...doc.data()
       })) as INotification[];
-      callback(notifications);
+
+      // 클라이언트에서 정렬 (인덱스 의존성 제거)
+      const sortedNotifications = notifications.sort((a, b) => {
+        const aTime = a.createdAt?.toDate?.() || new Date(0);
+        const bTime = b.createdAt?.toDate?.() || new Date(0);
+        return bTime.getTime() - aTime.getTime();
+      });
+
+      callback(sortedNotifications);
     }, (error) => {
-      console.error('알림 실시간 리스너 오류:', error);
+      console.error('❌ 알림 실시간 리스너 오류:', error);
     });
   }
 

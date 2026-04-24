@@ -71,24 +71,20 @@ export const useAuth = (): UseAuthReturn => {
   useEffect(() => {
     // Firebase Auth 초기화 지연을 위한 타임아웃 설정 (최대 10초)
     const authTimeout = setTimeout(() => {
-      if (authState.loading) {
-        console.warn('Firebase Auth 초기화 타임아웃 - 강제로 로딩 상태 해제');
-        setAuthState(prev => ({ ...prev, loading: false }));
-      }
+      setAuthState(prev => prev.loading ? { ...prev, loading: false } : prev);
     }, 10000);
 
     const unsubscribe = authService.onAuthStateChanged((user) => {
-      // 타임아웃 타이머 정리
-      if (timeoutTimerRef.current) {
-        clearTimeout(timeoutTimerRef.current);
-      }
-      clearTimeout(authTimeout);
+      if (authTimeout) clearTimeout(authTimeout);
 
       // 이전 사용자와 비교하여 실제 변경사항이 있는지 확인
       const hasChanged = user?.uid !== previousUserRef.current?.uid;
 
       if (hasChanged) {
-        // 즉시 상태 업데이트 (디바운싱 제거로 반응성 향상)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Auth state changed:', user ? `User: ${user.email}` : 'No user');
+        }
+        
         previousUserRef.current = user;
         setAuthState({
           user,
@@ -96,18 +92,13 @@ export const useAuth = (): UseAuthReturn => {
           error: null
         });
 
-        // 사용자 프로필 동기화
+        // 사용자 프로필 동기화 (FirestoreService 내부에서 중복 방지 처리됨)
         if (user) {
           firestoreService.syncUserProfile(user);
         }
-
-        // PC 브라우저에서 디버깅을 위한 로그
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Auth state changed:', user ? `User: ${user.email}` : 'No user');
-        }
-      } else if (authState.loading) {
-        // 사용자가 변경되지 않았지만 로딩 중인 경우 로딩 상태 해제
-        setAuthState(prev => ({ ...prev, loading: false }));
+      } else {
+        // UID가 같아도 로딩 중이었다면 로딩 해제
+        setAuthState(prev => prev.loading ? { ...prev, loading: false } : prev);
       }
     });
 
@@ -116,7 +107,7 @@ export const useAuth = (): UseAuthReturn => {
       unsubscribe();
       clearTimeout(authTimeout);
     };
-  }, [authState.loading]);
+  }, []); // 의존성 배열을 비워 한 번만 실행되도록 함
 
   return {
     ...authState,

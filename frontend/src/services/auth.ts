@@ -67,20 +67,13 @@ export class AuthService {
     // 리스너 등록
     this.authStateListeners.push(callback);
     
-    // 즉시 현재 상태 전달 (Firebase Auth 초기화 지연 방지)
-    const currentUser = this.getCurrentUser();
-    if (currentUser) {
-      callback(currentUser);
-    } else {
-      // 현재 사용자가 없으면 null 전달하여 로딩 상태 해제
-      callback(null);
-    }
-    
     // Firebase 인증 상태 변경 리스너 등록
+    // Firebase의 onAuthStateChanged는 등록 시 즉시 현재 상태를 호출하므로, 
+    // 여기서 별도로 callback(this.getCurrentUser())를 호출할 필요가 없습니다.
     const unsubscribe = onAuthStateChange((user) => {
       // PC 브라우저에서 안정성을 위해 상태 변경 전 로깅
-      if (process.env.NODE_ENV === 'development') {
-        console.log('AuthService: User state changed', user ? `from ${this.currentUser?.email} to ${user.email}` : 'to null');
+      if (process.env.NODE_ENV === 'development' && this.currentUser?.uid !== user?.uid) {
+        console.log('AuthService: User state changed', user ? `to ${user.email}` : 'to null');
       }
       
       this.currentUser = user;

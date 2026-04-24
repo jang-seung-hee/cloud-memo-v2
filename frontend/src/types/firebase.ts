@@ -157,7 +157,8 @@ export const COLLECTIONS = {
   MEMOS: 'memos',
   TEMPLATES: 'templates',
   CATEGORIES: 'categories',
-  NOTIFICATIONS: 'notifications'
+  NOTIFICATIONS: 'notifications',
+  PUBLIC_PROFILES: 'publicProfiles'
 } as const;
 
 // 컬렉션 이름 타입

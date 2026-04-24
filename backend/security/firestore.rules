@@ -29,47 +29,40 @@ service cloud.firestore {
     
     // === 사용자 프로필 컬렉션 ===
     match /users/{userId} {
-      // 본인만 전체 프로필 읽기 및 수정 가능 (개인정보 보호)
+      // 본인만 전체 프로필 읽기 및 수정 가능
       allow read, write: if isOwner(userId);
-      
-      // [개선안] 공개 프로필 정보는 하위 컬렉션으로 분리하여 노출
-      match /public/profile {
-        // 인증된 모든 사용자는 검색을 위해 다른 사람의 공개 프로필을 읽을 수 있음
-        allow read: if isAuthenticated();
-        // 본인만 작성 및 수정 가능
-        allow write: if isOwner(userId);
-      }
+    }
+    
+    // [New] 검색 전역 공개 프로필 (이메일 제외)
+    match /publicProfiles/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId);
     }
     
     // === 메모 컬렉션 ===
     match /memos/{memoId} {
-      // 읽기 권한
       allow read: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
         (resource.data.sharedWithUids != null && request.auth.uid in resource.data.sharedWithUids)
       );
       
-      // 생성 권한 및 스키마 검증
       allow create: if isAuthenticated() && 
         request.resource.data.userId == request.auth.uid &&
         isValidString(request.resource.data, 'title', 1, 100) &&
         isValidString(request.resource.data, 'content', 0, 10000);
       
-      // 업데이트 권한 및 검증
       allow update: if isAuthenticated() && (
         // 소유자 수정
         (resource.data.userId == request.auth.uid && 
          isValidString(request.resource.data, 'title', 1, 100)) ||
-        // 공유 받은 자의 수정 권한 확인
-        (resource.data.sharedWith != null && 
-         resource.data.sharedWith.filter(u, u.uid == request.auth.uid && u.permissions.edit == true).size() > 0 &&
+        // 공유 받은 사용자의 수정 (단순화: sharedWithUids 멤버십 확인)
+        (resource.data.sharedWithUids != null && request.auth.uid in resource.data.sharedWithUids &&
          request.resource.data.userId == resource.data.userId)
       );
       
       allow delete: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
-        (resource.data.sharedWith != null && 
-         resource.data.sharedWith.filter(u, u.uid == request.auth.uid && u.permissions.delete == true).size() > 0)
+        (resource.data.sharedWithUids != null && request.auth.uid in resource.data.sharedWithUids)
       );
     }
     
@@ -97,9 +90,15 @@ service cloud.firestore {
     
     // === 카테고리 컬렉션 ===
     match /categories/{categoryId} {
-      allow read, write: if isAuthenticated() && 
-        (resource == null || resource.data.userId == request.auth.uid) &&
-        (request.resource == null || request.resource.data.userId == request.auth.uid);
+      // 읽기: 인증된 사용자라면 허용 (템플릿과 동일한 방식)
+      allow read: if isAuthenticated();
+      
+      // 생성/수정/삭제: 본인 데이터만 가능
+      allow write: if isAuthenticated() && (
+        request.resource == null || request.resource.data.userId == request.auth.uid
+      ) && (
+        resource == null || resource.data.userId == request.auth.uid
+      );
     }
     
     // === 템플릿 컬렉션 ===

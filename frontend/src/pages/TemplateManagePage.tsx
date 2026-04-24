@@ -4,7 +4,7 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../components/ui/alert-dialog';
 import {
   PlusIcon,
@@ -455,17 +455,17 @@ export const TemplateManagePage: React.FC = () => {
               ? 'bg-white border-gray-200 shadow-lg'
               : ''
               }`}>
-              <DialogHeader>
-                <DialogTitle className={`${isMobileLightMode
-                  ? 'text-gray-800'
-                  : 'text-foreground'
-                  }`}>
-                  {editingTemplate ? '상용구 수정' : '새 상용구 추가'}
-                </DialogTitle>
-              </DialogHeader>
-              <div className="sr-only">
-                {editingTemplate ? '기존 상용구를 수정할 수 있습니다.' : '새로운 상용구를 추가할 수 있습니다.'}
-              </div>
+                <DialogHeader>
+                  <DialogTitle className={`${isMobileLightMode
+                    ? 'text-gray-800'
+                    : 'text-foreground'
+                    }`}>
+                    {editingTemplate ? '상용구 수정' : '새 상용구 추가'}
+                  </DialogTitle>
+                  <DialogDescription className="sr-only">
+                    {editingTemplate ? '기존 상용구를 수정할 수 있습니다.' : '새로운 상용구를 추가할 수 있습니다.'}
+                  </DialogDescription>
+                </DialogHeader>
 
               <div className="space-y-4">
                 {/* 제목 입력 */}
