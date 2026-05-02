@@ -55,26 +55,30 @@ export const N8nWorkflowSelectModal: React.FC<N8nWorkflowSelectModalProps> = ({
               }}>설정에서 등록하기</Button>
             </div>
           ) : (
-            <div className="grid gap-2.5 max-h-[60vh] sm:max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+            <div className="grid gap-2.5 max-h-[60vh] sm:max-h-[400px] overflow-y-auto pr-1 custom-scrollbar w-full">
               {workflows.map((workflow) => (
                 <button
                   key={workflow.id}
                   onClick={() => handleSelectWorkflow(workflow.id)}
-                  className={`w-full text-left flex items-start flex-col gap-1.5 p-3.5 border rounded-xl transition-all active:scale-[0.98] sm:hover:scale-[1.01] ${
+                  className={`group relative w-full text-left flex flex-col gap-1.5 p-3.5 border rounded-xl transition-all active:scale-[0.98] sm:hover:scale-[1.01] overflow-hidden box-border ${
                     isMobileLightMode 
                       ? 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-purple-300' 
                       : 'bg-card border-border hover:bg-accent hover:border-purple-500/50'
                   }`}
                 >
-                  <div className="flex items-center gap-2 w-full min-w-0">
-                    <span className="font-bold text-sm sm:text-base truncate flex-1 leading-tight">{workflow.name}</span>
+                  <div className="flex items-center justify-between w-full gap-2 overflow-hidden">
+                    <span className="font-bold text-sm sm:text-base truncate leading-tight flex-1">
+                      {workflow.name}
+                    </span>
                     {workflow.token && (
                       <ShieldCheckIcon className="h-4 w-4 text-green-500 shrink-0" title="보안 토큰 적용됨" />
                     )}
                   </div>
-                  <div className="flex items-center gap-1 text-[11px] sm:text-xs text-muted-foreground w-full min-w-0">
+                  <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-muted-foreground w-full overflow-hidden">
                     <LinkIcon className="h-3 w-3 shrink-0 opacity-60" />
-                    <span className="truncate opacity-70 flex-1">{workflow.url}</span>
+                    <span className="truncate opacity-70 block w-full">
+                      {workflow.url}
+                    </span>
                   </div>
                 </button>
               ))}
