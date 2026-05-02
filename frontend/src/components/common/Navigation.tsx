@@ -137,35 +137,13 @@ export const Navigation: React.FC = () => {
           {/* PC 모드: 고정된 위치 레이아웃 */}
           {isDesktop ? (
             <div className="relative w-full h-full flex justify-around items-center px-4">
-              {/* 홈 버튼 */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/')}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-1 h-auto rounded-xl transition-colors duration-200 nav-button-stable p-2 flex-1 max-w-20",
-                  location.pathname === '/' 
-                    ? (isMobileLightMode || isDesktopLightMode)
-                      ? "bg-blue-600 text-white shadow-md"
-                      : "bg-primary text-primary-foreground shadow-md"
-                    : (isMobileLightMode || isDesktopLightMode)
-                      ? "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                )}
-              >
-                <div className="flex flex-col items-center justify-center w-full h-full">
-                  <HomeIcon className={cn("transition-transform duration-200 h-5 w-5", location.pathname === '/' && "scale-110")} />
-                  <span className="font-medium transition-all duration-200 text-xs leading-none">홈</span>
-                </div>
-              </Button>
-
               {/* 메모 목록 버튼 */}
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate('/memos')}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 h-auto rounded-xl transition-colors duration-200 nav-button-stable p-2 flex-1 max-w-20",
+                  "flex flex-col items-center justify-center gap-1.5 h-auto rounded-xl transition-colors duration-200 nav-button-stable p-3 flex-1 max-w-24",
                   isMemoList 
                     ? (isMobileLightMode || isDesktopLightMode)
                       ? "bg-blue-600 text-white shadow-md"
@@ -176,8 +154,8 @@ export const Navigation: React.FC = () => {
                 )}
               >
                 <div className="flex flex-col items-center justify-center w-full h-full">
-                  <HomeIcon className={cn("transition-transform duration-200 h-5 w-5", isMemoList && "scale-110")} />
-                  <span className="font-medium transition-all duration-200 text-xs leading-none">메모 목록</span>
+                  <DocumentTextIcon className={cn("transition-transform duration-200 h-6 w-6", isMemoList && "scale-110")} />
+                  <span className="font-bold transition-all duration-200 text-sm leading-none mt-1">메모 목록</span>
                 </div>
               </Button>
 
@@ -187,7 +165,7 @@ export const Navigation: React.FC = () => {
                 size="sm"
                 onClick={() => setIsTemplateSidebarOpen(!isTemplateSidebarOpen)}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 h-auto rounded-xl transition-colors duration-200 nav-button-stable p-2 flex-1 max-w-20",
+                  "flex flex-col items-center justify-center gap-1.5 h-auto rounded-xl transition-colors duration-200 nav-button-stable p-3 flex-1 max-w-24",
                   isTemplateSidebarOpen 
                     ? (isMobileLightMode || isDesktopLightMode)
                       ? "text-blue-600 bg-blue-50 hover:bg-blue-100"
@@ -198,8 +176,8 @@ export const Navigation: React.FC = () => {
                 )}
               >
                 <div className="flex flex-col items-center justify-center w-full h-full">
-                  <SparklesIcon className="transition-transform duration-200 h-5 w-5" />
-                  <span className="font-medium transition-all duration-200 text-xs leading-none">퀵 상용구</span>
+                  <SparklesIcon className="transition-transform duration-200 h-6 w-6" />
+                  <span className="font-bold transition-all duration-200 text-sm leading-none mt-1">퀵 상용구</span>
                 </div>
               </Button>
 
@@ -209,15 +187,15 @@ export const Navigation: React.FC = () => {
                 size="sm"
                 onClick={() => navigate('/create')}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 h-auto rounded-xl transition-colors duration-200 nav-button-stable p-2 flex-1 max-w-20",
+                  "flex flex-col items-center justify-center gap-1.5 h-auto rounded-xl transition-colors duration-200 nav-button-stable p-3 flex-1 max-w-24",
                   (isMobileLightMode || isDesktopLightMode)
                     ? "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                     : "text-muted-foreground hover:text-foreground hover:bg-accent"
                 )}
               >
                 <div className="flex flex-col items-center justify-center w-full h-full">
-                  <PlusIcon className="transition-transform duration-200 h-5 w-5" />
-                  <span className="font-medium transition-all duration-200 text-xs leading-none">새 메모</span>
+                  <PlusIcon className="transition-transform duration-200 h-6 w-6" />
+                  <span className="font-bold transition-all duration-200 text-sm leading-none mt-1">새 메모</span>
                 </div>
               </Button>
 
@@ -227,67 +205,41 @@ export const Navigation: React.FC = () => {
                 size="sm"
                 onClick={() => setIsN8nModalOpen(true)}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 h-auto rounded-xl transition-colors duration-200 nav-button-stable p-2 flex-1 max-w-20",
+                  "flex flex-col items-center justify-center gap-1.5 h-auto rounded-xl transition-colors duration-200 nav-button-stable p-3 flex-1 max-w-24",
                   (isMobileLightMode || isDesktopLightMode)
                     ? "text-purple-600 hover:text-purple-900 hover:bg-purple-50"
                     : "text-purple-400 hover:text-purple-300 hover:bg-purple-900/20"
                 )}
               >
                 <div className="flex flex-col items-center justify-center w-full h-full">
-                  <BoltIcon className="transition-transform duration-200 h-5 w-5 text-purple-500" />
-                  <span className="font-medium transition-all duration-200 text-xs leading-none">n8n</span>
+                  <BoltIcon className="transition-transform duration-200 h-6 w-6 text-purple-500" />
+                  <span className="font-bold transition-all duration-200 text-sm leading-none mt-1">n8n</span>
                 </div>
               </Button>
             </div>
           ) : (
             /* 모바일 모드: 홈 화면과 동일한 디자인 */
-            <div className="flex justify-around items-center py-3 px-6">
-              {/* 홈 */}
-              <div 
-                className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => navigate('/')}
-              >
-                <div className={cn(
-                  "w-6 h-6 rounded-lg flex items-center justify-center mb-1",
-                  location.pathname === '/' 
-                    ? "bg-blue-500" 
-                    : "bg-gray-300 dark:bg-gray-600"
-                )}>
-                  <HomeIcon className={cn(
-                    "w-3 h-3",
-                    location.pathname === '/' 
-                      ? "text-white" 
-                      : "text-gray-600 dark:text-gray-300"
-                  )} />
-                </div>
-                <span className={cn(
-                  "text-xs font-medium",
-                  location.pathname === '/' 
-                    ? "text-blue-500" 
-                    : "text-gray-600 dark:text-gray-300"
-                )}>홈</span>
-              </div>
-
+            <div className="flex justify-around items-center py-4 px-4">
               {/* 메모목록 */}
               <div 
-                className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity"
+                className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity flex-1"
                 onClick={() => navigate('/memos')}
               >
                 <div className={cn(
-                  "w-6 h-6 rounded-lg flex items-center justify-center mb-1",
+                  "w-9 h-9 rounded-xl flex items-center justify-center mb-1.5",
                   isMemoList 
                     ? "bg-blue-500" 
                     : "bg-gray-300 dark:bg-gray-600"
                 )}>
                   <DocumentTextIcon className={cn(
-                    "w-3 h-3",
+                    "w-5 h-5",
                     isMemoList 
                       ? "text-white" 
                       : "text-gray-600 dark:text-gray-300"
                   )} />
                 </div>
                 <span className={cn(
-                  "text-xs font-medium",
+                  "text-[13px] font-bold",
                   isMemoList 
                     ? "text-blue-500" 
                     : "text-gray-600 dark:text-gray-300"
@@ -296,24 +248,24 @@ export const Navigation: React.FC = () => {
 
               {/* 퀵 사용구 */}
               <div 
-                className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity"
+                className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity flex-1"
                 onClick={() => setIsTemplateSidebarOpen(!isTemplateSidebarOpen)}
               >
                 <div className={cn(
-                  "w-6 h-6 rounded-lg flex items-center justify-center mb-1",
+                  "w-9 h-9 rounded-xl flex items-center justify-center mb-1.5",
                   isTemplateSidebarOpen 
                     ? "bg-blue-500" 
                     : "bg-gray-300 dark:bg-gray-600"
                 )}>
                   <SparklesIcon className={cn(
-                    "w-3 h-3",
+                    "w-5 h-5",
                     isTemplateSidebarOpen 
                       ? "text-white" 
                       : "text-gray-600 dark:text-gray-300"
                   )} />
                 </div>
                 <span className={cn(
-                  "text-xs font-medium",
+                  "text-[13px] font-bold",
                   isTemplateSidebarOpen 
                     ? "text-blue-500" 
                     : "text-gray-600 dark:text-gray-300"
@@ -322,24 +274,24 @@ export const Navigation: React.FC = () => {
 
               {/* 새메모 */}
               <div 
-                className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity"
+                className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity flex-1"
                 onClick={() => navigate('/create')}
               >
-                <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-lg flex items-center justify-center mb-1">
-                  <PlusIcon className="w-3 h-3 text-gray-600 dark:text-gray-300" />
+                <div className="w-9 h-9 bg-gray-300 dark:bg-gray-600 rounded-xl flex items-center justify-center mb-1.5">
+                  <PlusIcon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                 </div>
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-300">새메모</span>
+                <span className="text-[13px] font-bold text-gray-600 dark:text-gray-300">새메모</span>
               </div>
 
               {/* n8n 자동화 */}
               <div 
-                className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity"
+                className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity flex-1"
                 onClick={() => setIsN8nModalOpen(true)}
               >
-                <div className="w-6 h-6 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center mb-1 border border-purple-200 dark:border-purple-800/50">
-                  <BoltIcon className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                <div className="w-9 h-9 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center mb-1.5 border border-purple-200 dark:border-purple-800/50">
+                  <BoltIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                 </div>
-                <span className="text-xs font-medium text-purple-600 dark:text-purple-400">n8n</span>
+                <span className="text-[13px] font-bold text-purple-600 dark:text-purple-400">n8n</span>
               </div>
             </div>
           )}
