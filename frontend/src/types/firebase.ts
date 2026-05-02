@@ -63,6 +63,7 @@ export interface IFirebaseMemo {
   createdAt: any; // Firebase Timestamp
   updatedAt: any; // Firebase Timestamp
   userId: string;
+  isProcessing?: boolean; // 비동기 작업 중 여부
   sharedWith?: ISharedUser[]; // 공유 상세 정보
   sharedWithUids?: string[]; // 쿼리용 UID 목록
 }
@@ -98,6 +99,7 @@ export interface IMemoCreateData {
   tags: string[];
   category: 'temporary' | 'memory' | 'archive' | 'n8n';
   templateId?: string;
+  isProcessing?: boolean;
   sharedWith?: ISharedUser[];
   sharedWithUids?: string[];
 }
@@ -123,6 +125,7 @@ export interface IMemoUpdateData {
   isImportant?: boolean;
   isPinned?: boolean;
   isArchived?: boolean;
+  isProcessing?: boolean;
   sharedWith?: ISharedUser[];
   sharedWithUids?: string[];
 }

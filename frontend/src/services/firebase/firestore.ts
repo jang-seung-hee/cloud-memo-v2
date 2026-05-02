@@ -117,6 +117,7 @@ export class FirestoreService {
         tags: data.tags || [],
         isPinned: false,
         isArchived: false,
+        isProcessing: data.isProcessing || false, // 비동기 작업 여부 추가
         sharedWith: data.sharedWith || [], // 공유 상세 정보
         sharedWithUids: data.sharedWithUids || [], // 검색용 UID 목록
         createdAt: Timestamp.now(),

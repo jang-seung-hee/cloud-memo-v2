@@ -25,6 +25,7 @@ import {
   UsersIcon
 } from '@heroicons/react/24/outline';
 import { handleFirebaseError } from '../../utils/errorHandler';
+import { Loader2 } from 'lucide-react';
 
 interface MemoCardProps {
   memo: IFirebaseMemo;
@@ -286,6 +287,16 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
       className={`group cursor-pointer hover:shadow-lg transition-all duration-300 bg-white dark:bg-card border border-border/40 hover:border-border/60 rounded-lg overflow-hidden ${isDesktop ? 'h-[364px]' : 'min-h-[220px]'}`}
       onClick={handleClick}
     >
+      {/* n8n 처리 중 오버레이 */}
+      {memo.isProcessing && (
+        <div className="absolute inset-0 bg-white/70 dark:bg-gray-900/70 z-20 flex flex-col items-center justify-center backdrop-blur-[2px] transition-all duration-500">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-xl flex flex-col items-center border border-purple-100 dark:border-purple-900/50">
+            <Loader2 className="h-8 w-8 animate-spin text-purple-600 dark:text-purple-400 mb-3" />
+            <span className="text-sm font-bold text-purple-700 dark:text-purple-300 animate-pulse">n8n 처리 중...</span>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-2">완료되면 자동으로 업데이트됩니다</p>
+          </div>
+        </div>
+      )}
       <CardHeader className={`pb-3 pt-4 bg-white dark:bg-card relative ${isDesktop ? 'pb-2 px-4' : 'px-2'}`}>
         {isDesktop ? (
           <>

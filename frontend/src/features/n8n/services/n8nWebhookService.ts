@@ -6,13 +6,13 @@ export const n8nWebhookService = {
    * n8n 워크플로우 웹훅으로 메모와 첨부파일을 전송합니다.
    * @param webhookUrl n8n 웹훅 URL
    * @param token 보안 토큰 (옵션)
-   * @param payload 전송할 데이터 (제목, 내용)
+   * @param payload 전송할 데이터 (제목, 내용, 메모 ID 등)
    * @param files 첨부파일 배열
    */
   sendMemoToN8n: async (
     webhookUrl: string,
     token: string | undefined,
-    payload: { title: string; content: string },
+    payload: { title: string; content: string; memoId?: string },
     files: File[]
   ): Promise<boolean> => {
     try {
@@ -21,6 +21,9 @@ export const n8nWebhookService = {
       // 텍스트 데이터 추가
       formData.append('title', payload.title);
       formData.append('content', payload.content);
+      if (payload.memoId) {
+        formData.append('memoId', payload.memoId);
+      }
       
       // 파일 데이터 추가 (n8n에서 접근하기 쉽도록 배열 형태로 전송)
       if (files && files.length > 0) {

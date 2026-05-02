@@ -197,46 +197,52 @@ export const N8nMemoCreatePage: React.FC = () => {
     try {
       const title = extractTitle(formData.content);
 
-      // 1. n8n 웹훅 전송
-      const success = await n8nWebhookService.sendMemoToN8n(
-        workflow.url,
-        workflow.token,
-        { title, content: formData.content },
-        formData.images
-      );
-
-      if (!success) {
-        throw new Error('웹훅 전송에 실패했습니다.');
-      }
-
-      // 2. 파이어베이스 저장용 텍스트 구성 (첨부파일 이름 추가)
+      // 1. 파이어베이스 저장용 텍스트 구성 (첨부파일 이름 추가)
       let finalContent = `n8n : [${workflow.name}]\n\n${formData.content.trim()}`;
       if (formData.images.length > 0) {
         const fileNames = formData.images.map(img => img.name).join(', ');
         finalContent += `\n\n[첨부파일: ${fileNames}]`;
       }
 
-      // 3. Firestore에 저장 (첨부파일은 Storage에 저장하지 않으므로 images는 빈 배열 전달)
-      await createMemo({
+      // 2. Firestore에 먼저 저장하여 ID 확보 (isProcessing: true 설정)
+      const memoId = await createMemo({
         title,
         content: finalContent,
         images: [], 
         category: 'n8n',
         tags: [],
+        isProcessing: true, // 비동기 처리 중임을 표시
         sharedWith: [],
         sharedWithUids: []
       });
 
-      toast({
-        title: "n8n 전송 완료",
-        description: "메모가 n8n으로 전송되고 저장되었습니다."
+      // 3. n8n 웹훅 전송 (메모 ID 포함)
+      // n8n 측에서 이 ID를 이용해 나중에 문서를 업데이트할 수 있도록 함
+      n8nWebhookService.sendMemoToN8n(
+        workflow.url,
+        workflow.token,
+        { 
+          title, 
+          content: formData.content,
+          memoId: memoId 
+        },
+        formData.images
+      ).catch(err => {
+        console.error('배경 n8n 전송 오류:', err);
       });
+
+      toast({
+        title: "n8n 전송 요청 완료",
+        description: "메모가 n8n으로 전송되었습니다. 처리가 완료되면 내용이 자동으로 업데이트됩니다."
+      });
+      
+      // 결과 대기 없이 즉시 목록으로 이동
       navigate('/memos');
     } catch (error) {
       console.error('n8n 저장 중 오류:', error);
       toast({
         title: "저장 실패",
-        description: "n8n 전송 또는 저장 중 오류가 발생했습니다.",
+        description: "메모를 저장하는 중 오류가 발생했습니다.",
         variant: "destructive"
       });
     } finally {
