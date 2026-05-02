@@ -116,6 +116,14 @@ service cloud.firestore {
         resource.data.userId == request.auth.uid;
     }
     
+    // === n8n 워크플로우 컬렉션 ===
+    match /n8nWorkflows/{workflowId} {
+      allow read, write: if isAuthenticated() && (
+        (resource == null && request.resource.data.userId == request.auth.uid) ||
+        (resource != null && resource.data.userId == request.auth.uid)
+      );
+    }
+    
     // === 기본 거부 규칙 ===
     match /{document=**} {
       allow read, write: if false;

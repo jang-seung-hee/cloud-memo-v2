@@ -41,6 +41,11 @@ import {
   IFirebaseCategory,
   INotification
 } from '../../types/firebase';
+import {
+  IN8nWorkflow,
+  N8nWorkflowCreateData,
+  N8nWorkflowUpdateData
+} from '../../types/n8n';
 
 export class FirestoreService {
   private static instance: FirestoreService;
@@ -556,6 +561,94 @@ export class FirestoreService {
       throw this.createFirestoreError(error);
     }
   }
+
+  // === n8n 워크플로우 관련 메서드 ===
+
+  // n8n 워크플로우 생성
+  async createN8nWorkflow(userId: string, data: N8nWorkflowCreateData): Promise<string> {
+    try {
+      const workflowData = {
+        userId,
+        ...data,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now()
+      };
+
+      const docRef = await addDoc(collection(db, COLLECTIONS.N8N_WORKFLOWS), workflowData);
+      return docRef.id;
+    } catch (error) {
+      console.error('❌ n8n 워크플로우 생성 실패:', error);
+      throw this.createFirestoreError(error);
+    }
+  }
+
+  // 사용자별 n8n 워크플로우 목록 조회
+  async getN8nWorkflows(userId: string): Promise<IN8nWorkflow[]> {
+    try {
+      const q = query(
+        collection(db, COLLECTIONS.N8N_WORKFLOWS),
+        where('userId', '==', userId)
+      );
+
+      const querySnapshot = await getDocs(q);
+      const workflows = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as IN8nWorkflow[];
+
+      return workflows.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+    } catch (error) {
+      console.error('❌ n8n 워크플로우 목록 조회 실패:', error);
+      throw this.createFirestoreError(error);
+    }
+  }
+
+  // n8n 워크플로우 업데이트
+  async updateN8nWorkflow(workflowId: string, data: N8nWorkflowUpdateData): Promise<void> {
+    try {
+      const docRef = doc(db, COLLECTIONS.N8N_WORKFLOWS, workflowId);
+      await updateDoc(docRef, {
+        ...data,
+        updatedAt: Timestamp.now()
+      });
+    } catch (error) {
+      console.error('❌ n8n 워크플로우 업데이트 실패:', error);
+      throw this.createFirestoreError(error);
+    }
+  }
+
+  // n8n 워크플로우 삭제
+  async deleteN8nWorkflow(workflowId: string): Promise<void> {
+    try {
+      const docRef = doc(db, COLLECTIONS.N8N_WORKFLOWS, workflowId);
+      await deleteDoc(docRef);
+    } catch (error) {
+      console.error('❌ n8n 워크플로우 삭제 실패:', error);
+      throw this.createFirestoreError(error);
+    }
+  }
+
+  // n8n 워크플로우 실시간 리스너
+  onN8nWorkflowsSnapshot(userId: string, callback: FirestoreListener<IN8nWorkflow>): Unsubscribe {
+    const q = query(
+      collection(db, COLLECTIONS.N8N_WORKFLOWS),
+      where('userId', '==', userId)
+    );
+
+    return onSnapshot(q, (snapshot) => {
+      const workflows = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as IN8nWorkflow[];
+
+      const sortedWorkflows = workflows.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+      callback(sortedWorkflows);
+    }, (error) => {
+      console.error('❌ n8n 워크플로우 실시간 리스너 오류:', error);
+    });
+  }
+
+  // === 실시간 리스너 ===
 
   // 카테고리 실시간 리스너
   onCategoriesSnapshot(userId: string, callback: FirestoreListener<IFirebaseCategory>): Unsubscribe {

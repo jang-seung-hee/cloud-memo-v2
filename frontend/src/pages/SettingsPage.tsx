@@ -7,6 +7,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useFontSize, FontSizeType } from '../hooks/useFontSize';
 import { useToast } from '../hooks/use-toast';
 import { useDevice } from '../hooks/useDevice';
+import { N8nSettingsSection } from '../features/n8n/components/N8nSettingsSection';
 
 export const SettingsPage: React.FC = () => {
   const { isDark, toggleTheme } = useTheme();
@@ -266,6 +267,12 @@ export const SettingsPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* n8n 연동 설정 섹션 */}
+        <N8nSettingsSection 
+          isMobileLightMode={isMobileLightMode} 
+          isDesktop={isDesktop} 
+        />
       </div>
     </Layout>
   );

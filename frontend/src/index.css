@@ -147,12 +147,25 @@
     backface-visibility: hidden;
   }
   
-  /* Grid 아이템 안정성 */
   .nav-grid-item {
     transform: translateZ(0);
     will-change: transform;
     backface-visibility: hidden;
     contain: layout style paint;
+  }
+
+  /* 스피너 애니메이션 강제 정의 (Tailwind 미작동 대비) */
+  .animate-spin {
+    animation: spin 1s linear infinite !important;
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
   }
 }
 

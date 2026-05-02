@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { HomePage } from './pages/HomePage';
 import { MemoListPage } from './pages/MemoListPage';
 import { MemoCreatePage } from './pages/MemoCreatePage';
+import { N8nMemoCreatePage } from './pages/N8nMemoCreatePage';
 import { MemoEditPage } from './pages/MemoEditPage';
 import { MemoDetailPage } from './pages/MemoDetailPage';
 import { TemplateManagePage } from './pages/TemplateManagePage';
@@ -90,6 +91,11 @@ function App() {
             <Route path="/create" element={
               <ProtectedRoute>
                 <MemoCreatePage />
+              </ProtectedRoute>
+            } />
+            <Route path="/create-n8n/:workflowId" element={
+              <ProtectedRoute>
+                <N8nMemoCreatePage />
               </ProtectedRoute>
             } />
             <Route path="/memo/:id" element={

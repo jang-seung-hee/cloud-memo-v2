@@ -55,7 +55,7 @@ export interface IFirebaseMemo {
   content: string;
   images: string[];
   tags: string[];
-  category: 'temporary' | 'memory' | 'archive';
+  category: 'temporary' | 'memory' | 'archive' | 'n8n';
   isDraft?: boolean;
   isImportant?: boolean;
   isPinned?: boolean;
@@ -96,7 +96,7 @@ export interface IMemoCreateData {
   content: string;
   images: File[];
   tags: string[];
-  category: 'temporary' | 'memory' | 'archive';
+  category: 'temporary' | 'memory' | 'archive' | 'n8n';
   templateId?: string;
   sharedWith?: ISharedUser[];
   sharedWithUids?: string[];
@@ -118,7 +118,7 @@ export interface IMemoUpdateData {
   content?: string;
   images?: string[];
   tags?: string[];
-  category?: 'temporary' | 'memory' | 'archive';
+  category?: 'temporary' | 'memory' | 'archive' | 'n8n';
   isDraft?: boolean;
   isImportant?: boolean;
   isPinned?: boolean;
@@ -158,7 +158,8 @@ export const COLLECTIONS = {
   TEMPLATES: 'templates',
   CATEGORIES: 'categories',
   NOTIFICATIONS: 'notifications',
-  PUBLIC_PROFILES: 'publicProfiles'
+  PUBLIC_PROFILES: 'publicProfiles',
+  N8N_WORKFLOWS: 'n8nWorkflows'
 } as const;
 
 // 컬렉션 이름 타입

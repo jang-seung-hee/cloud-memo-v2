@@ -6,9 +6,11 @@ import {
   HomeIcon, 
   PlusIcon, 
   SparklesIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  BoltIcon
 } from '@heroicons/react/24/outline';
 import { TemplateSidebar } from '../ui/sidebar';
+import { N8nWorkflowSelectModal } from '../../features/n8n/components/N8nWorkflowSelectModal';
 import { useDevice } from '../../hooks/useDevice';
 import { useToast } from '../../hooks/use-toast';
 import { firestoreService } from '../../services/firebase/firestore';
@@ -27,6 +29,7 @@ export const Navigation: React.FC = () => {
   const { insertTemplateText } = useTemplateContext();
   const { isDark } = useTheme();
   const [isTemplateSidebarOpen, setIsTemplateSidebarOpen] = useState(false);
+  const [isN8nModalOpen, setIsN8nModalOpen] = useState(false);
 
   const isMemoList = location.pathname === '/memos';
 
@@ -217,6 +220,24 @@ export const Navigation: React.FC = () => {
                   <span className="font-medium transition-all duration-200 text-xs leading-none">새 메모</span>
                 </div>
               </Button>
+
+              {/* n8n 버튼 */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsN8nModalOpen(true)}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-1 h-auto rounded-xl transition-colors duration-200 nav-button-stable p-2 flex-1 max-w-20",
+                  (isMobileLightMode || isDesktopLightMode)
+                    ? "text-purple-600 hover:text-purple-900 hover:bg-purple-50"
+                    : "text-purple-400 hover:text-purple-300 hover:bg-purple-900/20"
+                )}
+              >
+                <div className="flex flex-col items-center justify-center w-full h-full">
+                  <BoltIcon className="transition-transform duration-200 h-5 w-5 text-purple-500" />
+                  <span className="font-medium transition-all duration-200 text-xs leading-none">n8n</span>
+                </div>
+              </Button>
             </div>
           ) : (
             /* 모바일 모드: 홈 화면과 동일한 디자인 */
@@ -309,6 +330,17 @@ export const Navigation: React.FC = () => {
                 </div>
                 <span className="text-xs font-medium text-gray-600 dark:text-gray-300">새메모</span>
               </div>
+
+              {/* n8n 자동화 */}
+              <div 
+                className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => setIsN8nModalOpen(true)}
+              >
+                <div className="w-6 h-6 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center mb-1 border border-purple-200 dark:border-purple-800/50">
+                  <BoltIcon className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                </div>
+                <span className="text-xs font-medium text-purple-600 dark:text-purple-400">n8n</span>
+              </div>
             </div>
           )}
         </div>
@@ -325,6 +357,13 @@ export const Navigation: React.FC = () => {
           setIsTemplateSidebarOpen(false);
         }}
         onTemplateCopy={handleTemplateCopy}
+      />
+
+      {/* n8n 워크플로우 선택 모달 */}
+      <N8nWorkflowSelectModal
+        isOpen={isN8nModalOpen}
+        onClose={() => setIsN8nModalOpen(false)}
+        isMobileLightMode={isMobileLightMode}
       />
     </>
   );

@@ -2,7 +2,7 @@ import React from 'react';
 import { Badge } from './badge';
 import { cn } from '../../lib/utils';
 
-export type CategoryType = 'temporary' | 'memory' | 'archive';
+export type CategoryType = 'temporary' | 'memory' | 'archive' | 'n8n';
 
 interface CategoryBadgeProps {
   category: CategoryType;
@@ -22,6 +22,10 @@ const categoryConfig = {
   archive: {
     label: '보관',
     color: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800/30'
+  },
+  n8n: {
+    label: 'n8n',
+    color: 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800/30'
   }
 };
 
@@ -72,7 +76,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   
   return (
     <div className={cn('flex gap-2', className)}>
-      {(['temporary', 'memory', 'archive'] as CategoryType[]).map((category) => {
+      {(['temporary', 'memory', 'archive', 'n8n'] as CategoryType[]).map((category) => {
         const isSelected = safeSelectedCategory === category;
         const config = categoryConfig[category];
         
@@ -90,7 +94,8 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
                     'ring-2 ring-offset-1 ring-offset-background',
                     category === 'temporary' ? 'ring-green-300 dark:ring-green-600' : '',
                     category === 'memory' ? 'ring-orange-300 dark:ring-orange-600' : '',
-                    category === 'archive' ? 'ring-red-300 dark:ring-red-600' : ''
+                    category === 'archive' ? 'ring-red-300 dark:ring-red-600' : '',
+                    category === 'n8n' ? 'ring-purple-300 dark:ring-purple-600' : ''
                   ]
                 : [
                     'bg-white dark:bg-gray-800',
@@ -115,7 +120,8 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
                 'absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border border-white dark:border-gray-800',
                 category === 'temporary' ? 'bg-green-500' : '',
                 category === 'memory' ? 'bg-orange-500' : '',
-                category === 'archive' ? 'bg-red-500' : ''
+                category === 'archive' ? 'bg-red-500' : '',
+                category === 'n8n' ? 'bg-purple-500' : ''
               )} />
             )}
           </button>

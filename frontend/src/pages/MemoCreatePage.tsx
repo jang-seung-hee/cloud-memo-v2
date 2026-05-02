@@ -573,7 +573,7 @@ export const MemoCreatePage: React.FC = () => {
     <Layout title="새 메모 작성" showNewButton={false}>
       <div className="flex flex-col h-full space-y-2">
         {/* 헤더 - 새로운 타이틀 스타일 */}
-        <div className={`flex items-center justify-between px-4 py-1.5 rounded-lg shadow-sm ${isMobileLightMode
+        <div className={`flex items-center justify-between px-2 py-1.5 rounded-lg shadow-sm ${isMobileLightMode
           ? 'bg-white border border-gray-200'
           : 'bg-gradient-to-r from-sky-400 via-blue-500 to-cyan-500 dark:bg-slate-800 dark:from-slate-800 dark:via-slate-800 dark:to-slate-800 shadow-md'
           }`}>

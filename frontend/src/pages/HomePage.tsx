@@ -22,8 +22,10 @@ import {
   Sparkles,
   Shield,
   Cloud,
-  ChevronRight
+  ChevronRight,
+  Zap
 } from 'lucide-react';
+import { N8nWorkflowSelectModal } from '../features/n8n/components/N8nWorkflowSelectModal';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -31,11 +33,16 @@ export const HomePage: React.FC = () => {
   const { user, isAuthenticated, login, logout } = useAuth();
   const { data: memos, loading: memosLoading } = useMemos();
   const { data: templates, loading: templatesLoading } = useTemplates();
-  const { isMobile } = useDevice();
+  const { isDesktop } = useDevice();
   const { isDark } = useTheme();
   const { toast } = useToast();
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [isTemplateSidebarOpen, setIsTemplateSidebarOpen] = useState(false);
+  const [isN8nModalOpen, setIsN8nModalOpen] = useState(false);
+
+  // 모바일 + 라이트 모드일 때의 스타일 조건
+  const isMobileLightMode = !isDesktop && !isDark;
+
   const [hasAutoRedirected, setHasAutoRedirected] = useState(() => {
     // sessionStorage에서 자동 리다이렉트 상태 확인
     return sessionStorage.getItem('hasAutoRedirected') === 'true';
@@ -135,7 +142,7 @@ export const HomePage: React.FC = () => {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#8bc0e0] to-[#6a9bd0] dark:bg-gradient-to-b dark:from-slate-800 dark:via-slate-900 dark:to-gray-950 flex items-center justify-center">
-        <div className="w-full max-w-md px-6 py-8">
+        <div className="w-full max-w-md px-3 py-8">
           {/* 로고 및 타이틀 */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-4">
@@ -228,7 +235,7 @@ export const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#8bc0e0] to-[#6a9bd0] dark:bg-gradient-to-b dark:from-slate-800 dark:via-slate-900 dark:to-gray-950 flex flex-col">
       {/* 메인 콘텐츠 */}
-      <div className="flex-1 flex items-center justify-center px-6 py-8 pb-28">
+      <div className="flex-1 flex items-center justify-center px-3 py-8 pb-28">
         <div className="w-full max-w-md">
           {/* 로고 및 타이틀 */}
           <div className="text-center mb-8">
@@ -338,7 +345,7 @@ export const HomePage: React.FC = () => {
 
       {/* 바텀 고정 메뉴 */}
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg">
-        <div className="flex justify-around items-center py-3 px-6">
+        <div className="flex justify-around items-center py-3 px-3">
           {/* 홈 */}
           <div className="flex flex-col items-center">
             <div className="w-6 h-6 bg-blue-500 rounded-lg flex items-center justify-center mb-1">
@@ -379,6 +386,17 @@ export const HomePage: React.FC = () => {
             </div>
             <span className="text-xs text-gray-600 dark:text-gray-300">새메모</span>
           </div>
+
+          {/* n8n 자동화 */}
+          <div 
+            className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => setIsN8nModalOpen(true)}
+          >
+            <div className="w-6 h-6 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center mb-1 border border-purple-200 dark:border-purple-800">
+              <Zap className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+            </div>
+            <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">n8n</span>
+          </div>
         </div>
       </div>
 
@@ -389,6 +407,13 @@ export const HomePage: React.FC = () => {
         templates={templates || []}
         onTemplateSelect={handleTemplateSelect}
         onTemplateCopy={handleTemplateCopy}
+      />
+
+      {/* n8n 워크플로우 선택 모달 */}
+      <N8nWorkflowSelectModal
+        isOpen={isN8nModalOpen}
+        onClose={() => setIsN8nModalOpen(false)}
+        isMobileLightMode={isMobileLightMode}
       />
     </div>
   );

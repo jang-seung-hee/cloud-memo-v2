@@ -90,7 +90,7 @@ export const Header: React.FC<HeaderProps> = ({
     }`}>
       <div className="flex flex-col">
         {/* 메인 헤더 */}
-        <div className={`flex items-center justify-between px-4 ${isDesktop ? 'h-12' : 'h-14'}`}>
+        <div className={`flex items-center justify-between ${isDesktop ? 'px-4 h-12' : 'px-2 h-14'}`}>
           {/* 왼쪽: 로고 */}
           <div 
             className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
