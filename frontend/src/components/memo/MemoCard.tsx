@@ -82,34 +82,29 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
     const diffTime = nowOnly.getTime() - dateOnly.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-    // 시간 포맷팅 (HH:MM)
+    // 시간 포맷팅 (HH:mm)
     const timeString = date.toLocaleTimeString('ko-KR', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false
     });
 
+    const yearShort = String(date.getFullYear()).substring(2);
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateShort = `${yearShort}.${month}.${day}`;
+
     if (diffDays === 0) {
-      return `오늘 (${timeString})`;
+      return `오늘 ${timeString}`;
     } else if (diffDays === 1) {
-      return `어제 (${timeString})`;
-    } else if (diffDays < 7) {
-      return `${diffDays}일 전 (${timeString})`;
+      return `어제 ${timeString}`;
     } else {
-      // 모바일 모드일 때는 YYYY/MM/DD 형식으로 표시하고 시간 제외
+      // 모바일 모드일 때는 최대한 축약 (YY.MM.DD)
       if (!isDesktop) {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}/${month}/${day}`;
+        return dateShort;
       } else {
-        // 데스크톱 모드일 때는 기존 형식 유지
-        const dateString = date.toLocaleDateString('ko-KR', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric'
-        });
-        return `${dateString} (${timeString})`;
+        // 데스크톱 모드에서도 축약된 형식 사용 (YY.MM.DD HH:mm)
+        return `${dateShort} ${timeString}`;
       }
     }
   }, [memo.createdAt, memo.updatedAt, isDesktop]);
@@ -291,211 +286,210 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
       className={`group cursor-pointer hover:shadow-lg transition-all duration-300 bg-white dark:bg-card border border-border/40 hover:border-border/60 rounded-lg overflow-hidden ${isDesktop ? 'h-[364px]' : 'min-h-[220px]'}`}
       onClick={handleClick}
     >
-      <CardHeader className={`pb-3 px-4 pt-4 bg-white dark:bg-card relative ${isDesktop ? 'pb-2' : ''}`}>
+      <CardHeader className={`pb-3 pt-4 bg-white dark:bg-card relative ${isDesktop ? 'pb-2 px-4' : 'px-2'}`}>
         {isDesktop ? (
           <>
-            {/* PC 모드: 제목만 표시 */}
+            {/* PC 모드: 제목 표시 */}
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
-                {/* 제목만 표시 */}
                 <h3 className={`font-semibold text-card-foreground line-clamp-2 group-hover:text-primary transition-colors ${fontSizeClasses.title}`}>
                   {getTitleForPC}
                 </h3>
               </div>
             </div>
 
-            {/* PC 모드: 제목 아래 새로운 행에 카테고리 뱃지, 액션 버튼, 작성시간 배치 */}
-            <div className="flex items-center justify-between mt-2 bg-muted/30 dark:bg-muted/20 rounded px-2 py-1.5">
-              {/* 왼쪽: 카테고리 뱃지와 작성시간 */}
-              <div className="flex items-center gap-2">
+            {/* PC 모드: 상단 바 (카테고리, 공유, 날짜, 액션) */}
+            <div className="flex items-center justify-between mt-2 bg-muted/30 dark:bg-muted/20 rounded px-1.5 py-1">
+              {/* 왼쪽: 카테고리 뱃지 및 공유 상태 */}
+              <div className="flex items-center gap-1.5">
                 <CategoryBadge category={memo.category || 'temporary'} size="sm" />
-
-                {/* 공유 상태 뱃지 (PC) */}
-                {isSentShare && (
-                  <Badge variant="outline" className="h-5 px-1.5 bg-blue-50 text-blue-600 border-blue-200 gap-1 flex items-center">
-                    <UsersIcon className="h-3 w-3" />
-                    <span className="text-[10px] font-bold">공유</span>
-                  </Badge>
-                )}
-                {isReceivedShare && (
-                  <Badge variant="outline" className="h-5 px-1.5 bg-green-50 text-green-600 border-green-200 gap-1 flex items-center">
-                    <ShareIcon className="h-3 w-3" />
-                    <span className="text-[10px] font-bold">받음</span>
-                  </Badge>
-                )}
-
-                <div className="flex items-center gap-1 text-muted-foreground ml-1">
-                  <ClockIcon className="h-3 w-3" />
-                  <span className={`text-xs ${fontSizeClasses.date}`}>
-                    {formattedDate}
-                  </span>
+                <div className="flex items-center gap-1">
+                  {isSentShare && (
+                    <Badge variant="outline" className="h-5 px-1.5 bg-blue-50 text-blue-600 border-blue-200 gap-0.5 flex items-center whitespace-nowrap">
+                      <UsersIcon className="h-3 w-3" />
+                      <span className="text-[10px] font-bold">공유</span>
+                    </Badge>
+                  )}
+                  {isReceivedShare && (
+                    <Badge variant="outline" className="h-5 px-1.5 bg-green-50 text-green-600 border-green-200 gap-0.5 flex items-center whitespace-nowrap">
+                      <ShareIcon className="h-3 w-3" />
+                      <span className="text-[10px] font-bold">받음</span>
+                    </Badge>
+                  )}
                 </div>
               </div>
 
-              {/* 오른쪽: 액션 버튼들 */}
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground transition-colors"
-                  onClick={handleCopy}
-                  title="복사"
-                >
-                  <DocumentDuplicateIcon className="h-3.5 w-3.5" />
-                </Button>
-                {canEdit && (
+              {/* 오른쪽: 날짜 + 액션 버튼들 */}
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center text-muted-foreground mr-0.5">
+                  <span className={`text-[11px] whitespace-nowrap ${fontSizeClasses.date}`}>
+                    {formattedDate}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-0.5 border-l border-border/30 pl-1.5 ml-0.5">
                   <Button
                     variant="ghost"
                     size="sm"
                     className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground transition-colors"
-                    onClick={handleEdit}
-                    title="수정"
+                    onClick={handleCopy}
+                    title="복사"
                   >
-                    <PencilIcon className="h-3.5 w-3.5" />
+                    <DocumentDuplicateIcon className="h-3.5 w-3.5" />
                   </Button>
-                )}
-                {canDelete && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive transition-colors"
-                        onClick={(e) => e.stopPropagation()}
-                        title="삭제"
-                      >
-                        <TrashIcon className="h-3.5 w-3.5" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>메모 삭제</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          이 메모를 삭제하시겠습니까?
-                          {memo.images && memo.images.length > 0 && (
-                            <span className="block mt-2 text-destructive">
-                              첨부된 이미지 {memo.images.length}개도 함께 삭제됩니다.
-                            </span>
-                          )}
-                          이 작업은 되돌릴 수 없습니다.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel onClick={(e) => e.stopPropagation()}>취소</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete();
-                          }}
-                          disabled={isDeleting}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+                  {canEdit && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground transition-colors"
+                      onClick={handleEdit}
+                      title="수정"
+                    >
+                      <PencilIcon className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                  {canDelete && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                          title="삭제"
                         >
-                          {isDeleting ? '삭제 중...' : '삭제'}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
+                          <TrashIcon className="h-3.5 w-3.5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>메모 삭제</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            이 메모를 삭제하시겠습니까?
+                            {memo.images && memo.images.length > 0 && (
+                              <span className="block mt-2 text-destructive">
+                                첨부된 이미지 {memo.images.length}개도 함께 삭제됩니다.
+                              </span>
+                            )}
+                            이 작업은 되돌릴 수 없습니다.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel onClick={(e) => e.stopPropagation()}>취소</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete();
+                            }}
+                            disabled={isDeleting}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+                          >
+                            {isDeleting ? '삭제 중...' : '삭제'}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
               </div>
             </div>
           </>
         ) : (
           // 모바일 모드: 카테고리 뱃지와 액션 버튼을 같은 줄에 배치
-          <div className="flex items-center justify-between mb-2 bg-muted/30 dark:bg-muted/20 rounded px-2 py-1.5">
-            {/* 왼쪽: 카테고리 뱃지와 작성시간 */}
-            <div className="flex items-center gap-2">
-              <CategoryBadge category={memo.category || 'temporary'} size="sm" />
-
-              {/* 공유 상태 뱃지 (모바일) */}
-              {isSentShare && (
-                <Badge variant="outline" className="h-5 px-1.5 bg-blue-50 text-blue-600 border-blue-200 gap-1 flex items-center">
-                  <UsersIcon className="h-3 w-3" />
-                  <span className="text-[10px] font-bold">공유</span>
-                </Badge>
-              )}
-              {isReceivedShare && (
-                <Badge variant="outline" className="h-5 px-1.5 bg-green-50 text-green-600 border-green-200 gap-1 flex items-center">
-                  <ShareIcon className="h-3 w-3" />
-                  <span className="text-[10px] font-bold">받음</span>
-                </Badge>
-              )}
-
-              <div className="flex items-center gap-1 text-muted-foreground ml-1">
-                <ClockIcon className="h-3 w-3" />
-                <span className={`text-xs ${fontSizeClasses.date}`}>
-                  {formattedDate}
-                </span>
+          <div className="flex items-center justify-between mb-2 bg-muted/30 dark:bg-muted/20 rounded px-1 py-1">
+            {/* 왼쪽: 카테고리 뱃지와 공유 상태 */}
+            <div className="flex items-center gap-1">
+              <CategoryBadge category={memo.category || 'temporary'} size="xs" />
+              <div className="flex items-center gap-0.5">
+                {isSentShare && (
+                  <Badge variant="outline" className="h-4.5 px-1 bg-blue-50 text-blue-600 border-blue-200 gap-0.5 flex items-center whitespace-nowrap">
+                    <UsersIcon className="h-2 w-2" />
+                    <span className="text-[9px] font-bold">공유</span>
+                  </Badge>
+                )}
+                {isReceivedShare && (
+                  <Badge variant="outline" className="h-4.5 px-1 bg-green-50 text-green-600 border-green-200 gap-0.5 flex items-center whitespace-nowrap">
+                    <ShareIcon className="h-2 w-2" />
+                    <span className="text-[9px] font-bold">받음</span>
+                  </Badge>
+                )}
               </div>
             </div>
 
-            {/* 오른쪽: 액션 버튼들 */}
+            {/* 오른쪽: 날짜 + 액션 버튼들 */}
             <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground transition-colors"
-                onClick={handleCopy}
-                title="복사"
-              >
-                <DocumentDuplicateIcon className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground transition-colors"
-                onClick={handleEdit}
-                title="수정"
-              >
-                <PencilIcon className="h-3.5 w-3.5" />
-              </Button>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive transition-colors"
-                    onClick={(e) => e.stopPropagation()}
-                    title="삭제"
-                  >
-                    <TrashIcon className="h-3.5 w-3.5" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>메모 삭제</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      이 메모를 삭제하시겠습니까?
-                      {memo.images && memo.images.length > 0 && (
-                        <span className="block mt-2 text-destructive">
-                          첨부된 이미지 {memo.images.length}개도 함께 삭제됩니다.
-                        </span>
-                      )}
-                      이 작업은 되돌릴 수 없습니다.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel onClick={(e) => e.stopPropagation()}>취소</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete();
-                      }}
-                      disabled={isDeleting}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+              <div className="flex items-center text-muted-foreground">
+                <span className={`text-[10px] leading-none whitespace-nowrap ${fontSizeClasses.date}`}>
+                  {formattedDate}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-0.5 border-l border-border/30 pl-1 ml-0.5">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={handleCopy}
+                  title="복사"
+                >
+                  <DocumentDuplicateIcon className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={handleEdit}
+                  title="수정"
+                >
+                  <PencilIcon className="h-3 w-3" />
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                      title="삭제"
                     >
-                      {isDeleting ? '삭제 중...' : '삭제'}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                      <TrashIcon className="h-3 w-3" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>메모 삭제</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        이 메모를 삭제하시겠습니까?
+                        {memo.images && memo.images.length > 0 && (
+                          <span className="block mt-2 text-destructive">
+                            첨부된 이미지 {memo.images.length}개도 함께 삭제됩니다.
+                          </span>
+                        )}
+                        이 작업은 되돌릴 수 없습니다.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel onClick={(e) => e.stopPropagation()}>취소</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete();
+                        }}
+                        disabled={isDeleting}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+                      >
+                        {isDeleting ? '삭제 중...' : '삭제'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </div>
           </div>
         )}
-
-
       </CardHeader>
 
-      <CardContent className={`px-4 pb-4 pt-0 bg-white dark:bg-card relative ${isDesktop ? 'flex flex-col h-full' : 'flex flex-col h-full'}`}>
+      <CardContent className={`pb-4 pt-0 bg-white dark:bg-card relative ${isDesktop ? 'px-4 flex flex-col h-full' : 'px-2 flex flex-col h-full'}`}>
 
         {/* 내용 미리보기 - 이미지 유무에 따라 다른 레이아웃 */}
         {isDesktop ? (
@@ -619,15 +613,6 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
             <Badge variant="outline" className={`bg-background/50 dark:bg-background/30 ${fontSizeClasses.text}`}>
               {memo.content.length}자
             </Badge>
-            {/* 모바일에서 날짜 표시 */}
-            {!isDesktop && (
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <ClockIcon className="h-3 w-3" />
-                <span className={`text-xs ${fontSizeClasses.date}`}>
-                  {formattedDate}
-                </span>
-              </div>
-            )}
           </div>
         </div>
       </CardContent>

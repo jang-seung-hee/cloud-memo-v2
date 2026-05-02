@@ -7,7 +7,7 @@ export type CategoryType = 'temporary' | 'memory' | 'archive' | 'n8n';
 interface CategoryBadgeProps {
   category: CategoryType;
   className?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
 }
 
 const categoryConfig = {
@@ -39,6 +39,7 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({
   const config = categoryConfig[safeCategory];
   
   const sizeClasses = {
+    xs: 'text-[10px] px-1 py-0.5',
     sm: 'text-xs px-1.5 py-0.5',
     md: 'text-xs px-2 py-1',
     lg: 'text-sm px-3 py-1.5'
