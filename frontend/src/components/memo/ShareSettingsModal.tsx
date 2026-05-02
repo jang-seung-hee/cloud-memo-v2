@@ -149,30 +149,28 @@ export const ShareSettingsModal: React.FC<ShareSettingsModalProps> = ({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="w-[94vw] sm:max-w-[500px] p-4 sm:p-6 rounded-xl gap-4">
                 <DialogHeader>
-                    <DialogTitle>공유 설정</DialogTitle>
+                    <DialogTitle className="text-center sm:text-left">공유 설정</DialogTitle>
                 </DialogHeader>
 
-                <div className="space-y-6 py-4">
+                <div className="space-y-4 py-2">
                     {/* 사용자 검색 */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">사용자 초대</label>
-                        <div className="flex gap-2">
-                            <div className="relative flex-1">
-                                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                <Input
-                                    placeholder="이메일 또는 이름으로 검색..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="pl-9"
-                                />
-                                {isSearching && (
-                                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                        <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-                                    </div>
-                                )}
-                            </div>
+                        <div className="relative">
+                            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <Input
+                                placeholder="이메일 또는 이름으로 검색..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-9"
+                            />
+                            {isSearching && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                    <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -187,17 +185,17 @@ export const ShareSettingsModal: React.FC<ShareSettingsModalProps> = ({
                                             className="flex items-center justify-between p-2 hover:bg-white dark:hover:bg-gray-800 rounded cursor-pointer transition-colors"
                                             onClick={() => handleAddUser(user)}
                                         >
-                                            <div className="flex items-center gap-2">
-                                                <Avatar className="h-8 w-8">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <Avatar className="h-8 w-8 flex-shrink-0">
                                                     <AvatarImage src={user.photoURL} />
                                                     <AvatarFallback>{user.displayName[0]}</AvatarFallback>
                                                 </Avatar>
-                                                <div>
-                                                    <p className="text-sm font-medium">{user.displayName}</p>
-                                                    <p className="text-xs text-gray-500">{user.email}</p>
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-medium truncate">{user.displayName}</p>
+                                                    <p className="text-xs text-gray-500 truncate">{user.email}</p>
                                                 </div>
                                             </div>
-                                            <UserPlusIcon className="h-5 w-5 text-blue-500" />
+                                            <UserPlusIcon className="h-5 w-5 text-blue-500 flex-shrink-0" />
                                         </div>
                                     ))}
                                 </div>
@@ -210,50 +208,52 @@ export const ShareSettingsModal: React.FC<ShareSettingsModalProps> = ({
                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                             공유 대상 ({localSharedWith.length}명)
                         </label>
-                        <ScrollArea className="h-[200px] border rounded-md p-2">
+                        <ScrollArea className="h-[200px] border rounded-md p-1 sm:p-2">
                             {localSharedWith.length === 0 ? (
                                 <div className="h-full flex flex-col items-center justify-center text-gray-400 py-8">
                                     <UserPlusIcon className="h-10 w-10 mb-2 opacity-20" />
                                     <p className="text-sm">공유된 사용자가 없습니다.</p>
                                 </div>
                             ) : (
-                                <div className="space-y-3">
+                                <div className="space-y-2">
                                     {localSharedWith.map(user => (
-                                        <div key={user.uid} className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded border shadow-sm">
+                                        <div key={user.uid} className="flex items-center justify-between p-1.5 sm:p-2 bg-white dark:bg-gray-800 rounded border shadow-sm gap-2">
                                             <div className="flex items-center gap-2 min-w-0">
-                                                <Avatar className="h-8 w-8 flex-shrink-0">
+                                                <Avatar className="h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0">
                                                     <AvatarImage src={user.photoURL} />
                                                     <AvatarFallback>{user.displayName[0]}</AvatarFallback>
                                                 </Avatar>
                                                 <div className="min-w-0">
-                                                    <p className="text-sm font-medium truncate">{user.displayName}</p>
-                                                    <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                                                    <p className="text-xs sm:text-sm font-medium truncate">{user.displayName}</p>
+                                                    <p className="text-[10px] sm:text-xs text-gray-500 truncate">{user.email}</p>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="flex items-center gap-1.5">
+                                            <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+                                                <div className="flex items-center gap-2 sm:gap-4">
+                                                    <div className="flex items-center gap-1">
                                                         <Checkbox
                                                             id={`edit-${user.uid}`}
                                                             checked={user.permissions.edit}
                                                             onCheckedChange={(checked) => handlePermissionChange(user.uid, 'edit', !!checked)}
+                                                            className="h-3.5 w-3.5"
                                                         />
-                                                        <label htmlFor={`edit-${user.uid}`} className="text-xs text-gray-600 dark:text-gray-400 cursor-pointer">수정</label>
+                                                        <label htmlFor={`edit-${user.uid}`} className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 cursor-pointer whitespace-nowrap">수정</label>
                                                     </div>
-                                                    <div className="flex items-center gap-1.5">
+                                                    <div className="flex items-center gap-1">
                                                         <Checkbox
                                                             id={`delete-${user.uid}`}
                                                             checked={user.permissions.delete}
                                                             onCheckedChange={(checked) => handlePermissionChange(user.uid, 'delete', !!checked)}
+                                                            className="h-3.5 w-3.5"
                                                         />
-                                                        <label htmlFor={`delete-${user.uid}`} className="text-xs text-gray-600 dark:text-gray-400 cursor-pointer">삭제</label>
+                                                        <label htmlFor={`delete-${user.uid}`} className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 cursor-pointer whitespace-nowrap">삭제</label>
                                                     </div>
                                                 </div>
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => handleRemoveUser(user.uid)}
-                                                    className="h-8 w-8 p-0 text-gray-400 hover:text-destructive"
+                                                    className="h-7 w-7 p-0 text-gray-400 hover:text-destructive flex-shrink-0"
                                                 >
                                                     <TrashIcon className="h-4 w-4" />
                                                 </Button>
@@ -266,9 +266,9 @@ export const ShareSettingsModal: React.FC<ShareSettingsModalProps> = ({
                     </div>
                 </div>
 
-                <DialogFooter>
-                    <Button variant="outline" onClick={onClose}>취소</Button>
-                    <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">
+                <DialogFooter className="flex-col sm:flex-row gap-2">
+                    <Button variant="outline" onClick={onClose} className="w-full sm:w-auto order-2 sm:order-1">취소</Button>
+                    <Button onClick={handleSave} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 order-1 sm:order-2">
                         적용
                     </Button>
                 </DialogFooter>
