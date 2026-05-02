@@ -64,6 +64,8 @@ export interface IFirebaseMemo {
   updatedAt: any; // Firebase Timestamp
   userId: string;
   isProcessing?: boolean; // 비동기 작업 중 여부
+  n8nStatus?: 'success' | 'error' | 'timeout'; // n8n 처리 결과
+  n8nError?: string; // n8n 처리 실패 사유
   sharedWith?: ISharedUser[]; // 공유 상세 정보
   sharedWithUids?: string[]; // 쿼리용 UID 목록
 }
@@ -100,6 +102,8 @@ export interface IMemoCreateData {
   category: 'temporary' | 'memory' | 'archive' | 'n8n';
   templateId?: string;
   isProcessing?: boolean;
+  n8nStatus?: 'success' | 'error' | 'timeout';
+  n8nError?: string;
   sharedWith?: ISharedUser[];
   sharedWithUids?: string[];
 }
@@ -126,6 +130,8 @@ export interface IMemoUpdateData {
   isPinned?: boolean;
   isArchived?: boolean;
   isProcessing?: boolean;
+  n8nStatus?: 'success' | 'error' | 'timeout';
+  n8nError?: string;
   sharedWith?: ISharedUser[];
   sharedWithUids?: string[];
 }

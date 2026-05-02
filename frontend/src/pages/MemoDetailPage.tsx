@@ -403,6 +403,12 @@ export const MemoDetailPage: React.FC = () => {
                   <div className="flex items-center gap-3">
                     <CategoryBadge category={memo.category || 'temporary'} size="md" />
 
+                    {!memo.isProcessing && memo.n8nStatus && (
+                      <Badge variant="outline" className={`h-8 px-2.5 bg-background text-[11px] font-bold ${memo.n8nStatus === 'success' ? 'text-green-600 border-green-200 bg-green-50' : memo.n8nStatus === 'error' ? 'text-red-600 border-red-200 bg-red-50' : 'text-orange-600 border-orange-200 bg-orange-50'}`}>
+                        {memo.n8nStatus === 'success' ? 'n8n 성공' : memo.n8nStatus === 'error' ? 'n8n 실패' : 'n8n 시간초과'}
+                      </Badge>
+                    )}
+
                     {/* 공유 상태 뱃지 (PC) */}
                     {user?.uid === memo.userId && (
                       <ShareSettingsBadge
@@ -509,6 +515,11 @@ export const MemoDetailPage: React.FC = () => {
                     {memo.content.length}자
                   </span>
                 </div>
+                {memo.n8nError && (
+                  <div className="mb-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded text-red-600 dark:text-red-400 text-xs font-medium">
+                    처리 실패 사유: {memo.n8nError}
+                  </div>
+                )}
                 <div className="p-4 bg-yellow-50 dark:bg-gray-800/60 rounded-lg border-0 min-h-[200px]">
                   <div className={`whitespace-pre-wrap text-gray-700 dark:text-gray-300 leading-relaxed ${fontSizeClasses.content} bg-yellow-50 bg-[linear-gradient(transparent_0%,transparent_1.5rem,rgba(229,231,235,0.65)_1.5rem,rgba(229,231,235,0.65)_1.6rem)] bg-[length:100%_1.6rem] dark:bg-gray-800/60 dark:bg-[linear-gradient(transparent_0%,transparent_1.5rem,rgba(75,85,99,0.25)_1.5rem,rgba(75,85,99,0.25)_1.51rem)] dark:bg-[length:100%_1.6rem]`}>
                     {formatLinksInText(memo.content)}
@@ -653,6 +664,12 @@ export const MemoDetailPage: React.FC = () => {
                     size="sm"
                     className="h-7 px-2 flex items-center justify-center text-[10px]"
                   />
+
+                  {!memo.isProcessing && memo.n8nStatus && (
+                    <Badge variant="outline" className={`h-7 px-2 text-[10px] font-bold ${memo.n8nStatus === 'success' ? 'text-green-600 border-green-200 bg-green-50' : memo.n8nStatus === 'error' ? 'text-red-600 border-red-200 bg-red-50' : 'text-orange-600 border-orange-200 bg-orange-50'}`}>
+                      {memo.n8nStatus === 'success' ? '성공' : memo.n8nStatus === 'error' ? '실패' : '시간초과'}
+                    </Badge>
+                  )}
 
                   {/* 공유 상태 뱃지 (모바일) */}
                   {user?.uid === memo.userId && (

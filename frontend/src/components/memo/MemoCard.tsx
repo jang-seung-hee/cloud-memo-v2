@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -40,6 +40,37 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
   const { user } = useAuth();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // n8n 처리 타임아웃 체크 (120초)
+  useEffect(() => {
+    if (!memo.isProcessing) return;
+
+    const checkTimeout = async () => {
+      const updatedAt = memo.updatedAt?.toDate ? memo.updatedAt.toDate() : new Date(memo.updatedAt);
+      const now = new Date();
+      const diffSeconds = (now.getTime() - updatedAt.getTime()) / 1000;
+
+      if (diffSeconds > 120) {
+        console.log(`[MemoCard] Auto-timing out stuck memo: ${memo.id}`);
+        try {
+          await firestoreService.updateMemo(memo.id, {
+            isProcessing: false,
+            n8nStatus: 'timeout',
+            n8nError: '처리 시간 초과 (120초)'
+          });
+          if (onMemoUpdate) onMemoUpdate();
+        } catch (err) {
+          console.error('Auto timeout update error:', err);
+        }
+      }
+    };
+
+    // 처음 한 번 체크하고, 10초마다 체크
+    checkTimeout();
+    const timer = setInterval(checkTimeout, 10000);
+    
+    return () => clearInterval(timer);
+  }, [memo.isProcessing, memo.updatedAt, memo.id, onMemoUpdate]);
 
   // 공유 상태 확인
   const isSentShare = useMemo(() => {
@@ -284,16 +315,40 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
 
   return (
     <Card
-      className={`group cursor-pointer hover:shadow-lg transition-all duration-300 bg-white dark:bg-card border border-border/40 hover:border-border/60 rounded-lg overflow-hidden ${isDesktop ? 'h-[364px]' : 'min-h-[220px]'}`}
+      className={`group cursor-pointer hover:shadow-lg transition-all duration-300 bg-white dark:bg-card border border-border/40 hover:border-border/60 rounded-lg overflow-hidden relative ${isDesktop ? 'h-[364px]' : 'min-h-[220px]'}`}
       onClick={handleClick}
     >
       {/* n8n 처리 중 오버레이 */}
       {memo.isProcessing && (
-        <div className="absolute inset-0 bg-white/70 dark:bg-gray-900/70 z-20 flex flex-col items-center justify-center backdrop-blur-[2px] transition-all duration-500">
+        <div className="absolute inset-0 bg-white/70 dark:bg-gray-900/70 z-20 flex flex-col items-center justify-center backdrop-blur-[2px] transition-all duration-500" onClick={(e) => e.stopPropagation()}>
           <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-xl flex flex-col items-center border border-purple-100 dark:border-purple-900/50">
             <Loader2 className="h-8 w-8 animate-spin text-purple-600 dark:text-purple-400 mb-3" />
             <span className="text-sm font-bold text-purple-700 dark:text-purple-300 animate-pulse">n8n 처리 중...</span>
-            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-2">완료되면 자동으로 업데이트됩니다</p>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-2 mb-3">완료되면 자동으로 업데이트됩니다</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-7 px-3 text-[11px] border-red-200 text-red-600 hover:bg-red-50"
+              onClick={async (e) => {
+                e.stopPropagation();
+                try {
+                  await firestoreService.updateMemo(memo.id, { 
+                    isProcessing: false,
+                    n8nStatus: 'error',
+                    n8nError: '사용자에 의해 중단됨' 
+                  });
+                  toast({
+                    title: "처리 중지됨",
+                    description: "사용자에 의해 처리가 중지되었습니다."
+                  });
+                  if (onMemoUpdate) onMemoUpdate();
+                } catch (error) {
+                  console.error('Stop error:', error);
+                }
+              }}
+            >
+              중지
+            </Button>
           </div>
         </div>
       )}
@@ -314,6 +369,11 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
               {/* 왼쪽: 카테고리 뱃지 및 공유 상태 */}
               <div className="flex items-center gap-1.5">
                 <CategoryBadge category={memo.category || 'temporary'} size="sm" />
+                {!memo.isProcessing && memo.n8nStatus && (
+                  <span className={`text-[11px] font-bold px-1 ${memo.n8nStatus === 'success' ? 'text-green-600 dark:text-green-400' : memo.n8nStatus === 'error' ? 'text-red-600 dark:text-red-400' : 'text-orange-600 dark:text-orange-400'}`}>
+                    {memo.n8nStatus === 'success' ? '성공' : memo.n8nStatus === 'error' ? '실패' : '시간초과'}
+                  </span>
+                )}
                 <div className="flex items-center gap-1">
                   {isSentShare && (
                     <Badge variant="outline" className="h-5 px-1.5 bg-blue-50 text-blue-600 border-blue-200 gap-0.5 flex items-center whitespace-nowrap">
@@ -411,6 +471,11 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
             {/* 왼쪽: 카테고리 뱃지와 공유 상태 */}
             <div className="flex items-center gap-1">
               <CategoryBadge category={memo.category || 'temporary'} size="xs" />
+              {!memo.isProcessing && memo.n8nStatus && (
+                <span className={`text-[10px] font-bold px-1 ${memo.n8nStatus === 'success' ? 'text-green-600 dark:text-green-400' : memo.n8nStatus === 'error' ? 'text-red-600 dark:text-red-400' : 'text-orange-600 dark:text-orange-400'}`}>
+                  {memo.n8nStatus === 'success' ? '성공' : memo.n8nStatus === 'error' ? '실패' : '시간초과'}
+                </span>
+              )}
               <div className="flex items-center gap-0.5">
                 {isSentShare && (
                   <Badge variant="outline" className="h-4.5 px-1 bg-blue-50 text-blue-600 border-blue-200 gap-0.5 flex items-center whitespace-nowrap">
@@ -509,6 +574,11 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
             {memo.images.length === 0 ? (
               // 이미지가 없을 때: 더 큰 고정 높이로 텍스트 영역 설정
               <div className="bg-muted/80 dark:bg-muted/70 rounded-lg p-3 mb-4 relative h-[280px] flex flex-col">
+                {memo.n8nError && (
+                  <div className="mb-2 p-1.5 bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800 rounded text-red-600 dark:text-red-400 text-[10px] font-bold">
+                    처리 실패: {memo.n8nError}
+                  </div>
+                )}
                 <p className={`text-muted-foreground line-clamp-7 leading-tight whitespace-pre-wrap flex-1 ${fontSizeClasses.content}`}>
                   {truncatedContent}
                 </p>
@@ -520,6 +590,11 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
                 {/* 텍스트 영역 - 고정 높이로 설정 */}
                 <div className="h-[220px] pb-22">
                   <div className="bg-muted/80 dark:bg-muted/70 rounded-lg p-3 h-full flex flex-col">
+                    {memo.n8nError && (
+                      <div className="mb-2 p-1.5 bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800 rounded text-red-600 dark:text-red-400 text-[10px] font-bold">
+                        처리 실패: {memo.n8nError}
+                      </div>
+                    )}
                     <p className={`text-muted-foreground line-clamp-7 leading-normal whitespace-pre-wrap flex-1 ${fontSizeClasses.content}`}>
                       {truncatedContent}
                     </p>
@@ -566,6 +641,11 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
           <>
             {/* 텍스트 영역 - flex-1로 남은 공간 차지 */}
             <div className="flex-1">
+              {memo.n8nError && (
+                <div className="mb-2 p-1.5 bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800 rounded text-red-600 dark:text-red-400 text-[10px] font-bold">
+                  처리 실패: {memo.n8nError}
+                </div>
+              )}
               <p className={`text-muted-foreground mb-2 leading-normal ${isExpanded ? 'whitespace-pre-wrap' : 'whitespace-normal'} ${fontSizeClasses.content} ${isExpanded ? '' : 'line-clamp-6'}`}>
                 {getMobileContent}
               </p>

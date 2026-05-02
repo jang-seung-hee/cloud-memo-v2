@@ -9,6 +9,9 @@ import { ImageUpload } from '../components/memo/ImageUpload';
 import { TemplateSidebar } from '../components/ui/sidebar';
 import { IMemoFormData } from '../types/memo';
 import { useMemos, useTemplates } from '../hooks/useFirestore';
+import { firestoreService } from '../services/firebase/firestore';
+import { db } from '../services/firebase/config';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/use-toast';
 import { useDevice } from '../hooks/useDevice';
@@ -41,6 +44,7 @@ export const N8nMemoCreatePage: React.FC = () => {
 
   const [isTemplateSidebarOpen, setIsTemplateSidebarOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [processingMemoId, setProcessingMemoId] = useState<string | null>(null);
   const [textareaHeight, setTextareaHeight] = useState(230); // 기본 높이
 
   // 모바일 + 라이트 모드일 때의 스타일 조건
@@ -84,6 +88,52 @@ export const N8nMemoCreatePage: React.FC = () => {
       navigate('/');
     }
   }, [authLoading, isWorkflowsLoading, workflow, navigate, toast]);
+
+  // Firestore 문서 리스너 (n8n 처리가 완료될 때까지 기다림)
+  useEffect(() => {
+    if (!processingMemoId) return;
+
+    let timeoutId: NodeJS.Timeout;
+
+    const unsubscribe = onSnapshot(doc(db, 'memos', processingMemoId), (docSnap) => {
+      if (docSnap.exists()) {
+        const memoData = docSnap.data();
+        if (memoData.isProcessing === false) {
+          // 처리가 완료됨
+          setIsUploading(false);
+          setProcessingMemoId(null);
+          toast({
+            title: "n8n 처리 완료",
+            description: "메모 처리가 성공적으로 완료되었습니다."
+          });
+          navigate('/memos');
+        }
+      }
+    });
+
+    // 120초 후 타임아웃
+    timeoutId = setTimeout(() => {
+      unsubscribe();
+      firestoreService.updateMemo(processingMemoId, {
+        isProcessing: false,
+        n8nStatus: 'timeout',
+        n8nError: '처리 시간 초과 (120초)'
+      });
+      setIsUploading(false);
+      setProcessingMemoId(null);
+      toast({
+        title: "처리 시간 초과",
+        description: "n8n 처리 응답을 기다리는 시간이 초과되었습니다.",
+        variant: "destructive"
+      });
+      navigate('/memos');
+    }, 120000);
+
+    return () => {
+      unsubscribe();
+      clearTimeout(timeoutId);
+    };
+  }, [processingMemoId, navigate, toast]);
 
   const extractTitle = useCallback((content: string): string => {
     const cleanContent = content.trim().replace(/\n/g, ' ').replace(/\s+/g, ' ');
@@ -216,9 +266,14 @@ export const N8nMemoCreatePage: React.FC = () => {
         sharedWithUids: []
       });
 
+      // processing 상태 설정하여 오버레이 유지 및 리스너 활성화
+      if (memoId) {
+        setProcessingMemoId(memoId);
+      }
+
       // 3. n8n 웹훅 전송 (메모 ID 포함)
       // n8n 측에서 이 ID를 이용해 나중에 문서를 업데이트할 수 있도록 함
-      n8nWebhookService.sendMemoToN8n(
+      const success = await n8nWebhookService.sendMemoToN8n(
         workflow.url,
         workflow.token,
         { 
@@ -229,15 +284,30 @@ export const N8nMemoCreatePage: React.FC = () => {
         formData.images
       ).catch(err => {
         console.error('배경 n8n 전송 오류:', err);
+        return false;
       });
 
-      toast({
-        title: "n8n 전송 요청 완료",
-        description: "메모가 n8n으로 전송되었습니다. 처리가 완료되면 내용이 자동으로 업데이트됩니다."
-      });
-      
-      // 결과 대기 없이 즉시 목록으로 이동
-      navigate('/memos');
+      if (success) {
+        toast({
+          title: "n8n 전송 완료",
+          description: "n8n에서 데이터를 처리하고 있습니다. 잠시만 기다려주세요..."
+        });
+      } else {
+        toast({
+          title: "n8n 전송 실패",
+          description: "n8n 웹훅으로 데이터를 전송하지 못했습니다.",
+          variant: "destructive"
+        });
+        setIsUploading(false);
+        setProcessingMemoId(null);
+        if (memoId) {
+          firestoreService.updateMemo(memoId, { 
+            isProcessing: false, 
+            n8nStatus: 'error',
+            n8nError: '웹훅 전송 실패' 
+          });
+        }
+      }
     } catch (error) {
       console.error('n8n 저장 중 오류:', error);
       toast({
@@ -245,9 +315,36 @@ export const N8nMemoCreatePage: React.FC = () => {
         description: "메모를 저장하는 중 오류가 발생했습니다.",
         variant: "destructive"
       });
-    } finally {
       setIsUploading(false);
+      setProcessingMemoId(null);
     }
+  };
+
+  const handleStopProcessing = async () => {
+    if (processingMemoId) {
+      await firestoreService.updateMemo(processingMemoId, {
+        isProcessing: false,
+        n8nStatus: 'error',
+        n8nError: '사용자에 의해 중단됨'
+      });
+    }
+    setIsUploading(false);
+    setProcessingMemoId(null);
+    toast({
+      title: "처리 중지됨",
+      description: "n8n 처리를 사용자가 중지했습니다."
+    });
+    navigate('/memos');
+  };
+
+  const handleDoOtherWork = () => {
+    setIsUploading(false);
+    setProcessingMemoId(null);
+    toast({
+      title: "백그라운드 처리",
+      description: "n8n 처리가 백그라운드에서 계속됩니다."
+    });
+    navigate('/memos');
   };
 
   const handleCancel = () => {
@@ -369,12 +466,24 @@ export const N8nMemoCreatePage: React.FC = () => {
                 <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
                 <div className="text-center">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    n8n 전송 중
+                    {processingMemoId ? 'n8n 처리 중...' : 'n8n 전송 중'}
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    웹훅으로 데이터를 보내고 있습니다...
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 mb-4">
+                    {processingMemoId 
+                      ? '웹훅 처리 결과를 기다리고 있습니다. 최대 120초가 소요될 수 있습니다.' 
+                      : '웹훅으로 데이터를 보내고 있습니다...'}
                   </p>
                 </div>
+                {processingMemoId && (
+                  <div className="flex w-full gap-2 mt-4">
+                    <Button variant="outline" size="sm" onClick={handleStopProcessing} className="flex-1 border-red-200 text-red-600 hover:bg-red-50">
+                      중지
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleDoOtherWork} className="flex-1">
+                      다른작업하기
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -531,8 +640,25 @@ export const N8nMemoCreatePage: React.FC = () => {
               <CardContent className="flex flex-col items-center space-y-4">
                 <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">n8n 전송 중</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    {processingMemoId ? 'n8n 처리 중...' : 'n8n 전송 중'}
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 mb-4">
+                    {processingMemoId 
+                      ? '웹훅 처리 결과를 기다리고 있습니다. 최대 120초가 소요될 수 있습니다.' 
+                      : '웹훅으로 데이터를 보내고 있습니다...'}
+                  </p>
                 </div>
+                {processingMemoId && (
+                  <div className="flex w-full gap-2 mt-2">
+                    <Button variant="outline" size="sm" onClick={handleStopProcessing} className="flex-1 border-red-200 text-red-600 hover:bg-red-50">
+                      중지
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleDoOtherWork} className="flex-1">
+                      다른작업하기
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
