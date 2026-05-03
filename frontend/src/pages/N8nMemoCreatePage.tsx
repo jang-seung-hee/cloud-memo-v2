@@ -248,12 +248,20 @@ export const N8nMemoCreatePage: React.FC = () => {
 
         const data = result.data || {};
         
-        // 최종 성공 조건 검증 (필드 존재 여부가 아닌 실제 값 유무 체크)
+        // 에러 필드가 실제로 유의미한 값을 가지는지 확인하는 헬퍼 함수
+        const hasActualError = (val: any) => {
+          if (!val) return false; // null, undefined, false, ""
+          if (typeof val === 'string') return val.trim().length > 0;
+          if (typeof val === 'object') return Object.keys(val).length > 0; // {} 나 [] 은 에러로 보지 않음
+          return true;
+        };
+
+        // 최종 성공 조건 검증 (빈 객체 예외 처리 완벽 적용)
         const isLogicalError = 
           (data.status && ['error', 'fail', 'failed'].includes(String(data.status).toLowerCase())) ||
           data.success === false ||
-          !!data.error ||         // null, undefined, false, "" 이면 성공으로 간주
-          !!data.errorMessage;    // 실제 값이 있을 때만 에러로 간주
+          hasActualError(data.error) ||
+          hasActualError(data.errorMessage);
 
         const isFinalSuccess = result.success && !isLogicalError;
 
