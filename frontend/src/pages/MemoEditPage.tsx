@@ -6,8 +6,11 @@ import { Textarea } from '../components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Layout } from '../components/common/Layout';
 import { ImageUpload } from '../components/memo/ImageUpload';
-import { CategorySelector, CategoryType } from '../components/ui/category-badge';
+import { CategoryType } from '../components/ui/category-badge';
 import { TemplateSidebar } from '../components/ui/sidebar';
+import { MemoEditor } from '../components/memo/MemoEditor';
+import { MemoCategoryBar } from '../components/memo/MemoCategoryBar';
+import { MemoActionButtons } from '../components/memo/MemoActionButtons';
 import { IMemoFormData } from '../types/memo';
 import { useMemos, useTemplates } from '../hooks/useFirestore';
 import { useAuth } from '../hooks/useAuth';
@@ -18,9 +21,10 @@ import { useFontSize } from '../hooks/useFontSize';
 import { useTheme } from '../hooks/useTheme';
 import { Loader2 } from 'lucide-react';
 import { storageService } from '../services/firebase/storage';
-import { IFirebaseTemplate, ISharedUser } from '../types/firebase';
+import { IFirebaseTemplate } from '../types/firebase';
 import { ShareSettingsBadge } from '../components/ui/share-settings-badge';
 import { ShareSettingsModal } from '../components/memo/ShareSettingsModal';
+import { useMemoForm } from '../hooks/useMemoForm';
 
 export const MemoEditPage: React.FC = () => {
   const navigate = useNavigate();
@@ -33,88 +37,31 @@ export const MemoEditPage: React.FC = () => {
   const { fontSizeClasses } = useFontSize();
   const { isDark } = useTheme();
 
-  const [formData, setFormData] = useState<IMemoFormData>({
-    content: '',
-    images: [],
-    category: 'temporary'
-  });
+  const {
+    formData,
+    setFormData,
+    sharedWith,
+    setSharedWith,
+    isTemplateSidebarOpen,
+    setIsTemplateSidebarOpen,
+    isShareModalOpen,
+    setIsShareModalOpen,
+    isUploading,
+    setIsUploading,
+    textareaHeight,
+    textareaRef,
+    isMobileLightMode,
+    extractTitle,
+    handleContentChange,
+    handlePaste,
+    handleCategoryChange,
+    handleImagesChange,
+    handleSidebarTemplateSelect,
+    handleTemplateCopy
+  } = useMemoForm();
 
-  const [isTemplateSidebarOpen, setIsTemplateSidebarOpen] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [originalImages, setOriginalImages] = useState<string[]>([]);
-  const [textareaHeight, setTextareaHeight] = useState(230); // 기본 높이
-
-  // 공유 관련 상태
-  const [sharedWith, setSharedWith] = useState<ISharedUser[]>([]);
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-
-  // 모바일 + 라이트 모드일 때의 스타일 조건
-  const isMobileLightMode = !isDesktop && !isDark;
-
-  // 동적 텍스트 필드 높이 훅 사용
-  const { textareaRef } = useDynamicTextareaHeight({
-    isMobile,
-    dependencies: [formData.images.length, originalImages.length] // 이미지 개수 변경 시 높이 재계산
-  });
-
-  // 디바이스 크기에 따른 텍스트 필드 높이 계산
-  useEffect(() => {
-    const calculateTextareaHeight = () => {
-      if (!isMobile) return;
-
-      const screenHeight = window.innerHeight;
-      const screenWidth = window.innerWidth;
-
-      // 기본 높이 계산 (최소 230px)
-      let baseHeight = Math.max(230, screenHeight * 0.31);
-
-      // 화면 크기에 따른 추가 높이 조정
-      if (screenHeight >= 800) {
-        // 큰 화면 (800px 이상)
-        baseHeight = Math.max(280, screenHeight * 0.35);
-      } else if (screenHeight >= 700) {
-        // 중간 화면 (700-800px)
-        baseHeight = Math.max(260, screenHeight * 0.33);
-      } else if (screenHeight >= 600) {
-        // 작은 화면 (600-700px)
-        baseHeight = Math.max(240, screenHeight * 0.32);
-      } else {
-        // 매우 작은 화면 (600px 미만)
-        baseHeight = Math.max(230, screenHeight * 0.30);
-      }
-
-      // 가로 세로 비율에 따른 조정
-      const aspectRatio = screenWidth / screenHeight;
-      if (aspectRatio > 0.5) { // 세로가 더 긴 화면
-        baseHeight = Math.min(baseHeight + 20, screenHeight * 0.4);
-      }
-
-      setTextareaHeight(baseHeight);
-    };
-
-    // 초기 계산
-    calculateTextareaHeight();
-
-    // 리사이즈 이벤트 리스너
-    const handleResize = () => {
-      calculateTextareaHeight();
-    };
-
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('orientationchange', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('orientationchange', handleResize);
-    };
-  }, [isMobile]);
-
-  // 메모 내용에서 제목 추출 (줄바꿈 제거 후 10자)
-  const extractTitle = (content: string): string => {
-    const cleanContent = content.trim().replace(/\n/g, ' ').replace(/\s+/g, ' ');
-    return cleanContent.substring(0, 10) || '제목 없음';
-  };
 
   // 기존 메모 데이터 로딩
   useEffect(() => {
@@ -193,166 +140,9 @@ export const MemoEditPage: React.FC = () => {
     loadMemo();
   }, [memoId, getMemoById, toast, authLoading, isAuthenticated, user]);
 
-  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setFormData(prev => ({ ...prev, content: e.target.value }));
-  };
-
-  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    const clipboardData = e.clipboardData;
-    if (!clipboardData) return;
-
-    // 클립보드에 이미지가 있는지 확인
-    const items = Array.from(clipboardData.items);
-    const imageItems = items.filter(item => item.type.startsWith('image/'));
-
-    if (imageItems.length > 0) {
-      e.preventDefault(); // 기본 텍스트 붙여넣기 방지
-
-      const newImages: File[] = [];
-
-      for (const item of imageItems) {
-        const file = item.getAsFile();
-        if (file) {
-          // 파일명 생성 (클립보드 이미지는 보통 이름이 없음)
-          const timestamp = Date.now();
-          const extension = file.type.split('/')[1] || 'png';
-          const fileName = `clipboard-image-${timestamp}.${extension}`;
-
-          // File 객체 생성
-          const imageFile = new File([file], fileName, { type: file.type });
-          newImages.push(imageFile);
-        }
-      }
-
-      if (newImages.length > 0) {
-        // 기존 이미지에 새 이미지 추가
-        const updatedImages = [...formData.images, ...newImages];
-        setFormData(prev => ({ ...prev, images: updatedImages }));
-
-        // 사용자에게 알림
-        toast({
-          title: "이미지 추가됨",
-          description: `${newImages.length}개의 이미지가 클립보드에서 추가되었습니다.`,
-        });
-      }
-    }
-  };
-
-  const handleCategoryChange = (category: CategoryType) => {
-    setFormData(prev => ({ ...prev, category }));
-  };
-
-  const handleImagesChange = (images: File[]) => {
-    console.log('🖼️ handleImagesChange 호출됨:', images.map(img => img.name));
-    setFormData(prev => ({ ...prev, images }));
-  };
-
   const handleExistingImagesChange = (images: string[]) => {
     console.log('🖼️ handleExistingImagesChange 호출됨:', images);
     setOriginalImages(images);
-  };
-
-  // 상용구 사이드바에서 템플릿 선택
-  const handleSidebarTemplateSelect = (content: string) => {
-    console.log('🔍 MemoEditPage handleSidebarTemplateSelect 호출됨:', {
-      content,
-      contentLength: content?.length,
-      textareaRef: textareaRef.current,
-      currentContent: formData.content
-    });
-
-    const textarea = textareaRef.current;
-    if (!textarea) {
-      console.log('❌ textarea가 null입니다');
-      return;
-    }
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const currentContent = formData.content;
-    const newContent = currentContent.substring(0, start) + content + currentContent.substring(end);
-
-    console.log('📝 텍스트 삽입 정보:', {
-      start,
-      end,
-      currentContent,
-      newContent,
-      newContentLength: newContent.length
-    });
-
-    // 새로운 커서 위치 계산
-    const newCursorPos = start + content.length;
-
-    // 상태 업데이트
-    setFormData(prev => ({ ...prev, content: newContent }));
-
-    // requestAnimationFrame을 사용하여 DOM 업데이트 후 커서 위치 설정
-    requestAnimationFrame(() => {
-      const updatedTextarea = textareaRef.current;
-      if (updatedTextarea) {
-        console.log('📍 requestAnimationFrame에서 커서 위치 설정:', newCursorPos);
-        updatedTextarea.setSelectionRange(newCursorPos, newCursorPos);
-        updatedTextarea.focus();
-        console.log('✅ 커서 위치 설정 완료');
-      }
-    });
-
-    console.log('✅ 상태 업데이트 완료, newCursorPos:', newCursorPos);
-  };
-
-  // 모바일 호환 클립보드 복사 함수
-  const copyToClipboard = async (text: string): Promise<boolean> => {
-    try {
-      // 1. 먼저 navigator.clipboard API 시도 (최신 브라우저)
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(text);
-        return true;
-      }
-
-      // 2. fallback: document.execCommand 사용 (구형 브라우저, 모바일)
-      const textArea = document.createElement('textarea');
-      textArea.value = text;
-      textArea.style.position = 'fixed';
-      textArea.style.left = '-999999px';
-      textArea.style.top = '-999999px';
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-
-      const successful = document.execCommand('copy');
-      document.body.removeChild(textArea);
-
-      return successful;
-    } catch (error) {
-      console.error('클립보드 복사 실패:', error);
-      return false;
-    }
-  };
-
-  // 상용구 클립보드 복사
-  const handleTemplateCopy = async (content: string) => {
-    try {
-      const success = await copyToClipboard(content);
-
-      if (success) {
-        toast({
-          title: "복사 완료",
-          description: "상용구가 클립보드에 복사되었습니다."
-        });
-      } else {
-        toast({
-          title: "복사 실패",
-          description: "클립보드 복사에 실패했습니다.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "복사 실패",
-        description: "클립보드 복사에 실패했습니다.",
-        variant: "destructive"
-      });
-    }
   };
 
   const handleSave = async () => {
@@ -496,89 +286,35 @@ export const MemoEditPage: React.FC = () => {
             <CardContent className="space-y-6">
               {/* 카테고리 선택과 액션 버튼 */}
               <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">카테고리:</span>
-                  <CategorySelector
-                    selectedCategory={formData.category}
-                    onCategoryChange={handleCategoryChange}
-                  />
-                  <ShareSettingsBadge
-                    sharedCount={sharedWith.length}
-                    onClick={() => setIsShareModalOpen(true)}
-                  />
-                </div>
-
-                {/* 액션 버튼 */}
-                <div className="flex items-center gap-3">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCancel}
-                    disabled={isSaving}
-                    className="px-4 py-2"
-                  >
-                    <XMarkIcon className="h-4 w-4 mr-2" />
-                    취소
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={handleSave}
-                    disabled={isSaving}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700"
-                  >
-                    {isSaving ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        저장 중...
-                      </>
-                    ) : (
-                      <>
-                        <CheckIcon className="h-4 w-4 mr-2" />
-                        저장
-                      </>
-                    )}
-                  </Button>
-                </div>
+                <MemoCategoryBar
+                  category={formData.category}
+                  onCategoryChange={handleCategoryChange}
+                  sharedCount={sharedWith.length}
+                  onShareClick={() => setIsShareModalOpen(true)}
+                  isMobile={false}
+                />
+                <MemoActionButtons
+                  onCancel={handleCancel}
+                  onSave={handleSave}
+                  isSaving={isSaving}
+                  isMobile={false}
+                  saveButtonText="수정"
+                  savingText="수정 중..."
+                />
               </div>
 
-              {/* 메모 입력 영역 */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label htmlFor="content" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    메모 내용
-                  </label>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {formData.content.length}자
-                  </span>
-                </div>
-                <div className="relative">
-                  <Textarea
-                    id="content"
-                    ref={textareaRef}
-                    value={formData.content}
-                    onChange={handleContentChange}
-                    onPaste={handlePaste}
-                    placeholder="메모 내용을 입력하세요..."
-                    className={`min-h-[350px] resize-y border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 transition-colors duration-200 ${fontSizeClasses.content}`}
-                  />
-                </div>
-              </div>
-
-              {/* 이미지 업로드 영역 */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <PhotoIcon className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">이미지 첨부</span>
-                </div>
-                <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 transition-colors duration-200" style={{ minHeight: 'calc(8rem - 30px)' }}>
-                  <ImageUpload
-                    images={formData.images}
-                    onImagesChange={handleImagesChange}
-                    existingImages={originalImages}
-                    onExistingImagesChange={handleExistingImagesChange}
-                  />
-                </div>
-              </div>
+              <MemoEditor
+                content={formData.content}
+                onContentChange={handleContentChange}
+                onPaste={handlePaste}
+                images={formData.images}
+                onImagesChange={handleImagesChange}
+                existingImages={originalImages}
+                onExistingImagesChange={handleExistingImagesChange}
+                textareaRef={textareaRef}
+                isMobile={false}
+                fontSizeClasses={fontSizeClasses}
+              />
 
 
             </CardContent>
@@ -685,268 +421,6 @@ export const MemoEditPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 카테고리와 상용구 버튼 - 전체 너비로 정돈된 레이아웃 */}
-        <div className={`w-full px-3 py-2 rounded-lg ${isMobileLightMode
-          ? 'bg-gray-50 border border-gray-200'
-          : 'bg-gray-50/50 dark:bg-gray-800/50 border border-gray-200/60 dark:border-gray-700/60'
-          }`}>
-          <div className="flex items-center justify-between gap-2">
-            <CategorySelector
-              selectedCategory={formData.category}
-              onCategoryChange={handleCategoryChange}
-            />
-            <ShareSettingsBadge
-              sharedCount={sharedWith.length}
-              onClick={() => setIsShareModalOpen(true)}
-              className="h-8"
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsTemplateSidebarOpen(true)}
-              className={`flex items-center gap-1 px-2 py-1 h-8 ${isMobileLightMode
-                ? 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                : 'border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-900/20'
-                }`}
-            >
-              <BookmarkIcon className="h-3 w-3" />
-              <span className="text-xs">상용구</span>
-            </Button>
-          </div>
-        </div>
-
-        {/* 메모 입력 영역 - 디바이스에 따른 동적 높이 */}
-        <Card className={`flex-1 shadow-sm border-2 ${isMobileLightMode
-          ? 'border-gray-200 bg-white'
-          : 'border-gray-200 dark:border-gray-700'
-          }`}>
-          <CardContent className="p-4 h-full">
-            <div className="flex flex-col h-full">
-              <div className="flex items-center justify-between mb-3">
-                <label htmlFor="content" className={`text-sm font-medium ${isMobileLightMode
-                  ? 'text-gray-700'
-                  : 'text-gray-700 dark:text-gray-300'
-                  }`}>
-                  메모 내용
-                </label>
-                <span className={`text-xs ${isMobileLightMode
-                  ? 'text-gray-500'
-                  : 'text-gray-500 dark:text-gray-400'
-                  }`}>
-                  {formData.content.length}자
-                </span>
-              </div>
-              <div className="flex-1">
-                <Textarea
-                  id="content"
-                  ref={textareaRef}
-                  value={formData.content}
-                  onChange={handleContentChange}
-                  onPaste={handlePaste}
-                  placeholder="메모 내용을 입력하세요..."
-                  style={{
-                    height: textareaHeight,
-                    minHeight: '230px'
-                  }}
-                  className={`h-full resize-none border-0 focus:ring-0 focus:border-0 bg-transparent ${fontSizeClasses.content} ${isMobileLightMode
-                    ? 'text-gray-700 placeholder-gray-400'
-                    : 'text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500'
-                    }`}
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 액션 버튼 - 이미지 박스 위로 이동 */}
-        <div className="flex items-center justify-center gap-4">
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={handleCancel}
-            disabled={isSaving}
-            className={`flex-1 h-12 ${isMobileLightMode
-              ? 'border-gray-300 text-gray-700 hover:bg-gray-50'
-              : ''
-              }`}
-          >
-            <XMarkIcon className="h-5 w-5 mr-2" />
-            취소
-          </Button>
-          <Button
-            size="lg"
-            onClick={handleSave}
-            disabled={isSaving}
-            className={`flex-1 h-12 ${isMobileLightMode
-              ? 'bg-gradient-to-r from-[#87ceeb] to-[#4682b4] hover:from-[#7bb8d9] hover:to-[#3d6b9a] text-white shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5'
-              : 'bg-blue-600 hover:bg-blue-700 dark:bg-slate-600 dark:hover:bg-slate-500'
-              }`}
-          >
-            {isSaving ? (
-              <>
-                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                저장 중...
-              </>
-            ) : (
-              <>
-                <CheckIcon className="h-5 w-5 mr-2" />
-                저장
-              </>
-            )}
-          </Button>
-        </div>
-
-        {/* 이미지 업로드 영역 - 아이콘과 미리보기 분할 */}
-        <Card className={`shadow-sm border-2 ${isMobileLightMode
-          ? 'border-gray-200 bg-white'
-          : 'border-gray-200 dark:border-gray-700'
-          }`}>
-          <CardContent className="p-4">
-            <div className="space-y-3">
-              {/* 카메라/갤러리 버튼과 이미지 미리보기 분할 */}
-              <div className="grid grid-cols-2 gap-3">
-                {/* 왼쪽: 카메라/갤러리 버튼 */}
-                <div className="space-y-2">
-                  {/* 카메라 버튼 */}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      const cameraInput = document.createElement('input');
-                      cameraInput.type = 'file';
-                      cameraInput.accept = 'image/*';
-                      cameraInput.capture = 'environment';
-                      cameraInput.onchange = (e) => {
-                        const files = (e.target as HTMLInputElement).files;
-                        if (files && files.length > 0) {
-                          handleImagesChange([...formData.images, ...Array.from(files)]);
-                        }
-                      };
-                      cameraInput.click();
-                    }}
-                    className={`w-full h-10 flex items-center justify-center transition-all duration-200 ${isMobileLightMode
-                      ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 hover:from-blue-100 hover:to-indigo-100'
-                      : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 hover:from-blue-100 hover:to-indigo-100 dark:from-slate-700 dark:to-slate-600 dark:border-slate-500 dark:hover:from-slate-600 dark:hover:to-slate-500'
-                      }`}
-                  >
-                    <CameraIcon className={`h-4 w-4 mr-1 ${isMobileLightMode
-                      ? 'text-blue-600'
-                      : 'text-blue-600 dark:text-blue-400'
-                      }`} />
-                    <span className={`text-xs font-medium ${isMobileLightMode
-                      ? 'text-blue-700'
-                      : 'text-blue-700 dark:text-blue-300'
-                      }`}>카메라</span>
-                  </Button>
-
-                  {/* 갤러리 버튼 */}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      const fileInput = document.createElement('input');
-                      fileInput.type = 'file';
-                      fileInput.accept = 'image/*';
-                      fileInput.multiple = true;
-                      fileInput.onchange = (e) => {
-                        const files = (e.target as HTMLInputElement).files;
-                        if (files && files.length > 0) {
-                          handleImagesChange([...formData.images, ...Array.from(files)]);
-                        }
-                      };
-                      fileInput.click();
-                    }}
-                    className={`w-full h-10 flex items-center justify-center transition-all duration-200 ${isMobileLightMode
-                      ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 hover:from-green-100 hover:to-emerald-100'
-                      : 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 hover:from-green-100 hover:to-emerald-100 dark:from-slate-700 dark:to-slate-600 dark:border-slate-500 dark:hover:from-slate-600 dark:hover:to-slate-500'
-                      }`}
-                  >
-                    <PhotoIcon className={`h-4 w-4 mr-1 ${isMobileLightMode
-                      ? 'text-green-600'
-                      : 'text-green-600 dark:text-green-400'
-                      }`} />
-                    <span className={`text-xs font-medium ${isMobileLightMode
-                      ? 'text-green-700'
-                      : 'text-green-700 dark:text-green-300'
-                      }`}>갤러리</span>
-                  </Button>
-                </div>
-
-                {/* 오른쪽: 이미지 미리보기 영역 */}
-                <div className={`rounded-lg border-2 border-dashed p-2 min-h-[84px] ${isMobileLightMode
-                  ? 'bg-gray-50 border-gray-300'
-                  : 'bg-gray-50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600'
-                  }`}>
-                  {(originalImages.length > 0 || formData.images.length > 0) ? (
-                    <div className="grid grid-cols-2 gap-1">
-                      {/* 기존 이미지들 */}
-                      {originalImages.slice(0, 4).map((imageUrl, index) => (
-                        <div key={`existing-${index}`} className="relative group">
-                          <img
-                            src={imageUrl}
-                            alt={`기존 이미지 ${index + 1}`}
-                            className="w-full h-16 object-cover rounded border border-gray-200"
-                          />
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            className="absolute -top-1 -right-1 h-4 w-4 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => {
-                              const newExistingImages = originalImages.filter((_, i) => i !== index);
-                              handleExistingImagesChange(newExistingImages);
-                            }}
-                          >
-                            <XMarkIcon className="h-2.5 w-2.5" />
-                          </Button>
-                        </div>
-                      ))}
-
-                      {/* 새로 추가된 이미지들 */}
-                      {formData.images.slice(0, Math.max(0, 4 - originalImages.length)).map((image, index) => (
-                        <div key={`new-${index}`} className="relative group">
-                          <img
-                            src={URL.createObjectURL(image)}
-                            alt={`새 이미지 ${index + 1}`}
-                            className="w-full h-16 object-cover rounded border border-gray-200"
-                          />
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            className="absolute -top-1 -right-1 h-4 w-4 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => {
-                              const newImages = formData.images.filter((_, i) => i !== index);
-                              handleImagesChange(newImages);
-                            }}
-                          >
-                            <XMarkIcon className="h-2.5 w-2.5" />
-                          </Button>
-                        </div>
-                      ))}
-
-                      {/* 추가 이미지가 있을 때 표시 */}
-                      {(formData.images.length + originalImages.length) > 4 && (
-                        <div className="w-full h-16 bg-gray-100 rounded border border-gray-200 flex items-center justify-center">
-                          <span className="text-xs text-gray-500 font-medium">
-                            +{(formData.images.length + originalImages.length) - 4}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <PhotoIcon className={`h-8 w-8 ${isMobileLightMode
-                        ? 'text-gray-400'
-                        : 'text-gray-400'
-                        }`} />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* 상용구 사이드바 */}
