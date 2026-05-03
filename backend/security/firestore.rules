@@ -15,6 +15,13 @@ service cloud.firestore {
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
+
+    // [New] 등록된 사용자 여부 확인 (users 컬렉션에 문서가 존재해야 함)
+    // 소규모 신뢰 그룹(가족 등) 외의 신규 가입자 접근을 차단하는 핵심 함수
+    function isRegisteredUser() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
     
     // 데이터 타입 및 크기 검증 함수
     function isValidString(data, field, min, max) {
@@ -29,72 +36,92 @@ service cloud.firestore {
     
     // === 사용자 프로필 컬렉션 ===
     match /users/{userId} {
-      // 본인만 전체 프로필 읽기 및 수정 가능
-      allow read, write: if isOwner(userId);
+      // 읽기 및 수정: 본인만 가능하며, 이미 등록된 상태여야 함
+      allow read: if isOwner(userId);
+      allow update: if isOwner(userId) && isRegisteredUser();
+      
+      // 생성: 신규 회원가입 차단 (이미 등록된 사람만 쓸 수 있도록 신규 생성을 금지)
+      // 새로운 사용자가 필요할 경우 Firebase Console에서 수동으로 문서를 생성하거나 
+      // 잠시 이 규칙을 true로 변경해야 합니다.
+      allow create: if false; 
     }
     
     // [New] 검색 전역 공개 프로필 (이메일 제외)
     match /publicProfiles/{userId} {
-      allow read: if isAuthenticated();
-      allow write: if isOwner(userId);
+      // 등록된 사용자끼리만 프로필 확인 가능
+      allow read: if isRegisteredUser();
+      allow write: if isOwner(userId) && isRegisteredUser();
     }
     
     // === 메모 컬렉션 ===
     match /memos/{memoId} {
-      allow read: if isAuthenticated() && (
+      // 읽기, 생성, 수정, 삭제 모두 등록된 사용자(isRegisteredUser)여야 함
+      allow read: if isRegisteredUser() && (
         resource.data.userId == request.auth.uid ||
         (resource.data.sharedWithUids != null && request.auth.uid in resource.data.sharedWithUids)
       );
       
-      allow create: if isAuthenticated() && 
+      allow create: if isRegisteredUser() && 
         request.resource.data.userId == request.auth.uid &&
         isValidString(request.resource.data, 'title', 1, 100) &&
         isValidString(request.resource.data, 'content', 0, 10000);
       
-      allow update: if isAuthenticated() && (
-        // 소유자 수정
+      allow update: if isRegisteredUser() && (
+        // 1. 소유자 수정: 무조건 허용
         (resource.data.userId == request.auth.uid && 
          isValidString(request.resource.data, 'title', 1, 100)) ||
-        // 공유 받은 사용자의 수정 (단순화: sharedWithUids 멤버십 확인)
-        (resource.data.sharedWithUids != null && request.auth.uid in resource.data.sharedWithUids &&
-         request.resource.data.userId == resource.data.userId)
+        // 2. 공유 받은 사용자 수정: sharedWith 리스트에서 내 UID와 edit 권한이 true인 객체가 정확히 있는지 확인
+        (
+          resource.data.sharedWith != null && 
+          (
+            resource.data.sharedWith.hasAny([{'uid': request.auth.uid, 'permissions': {'edit': true, 'delete': true}}]) ||
+            resource.data.sharedWith.hasAny([{'uid': request.auth.uid, 'permissions': {'edit': true, 'delete': false}}])
+          ) &&
+          request.resource.data.userId == resource.data.userId // 소유권 변경 방지
+        )
       );
       
-      allow delete: if isAuthenticated() && (
+      allow delete: if isRegisteredUser() && (
+        // 1. 소유자 삭제: 무조건 허용
         resource.data.userId == request.auth.uid ||
-        (resource.data.sharedWithUids != null && request.auth.uid in resource.data.sharedWithUids)
+        // 2. 공유 받은 사용자 삭제: sharedWith 리스트에서 내 UID와 delete 권한이 true인 객체가 있는지 확인
+        (
+          resource.data.sharedWith != null && 
+          (
+            resource.data.sharedWith.hasAny([{'uid': request.auth.uid, 'permissions': {'edit': true, 'delete': true}}]) ||
+            resource.data.sharedWith.hasAny([{'uid': request.auth.uid, 'permissions': {'edit': false, 'delete': true}}])
+          )
+        )
       );
     }
     
     // === 알림 컬렉션 ===
     match /notifications/{notificationId} {
-      // 읽기: 수신자 본인만
-      allow read: if isAuthenticated() && 
+      // 수신자 본인이고 등록된 사용자여야 함
+      allow read: if isRegisteredUser() && 
         resource.data.receiverId == request.auth.uid;
       
-      // 생성: 보안 강화된 생성 조건
-      allow create: if isAuthenticated() && 
-        // 1. 발신자 본인 확인
+      // 생성: 발신자가 등록된 사용자여야 함
+      allow create: if isRegisteredUser() && 
         request.resource.data.senderId == request.auth.uid &&
-        // 2. 해당 메모의 소유자이거나 관리 권한이 있는 경우에만 알림 생성 가능 (Abuse 방지)
         get(/databases/$(database)/documents/memos/$(request.resource.data.memoId)).data.userId == request.auth.uid;
       
-      // 업데이트: 읽음 처리만 허용
-      allow update: if isAuthenticated() && 
+      allow update: if isRegisteredUser() && 
         resource.data.receiverId == request.auth.uid &&
         request.resource.data.isRead == true;
       
-      allow delete: if isAuthenticated() && 
+      allow delete: if isRegisteredUser() && 
         resource.data.receiverId == request.auth.uid;
     }
     
     // === 카테고리 컬렉션 ===
     match /categories/{categoryId} {
-      // 읽기: 인증된 사용자라면 허용 (템플릿과 동일한 방식)
-      allow read: if isAuthenticated();
+      // 등록된 사용자만 본인의 카테고리 읽기 및 쓰기 가능
+      allow read: if isRegisteredUser() && (
+        resource == null || resource.data.userId == request.auth.uid
+      );
       
-      // 생성/수정/삭제: 본인 데이터만 가능
-      allow write: if isAuthenticated() && (
+      allow write: if isRegisteredUser() && (
         request.resource == null || request.resource.data.userId == request.auth.uid
       ) && (
         resource == null || resource.data.userId == request.auth.uid
@@ -103,22 +130,22 @@ service cloud.firestore {
     
     // === 템플릿 컬렉션 ===
     match /templates/{templateId} {
-      allow read: if isAuthenticated() && (
+      allow read: if isRegisteredUser() && (
         resource.data.userId == request.auth.uid ||
         resource.data.isPublic == true
       );
       
-      allow create: if isAuthenticated() && 
+      allow create: if isRegisteredUser() && 
         request.resource.data.userId == request.auth.uid &&
         isValidString(request.resource.data, 'title', 1, 100);
-        
-      allow update, delete: if isAuthenticated() && 
+      
+      allow update, delete: if isRegisteredUser() && 
         resource.data.userId == request.auth.uid;
     }
     
     // === n8n 워크플로우 컬렉션 ===
     match /n8nWorkflows/{workflowId} {
-      allow read, write: if isAuthenticated() && (
+      allow read, write: if isRegisteredUser() && (
         (resource == null && request.resource.data.userId == request.auth.uid) ||
         (resource != null && resource.data.userId == request.auth.uid)
       );
@@ -129,4 +156,4 @@ service cloud.firestore {
       allow read, write: if false;
     }
   }
-} 
+}

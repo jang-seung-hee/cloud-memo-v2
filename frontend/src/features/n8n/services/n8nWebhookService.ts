@@ -14,7 +14,7 @@ export const n8nWebhookService = {
     token: string | undefined,
     payload: { title: string; content: string; memoId?: string },
     files: File[]
-  ): Promise<boolean> => {
+  ): Promise<{ success: boolean; data?: any }> => {
     try {
       const formData = new FormData();
       
@@ -44,18 +44,25 @@ export const n8nWebhookService = {
       const response = await fetch(webhookUrl, {
         method: 'POST',
         headers,
-        body: formData, // FormData를 사용하면 fetch가 알아서 multipart/form-data 헤더와 boundary를 설정합니다.
+        body: formData,
       });
 
       if (!response.ok) {
         console.error(`n8n 웹훅 전송 실패: HTTP ${response.status} ${response.statusText}`);
-        return false;
+        return { success: false };
       }
 
-      return true;
+      // n8n에서 처리된 결과가 있다면 JSON으로 파싱 시도
+      try {
+        const data = await response.json();
+        return { success: true, data };
+      } catch (e) {
+        // JSON이 아닌 경우에도 전송 자체는 성공으로 처리
+        return { success: true };
+      }
     } catch (error) {
       console.error('n8n 웹훅 전송 중 오류 발생:', error);
-      return false;
+      return { success: false };
     }
   }
 };
