@@ -248,16 +248,17 @@ export const N8nMemoCreatePage: React.FC = () => {
 
         const data = result.data || {};
         
-        // 최종 성공 조건 검증 (요구사항 기반)
+        // 최종 성공 조건 검증 (필드 존재 여부가 아닌 실제 값 유무 체크)
         const isLogicalError = 
-          ['error', 'fail', 'failed'].includes(String(data.status).toLowerCase()) ||
+          (data.status && ['error', 'fail', 'failed'].includes(String(data.status).toLowerCase())) ||
           data.success === false ||
-          data.error !== undefined;
+          !!data.error ||         // null, undefined, false, "" 이면 성공으로 간주
+          !!data.errorMessage;    // 실제 값이 있을 때만 에러로 간주
 
         const isFinalSuccess = result.success && !isLogicalError;
 
         if (isFinalSuccess) {
-          // 성공 처리
+          // 성공 처리 (생략...)
           setIsUploading(false);
           setProcessingMemoId(null);
           
@@ -280,10 +281,11 @@ export const N8nMemoCreatePage: React.FC = () => {
           });
           navigate('/memos');
         } else {
-          // 실패 처리 (에러 메시지 우선순위 추출)
+          // 실패 처리 (에러 메시지 우선순위 추출 보완)
           const errorMsg = 
             (data.error && typeof data.error === 'object' && data.error.message) ||
             (data.error && typeof data.error === 'string' && data.error) ||
+            data.errorMessage || // n8n 표준 에러 메시지 우선 순위 상향
             data.message ||
             data.output ||
             result.statusText ||
