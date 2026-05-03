@@ -13,8 +13,9 @@ export const n8nWebhookService = {
     webhookUrl: string,
     token: string | undefined,
     payload: { title: string; content: string; memoId?: string },
-    files: File[]
-  ): Promise<{ success: boolean; data?: any }> => {
+    files: File[],
+    signal?: AbortSignal
+  ): Promise<{ success: boolean; data?: any; status?: number; statusText?: string }> => {
     try {
       const formData = new FormData();
       
@@ -25,44 +26,47 @@ export const n8nWebhookService = {
         formData.append('memoId', payload.memoId);
       }
       
-      // 파일 데이터 추가 (n8n에서 접근하기 쉽도록 배열 형태로 전송)
+      // 파일 데이터 추가
       if (files && files.length > 0) {
         files.forEach((file, index) => {
-          // n8n의 파일 노드에서는 이름이 중요할 수 있습니다.
           formData.append(`file_${index}`, file, file.name);
         });
         formData.append('fileCount', files.length.toString());
       }
 
-      // 헤더 설정 (토큰이 있는 경우만)
       const headers: Record<string, string> = {};
       if (token && token.trim() !== '') {
         headers['X-N8N-TOKEN'] = token;
       }
       
-      // fetch로 전송
       const response = await fetch(webhookUrl, {
         method: 'POST',
         headers,
         body: formData,
+        signal, // 타임아웃 처리를 위한 시그널 추가
       });
 
+      const status = response.status;
+      const statusText = response.statusText;
+
       if (!response.ok) {
-        console.error(`n8n 웹훅 전송 실패: HTTP ${response.status} ${response.statusText}`);
-        return { success: false };
+        console.error(`n8n 웹훅 전송 실패: HTTP ${status} ${statusText}`);
+        return { success: false, status, statusText };
       }
 
-      // n8n에서 처리된 결과가 있다면 JSON으로 파싱 시도
       try {
         const data = await response.json();
-        return { success: true, data };
+        return { success: true, data, status, statusText };
       } catch (e) {
-        // JSON이 아닌 경우에도 전송 자체는 성공으로 처리
-        return { success: true };
+        return { success: true, status, statusText };
       }
-    } catch (error) {
-      console.error('n8n 웹훅 전송 중 오류 발생:', error);
-      return { success: false };
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.error('n8n 웹훅 전송 타임아웃');
+      } else {
+        console.error('n8n 웹훅 전송 중 오류 발생:', error);
+      }
+      return { success: false, statusText: error.message };
     }
   }
 };

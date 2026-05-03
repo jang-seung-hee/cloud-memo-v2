@@ -227,60 +227,109 @@ export const N8nMemoCreatePage: React.FC = () => {
         setProcessingMemoId(memoId);
       }
 
-      // 3. n8n 웹훅 전송 (메모 ID 포함)
-      const result = await n8nWebhookService.sendMemoToN8n(
-        workflow.url,
-        workflow.token,
-        { 
-          title, 
-          content: formData.content,
-          memoId: memoId 
-        },
-        formData.images
-      ).catch(err => {
-        console.error('n8n 전송 오류:', err);
-        return { success: false, data: undefined };
-      });
+      // 3. n8n 웹훅 전송 (120초 타임아웃 적용)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 120초 타임아웃 설정
 
-      if (result.success) {
-        // 전송 및 처리 완료 (n8n이 동기적으로 응답한다고 가정)
+      try {
+        const result = await n8nWebhookService.sendMemoToN8n(
+          workflow.url,
+          workflow.token,
+          { 
+            title, 
+            content: formData.content,
+            memoId: memoId 
+          },
+          formData.images,
+          controller.signal
+        );
+
+        clearTimeout(timeoutId); // 요청 완료 시 타이머 해제
+
+        const data = result.data || {};
+        
+        // 최종 성공 조건 검증 (요구사항 기반)
+        const isLogicalError = 
+          ['error', 'fail', 'failed'].includes(String(data.status).toLowerCase()) ||
+          data.success === false ||
+          data.error !== undefined;
+
+        const isFinalSuccess = result.success && !isLogicalError;
+
+        if (isFinalSuccess) {
+          // 성공 처리
+          setIsUploading(false);
+          setProcessingMemoId(null);
+          
+          if (memoId) {
+            const updateData: any = { 
+              isProcessing: false, 
+              n8nStatus: 'success' 
+            };
+            
+            // n8n 응답 데이터 반영 (output/title)
+            if (data.output) updateData.content = data.output;
+            if (data.title) updateData.title = data.title;
+            
+            await firestoreService.updateMemo(memoId, updateData);
+          }
+
+          toast({
+            title: "n8n 처리 완료",
+            description: "n8n으로부터 응답을 받아 메모가 성공적으로 업데이트되었습니다."
+          });
+          navigate('/memos');
+        } else {
+          // 실패 처리 (에러 메시지 우선순위 추출)
+          const errorMsg = 
+            (data.error && typeof data.error === 'object' && data.error.message) ||
+            (data.error && typeof data.error === 'string' && data.error) ||
+            data.message ||
+            data.output ||
+            result.statusText ||
+            "알 수 없는 오류";
+
+          setIsUploading(false);
+          setProcessingMemoId(null);
+          
+          if (memoId) {
+            await firestoreService.updateMemo(memoId, { 
+              isProcessing: false, 
+              n8nStatus: 'error',
+              n8nError: errorMsg 
+            });
+          }
+
+          toast({
+            title: "n8n 처리 실패",
+            description: errorMsg,
+            variant: "destructive"
+          });
+        }
+      } catch (error: any) {
+        clearTimeout(timeoutId);
+        
+        let errorMsg = "메모를 저장하는 중 오류가 발생했습니다.";
+        if (error.name === 'AbortError') {
+          errorMsg = "n8n 응답 시간이 초과되었습니다.";
+        }
+
         setIsUploading(false);
         setProcessingMemoId(null);
         
-        // Firestore 상태 업데이트 (완료)
-        if (memoId) {
-          const updateData: any = { 
-            isProcessing: false, 
-            n8nStatus: 'success' 
-          };
-          
-          // n8n에서 받은 데이터가 있다면 메모 내용 업데이트 (예: AI 요약본 등)
-          if (result.data && result.data.output) {
-            updateData.content = result.data.output;
-            updateData.title = result.data.title || title;
-          }
-          
-          await firestoreService.updateMemo(memoId, updateData);
-        }
-
-        toast({
-          title: "n8n 처리 완료",
-          description: "n8n으로부터 응답을 받아 메모가 성공적으로 업데이트되었습니다."
-        });
-        navigate('/memos');
-      } else {
-        toast({
-          title: "n8n 전송 실패",
-          description: "n8n 웹훅으로 데이터를 전송하지 못했습니다.",
-          variant: "destructive"
-        });
         if (memoId) {
           await firestoreService.updateMemo(memoId, { 
             isProcessing: false, 
             n8nStatus: 'error',
-            n8nError: '웹훅 전송 실패' 
+            n8nError: errorMsg 
           });
         }
+
+        toast({
+          title: error.name === 'AbortError' ? "시간 초과" : "저장 실패",
+          description: errorMsg,
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error('n8n 저장 중 오류:', error);
