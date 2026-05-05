@@ -421,6 +421,42 @@ export const MemoEditPage: React.FC = () => {
           </div>
         </div>
 
+        {/* 카테고리와 상용구 버튼 - 전체 너비로 정돈된 레이아웃 */}
+        <MemoCategoryBar
+          category={formData.category}
+          onCategoryChange={handleCategoryChange}
+          sharedCount={sharedWith.length}
+          onShareClick={() => setIsShareModalOpen(true)}
+          onTemplateClick={() => setIsTemplateSidebarOpen(true)}
+          isMobile={true}
+          isMobileLightMode={isMobileLightMode}
+        />
+
+        <MemoEditor
+          content={formData.content}
+          onContentChange={handleContentChange}
+          onPaste={handlePaste}
+          images={formData.images}
+          onImagesChange={handleImagesChange}
+          existingImages={originalImages}
+          onExistingImagesChange={handleExistingImagesChange}
+          textareaRef={textareaRef}
+          textareaHeight={textareaHeight}
+          isMobile={true}
+          isMobileLightMode={isMobileLightMode}
+          fontSizeClasses={fontSizeClasses}
+        />
+
+        {/* 액션 버튼 */}
+        <MemoActionButtons
+          onCancel={handleCancel}
+          onSave={handleSave}
+          isSaving={isSaving}
+          isMobile={true}
+          isMobileLightMode={isMobileLightMode}
+          saveButtonText="수정"
+          savingText="수정 중..."
+        />
       </div>
 
       {/* 상용구 사이드바 */}

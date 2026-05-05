@@ -13,6 +13,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CategoryType } from '../components/ui/category-badge';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
+import { useN8nWorkflows } from '../features/n8n/hooks/useN8nWorkflows';
 
 export const MemoListPage: React.FC = () => {
   const { data: memos, loading: isLoading, error } = useMemos();
@@ -20,6 +21,7 @@ export const MemoListPage: React.FC = () => {
   const { isDesktop } = useDevice();
   const { isDark } = useTheme();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { workflows } = useN8nWorkflows();
   const navigate = useNavigate();
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -258,6 +260,7 @@ export const MemoListPage: React.FC = () => {
                   <option value="all" className="text-gray-800">전체</option>
                   <option value="temporary" className="text-gray-800">임시</option>
                   <option value="memory" className="text-gray-800">기억</option>
+                  {workflows.length > 0 && <option value="n8n" className="text-gray-800">n8n</option>}
                 </select>
 
                 {/* 공유받은 메모 버튼 */}
@@ -362,6 +365,7 @@ export const MemoListPage: React.FC = () => {
                   <option value="all">전체</option>
                   <option value="temporary">임시</option>
                   <option value="memory">기억</option>
+                  {workflows.length > 0 && <option value="n8n">n8n</option>}
                 </select>
 
                 {/* 검색 필드 */}

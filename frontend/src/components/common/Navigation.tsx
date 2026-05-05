@@ -18,6 +18,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useTemplates } from '../../hooks/useFirestore';
 import { useTemplateContext } from '../../contexts/TemplateContext';
 import { useTheme } from '../../hooks/useTheme';
+import { useN8nWorkflows } from '../../features/n8n/hooks/useN8nWorkflows';
 
 export const Navigation: React.FC = () => {
   const navigate = useNavigate();
@@ -28,6 +29,7 @@ export const Navigation: React.FC = () => {
   const { data: templates } = useTemplates();
   const { insertTemplateText } = useTemplateContext();
   const { isDark } = useTheme();
+  const { workflows } = useN8nWorkflows();
   const [isTemplateSidebarOpen, setIsTemplateSidebarOpen] = useState(false);
   const [isN8nModalOpen, setIsN8nModalOpen] = useState(false);
 
@@ -132,7 +134,7 @@ export const Navigation: React.FC = () => {
             ? 'bg-gray-200 border-t border-gray-300 shadow-sm' 
             : 'bg-white/95 dark:bg-gray-950/95 border-t border-gray-200/60 dark:border-slate-800/60 backdrop-blur-md'
           : 'bg-gray-200 dark:bg-gray-950 border-t border-gray-200 dark:border-gray-700 shadow-lg'
-      } nav-stable ${isDesktop ? 'h-14' : ''}`}>
+      } nav-stable ${isDesktop ? 'h-12' : ''}`}>
         <div className={isDesktop ? "relative w-full h-full nav-stable" : ""}>
           {/* PC 모드: 고정된 위치 레이아웃 */}
           {isDesktop ? (
@@ -143,7 +145,7 @@ export const Navigation: React.FC = () => {
                 size="sm"
                 onClick={() => navigate('/memos')}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1.5 h-auto rounded-xl transition-colors duration-200 nav-button-stable p-3 flex-1 max-w-24",
+                  "flex flex-col items-center justify-center gap-1 h-auto rounded-xl transition-colors duration-200 nav-button-stable p-1.5 flex-1 max-w-24",
                   isMemoList 
                     ? (isMobileLightMode || isDesktopLightMode)
                       ? "bg-blue-600 text-white shadow-md"
@@ -154,8 +156,8 @@ export const Navigation: React.FC = () => {
                 )}
               >
                 <div className="flex flex-col items-center justify-center w-full h-full">
-                  <DocumentTextIcon className={cn("transition-transform duration-200 h-6 w-6", isMemoList && "scale-110")} />
-                  <span className="font-bold transition-all duration-200 text-sm leading-none mt-1">메모 목록</span>
+                  <DocumentTextIcon className={cn("transition-transform duration-200 h-5 w-5", isMemoList && "scale-110")} />
+                  <span className="font-bold transition-all duration-200 text-xs leading-none mt-1">메모 목록</span>
                 </div>
               </Button>
 
@@ -165,7 +167,7 @@ export const Navigation: React.FC = () => {
                 size="sm"
                 onClick={() => setIsTemplateSidebarOpen(!isTemplateSidebarOpen)}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1.5 h-auto rounded-xl transition-colors duration-200 nav-button-stable p-3 flex-1 max-w-24",
+                  "flex flex-col items-center justify-center gap-1 h-auto rounded-xl transition-colors duration-200 nav-button-stable p-1.5 flex-1 max-w-24",
                   isTemplateSidebarOpen 
                     ? (isMobileLightMode || isDesktopLightMode)
                       ? "text-blue-600 bg-blue-50 hover:bg-blue-100"
@@ -176,8 +178,8 @@ export const Navigation: React.FC = () => {
                 )}
               >
                 <div className="flex flex-col items-center justify-center w-full h-full">
-                  <SparklesIcon className="transition-transform duration-200 h-6 w-6" />
-                  <span className="font-bold transition-all duration-200 text-sm leading-none mt-1">퀵 상용구</span>
+                  <SparklesIcon className="transition-transform duration-200 h-5 w-5" />
+                  <span className="font-bold transition-all duration-200 text-xs leading-none mt-1">퀵 상용구</span>
                 </div>
               </Button>
 
@@ -187,39 +189,41 @@ export const Navigation: React.FC = () => {
                 size="sm"
                 onClick={() => navigate('/create')}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1.5 h-auto rounded-xl transition-colors duration-200 nav-button-stable p-3 flex-1 max-w-24",
+                  "flex flex-col items-center justify-center gap-1 h-auto rounded-xl transition-colors duration-200 nav-button-stable p-1.5 flex-1 max-w-24",
                   (isMobileLightMode || isDesktopLightMode)
                     ? "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                     : "text-muted-foreground hover:text-foreground hover:bg-accent"
                 )}
               >
                 <div className="flex flex-col items-center justify-center w-full h-full">
-                  <PlusIcon className="transition-transform duration-200 h-6 w-6" />
-                  <span className="font-bold transition-all duration-200 text-sm leading-none mt-1">새 메모</span>
+                  <PlusIcon className="transition-transform duration-200 h-5 w-5" />
+                  <span className="font-bold transition-all duration-200 text-xs leading-none mt-1">새 메모</span>
                 </div>
               </Button>
 
-              {/* n8n 버튼 */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsN8nModalOpen(true)}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-1.5 h-auto rounded-xl transition-colors duration-200 nav-button-stable p-3 flex-1 max-w-24",
-                  (isMobileLightMode || isDesktopLightMode)
-                    ? "text-purple-600 hover:text-purple-900 hover:bg-purple-50"
-                    : "text-purple-400 hover:text-purple-300 hover:bg-purple-900/20"
-                )}
-              >
-                <div className="flex flex-col items-center justify-center w-full h-full">
-                  <BoltIcon className="transition-transform duration-200 h-6 w-6 text-purple-500" />
-                  <span className="font-bold transition-all duration-200 text-sm leading-none mt-1">n8n</span>
-                </div>
-              </Button>
+              {/* n8n 버튼 - 등록된 워크플로우가 있을 때만 표시 */}
+              {workflows.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsN8nModalOpen(true)}
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-1 h-auto rounded-xl transition-colors duration-200 nav-button-stable p-1.5 flex-1 max-w-24",
+                    (isMobileLightMode || isDesktopLightMode)
+                      ? "text-purple-600 hover:text-purple-900 hover:bg-purple-50"
+                      : "text-purple-400 hover:text-purple-300 hover:bg-purple-900/20"
+                  )}
+                >
+                  <div className="flex flex-col items-center justify-center w-full h-full">
+                    <BoltIcon className="h-5 w-5 text-purple-500" />
+                    <span className="font-bold transition-all duration-200 text-xs leading-none mt-1">n8n</span>
+                  </div>
+                </Button>
+              )}
             </div>
           ) : (
             /* 모바일 모드: 홈 화면과 동일한 디자인 */
-            <div className="flex justify-around items-center py-4 px-4">
+            <div className="flex justify-around items-center py-2 px-4">
               {/* 메모목록 */}
               <div 
                 className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity flex-1"
@@ -283,16 +287,18 @@ export const Navigation: React.FC = () => {
                 <span className="text-[13px] font-bold text-gray-600 dark:text-gray-300">새메모</span>
               </div>
 
-              {/* n8n 자동화 */}
-              <div 
-                className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity flex-1"
-                onClick={() => setIsN8nModalOpen(true)}
-              >
-                <div className="w-9 h-9 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center mb-1.5 border border-purple-200 dark:border-purple-800/50">
-                  <BoltIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              {/* n8n 자동화 - 등록된 워크플로우가 있을 때만 표시 */}
+              {workflows.length > 0 && (
+                <div 
+                  className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity flex-1"
+                  onClick={() => setIsN8nModalOpen(true)}
+                >
+                  <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center mb-1 border border-purple-200 dark:border-purple-800/50">
+                    <BoltIcon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400">n8n</span>
                 </div>
-                <span className="text-[13px] font-bold text-purple-600 dark:text-purple-400">n8n</span>
-              </div>
+              )}
             </div>
           )}
         </div>
