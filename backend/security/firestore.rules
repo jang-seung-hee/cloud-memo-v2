@@ -64,12 +64,13 @@ service cloud.firestore {
       allow create: if isRegisteredUser() && 
         request.resource.data.userId == request.auth.uid &&
         isValidString(request.resource.data, 'title', 1, 100) &&
-        isValidString(request.resource.data, 'content', 0, 10000);
+        isValidString(request.resource.data, 'content', 0, 900000);
       
       allow update: if isRegisteredUser() && (
-        // 1. 소유자 수정: 무조건 허용
+        // 1. 소유자 수정
         (resource.data.userId == request.auth.uid && 
-         isValidString(request.resource.data, 'title', 1, 100)) ||
+         isValidString(request.resource.data, 'title', 1, 100) &&
+         isValidString(request.resource.data, 'content', 0, 900000)) ||
         // 2. 공유 받은 사용자 수정: sharedWith 리스트에서 내 UID와 edit 권한이 true인 객체가 정확히 있는지 확인
         (
           resource.data.sharedWith != null && 
