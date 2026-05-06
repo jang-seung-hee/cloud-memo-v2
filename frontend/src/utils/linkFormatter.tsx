@@ -5,20 +5,22 @@ export const formatLinksInText = (text: string): React.ReactNode[] => {
   // URL 패턴 매칭 (http, https, www로 시작하는 링크)
   const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
   const parts = text.split(urlRegex);
-  
+
   return parts.map((part, index) => {
     if (urlRegex.test(part)) {
       // 링크인 경우
       const url = part.startsWith('www.') ? `https://${part}` : part;
+      const displayUrl = part.length > 25 ? part.substring(0, 25) + '...' : part;
       return (
         <a
           key={index}
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-800 dark:text-blue-400 font-bold hover:underline"
+          className="text-blue-800 dark:text-blue-400 font-bold hover:underline break-all"
+          title={part}
         >
-          {part}
+          {displayUrl}
         </a>
       );
     }

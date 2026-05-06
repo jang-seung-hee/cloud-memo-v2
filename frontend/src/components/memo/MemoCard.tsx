@@ -195,7 +195,7 @@ const MemoCardComponent: React.FC<MemoCardProps> = ({ memo, onMemoUpdate }) => {
           <div className="flex items-center justify-between mb-2 bg-muted/30 dark:bg-muted/20 rounded px-1 py-1">
             {/* 왼쪽: 카테고리 뱃지와 공유 상태 */}
             <div className="flex items-center gap-1">
-              <CategoryBadge category={memo.category || 'temporary'} size="xs" />
+              <CategoryBadge category={memo.category || 'temporary'} size="sm" />
               {!memo.isProcessing && memo.n8nStatus && (
                 <span className={`text-[10px] font-bold px-1 ${memo.n8nStatus === 'success' ? 'text-green-600 dark:text-green-400' : memo.n8nStatus === 'error' ? 'text-red-600 dark:text-red-400' : 'text-orange-600 dark:text-orange-400'}`}>
                   {memo.n8nStatus === 'success' ? '성공' : memo.n8nStatus === 'error' ? '실패' : '시간초과'}

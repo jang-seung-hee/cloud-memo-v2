@@ -270,6 +270,12 @@ export const N8nMemoCreatePage: React.FC = () => {
           setIsUploading(false);
           setProcessingMemoId(null);
           
+          try {
+            new Audio('/sounds/success.wav').play().catch(e => console.log('Audio play failed:', e));
+          } catch (e) {
+            console.log('Audio init failed:', e);
+          }
+          
           if (memoId) {
             const updateData: any = { 
               isProcessing: false, 
@@ -289,6 +295,11 @@ export const N8nMemoCreatePage: React.FC = () => {
           });
           navigate('/memos');
         } else {
+          try {
+            new Audio('/sounds/error.wav').play().catch(e => console.log('Audio play failed:', e));
+          } catch (e) {
+            console.log('Audio init failed:', e);
+          }
           // 실패 처리 (에러 메시지 우선순위 추출 보완)
           const errorMsg = 
             (data.error && typeof data.error === 'object' && data.error.message) ||
@@ -319,6 +330,12 @@ export const N8nMemoCreatePage: React.FC = () => {
       } catch (error: any) {
         clearTimeout(timeoutId);
         
+        try {
+          new Audio('/sounds/error.wav').play().catch(e => console.log('Audio play failed:', e));
+        } catch (e) {
+          console.log('Audio init failed:', e);
+        }
+        
         let errorMsg = "메모를 저장하는 중 오류가 발생했습니다.";
         if (error.name === 'AbortError') {
           errorMsg = "n8n 응답 시간이 초과되었습니다.";
@@ -343,6 +360,13 @@ export const N8nMemoCreatePage: React.FC = () => {
       }
     } catch (error) {
       console.error('n8n 저장 중 오류:', error);
+      
+      try {
+        new Audio('/sounds/error.wav').play().catch(e => console.log('Audio play failed:', e));
+      } catch (e) {
+        console.log('Audio init failed:', e);
+      }
+
       toast({
         title: "저장 실패",
         description: "메모를 저장하는 중 오류가 발생했습니다.",
