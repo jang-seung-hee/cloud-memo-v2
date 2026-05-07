@@ -25,7 +25,7 @@ import { IFirebaseTemplate } from '../types/firebase';
 import { ShareSettingsBadge } from '../components/ui/share-settings-badge';
 import { ShareSettingsModal } from '../components/memo/ShareSettingsModal';
 import { useMemoForm } from '../hooks/useMemoForm';
-import { siteConfig } from '../config/siteConfig';
+import { playSound } from '../utils/soundPlayer';
 
 export const MemoCreatePage: React.FC = () => {
   const navigate = useNavigate();
@@ -134,11 +134,7 @@ export const MemoCreatePage: React.FC = () => {
         });
 
         // 성공 효과음 재생
-        try {
-          new Audio(siteConfig.sounds.success).play().catch(e => console.log('Audio play failed:', e));
-        } catch (e) {
-          console.log('Audio init failed:', e);
-        }
+        playSound('success');
 
         navigate('/memos'); // 메모 목록 페이지로 이동
     } catch (error) {

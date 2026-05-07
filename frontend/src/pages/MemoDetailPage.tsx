@@ -31,7 +31,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { handleFirebaseError } from '../utils/errorHandler';
 import { formatLinksInText } from '../utils/linkFormatter';
-import { siteConfig } from '../config/siteConfig';
+import { playSound } from '../utils/soundPlayer';
 
 export const MemoDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -246,11 +246,7 @@ export const MemoDetailPage: React.FC = () => {
       });
 
       // 삭제 효과음 재생
-      try {
-        new Audio(siteConfig.sounds.delete).play().catch(e => console.log('Audio play failed:', e));
-      } catch (e) {
-        console.log('Audio init failed:', e);
-      }
+      playSound('delete');
 
       navigate('/memos');
     } catch (error) {

@@ -21,7 +21,7 @@ import { useTheme } from '../hooks/useTheme';
 import { Loader2 } from 'lucide-react';
 import { useN8nWorkflows } from '../features/n8n/hooks/useN8nWorkflows';
 import { n8nWebhookService } from '../features/n8n/services/n8nWebhookService';
-import { siteConfig } from '../config/siteConfig';
+import { playSound } from '../utils/soundPlayer';
 
 export const N8nMemoCreatePage: React.FC = () => {
   const navigate = useNavigate();
@@ -271,11 +271,8 @@ export const N8nMemoCreatePage: React.FC = () => {
           setIsUploading(false);
           setProcessingMemoId(null);
           
-          try {
-            new Audio(siteConfig.sounds.success).play().catch(e => console.log('Audio play failed:', e));
-          } catch (e) {
-            console.log('Audio init failed:', e);
-          }
+          // 성공 효과음 재생
+          playSound('success');
           
           if (memoId) {
             const updateData: any = { 
@@ -296,11 +293,8 @@ export const N8nMemoCreatePage: React.FC = () => {
           });
           navigate('/memos');
         } else {
-          try {
-            new Audio(siteConfig.sounds.error).play().catch(e => console.log('Audio play failed:', e));
-          } catch (e) {
-            console.log('Audio init failed:', e);
-          }
+          // 실패 효과음 재생
+          playSound('error');
           // 실패 처리 (에러 메시지 우선순위 추출 보완)
           const errorMsg = 
             (data.error && typeof data.error === 'object' && data.error.message) ||
@@ -331,11 +325,8 @@ export const N8nMemoCreatePage: React.FC = () => {
       } catch (error: any) {
         clearTimeout(timeoutId);
         
-        try {
-          new Audio(siteConfig.sounds.error).play().catch(e => console.log('Audio play failed:', e));
-        } catch (e) {
-          console.log('Audio init failed:', e);
-        }
+        // 오류 효과음 재생
+        playSound('error');
         
         let errorMsg = "메모를 저장하는 중 오류가 발생했습니다.";
         if (error.name === 'AbortError') {
@@ -362,11 +353,8 @@ export const N8nMemoCreatePage: React.FC = () => {
     } catch (error) {
       console.error('n8n 저장 중 오류:', error);
       
-      try {
-        new Audio(siteConfig.sounds.error).play().catch(e => console.log('Audio play failed:', e));
-      } catch (e) {
-        console.log('Audio init failed:', e);
-      }
+      // 오류 효과음 재생
+      playSound('error');
 
       toast({
         title: "저장 실패",
