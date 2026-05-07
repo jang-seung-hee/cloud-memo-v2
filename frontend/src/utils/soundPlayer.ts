@@ -19,8 +19,8 @@ const soundSettings: Record<SoundType, { volume: number; playbackRate: number }>
   success: { volume: 0.8, playbackRate: 1.0 },
   /** 메모/n8n 등록 실패 시: 볼륨 80%, 정상 속도 */
   error: { volume: 0.8, playbackRate: 1.0 },
-  /** 메모 삭제 시: 볼륨 40%, 1.5배속 */
-  delete: { volume: 0.4, playbackRate: 1.5 },
+  /** 메모 삭제 시: 볼륨 20%, 1.5배속 */
+  delete: { volume: 0.20, playbackRate: 1.5 },
 };
 
 /**
