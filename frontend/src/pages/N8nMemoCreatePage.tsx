@@ -317,9 +317,9 @@ export const N8nMemoCreatePage: React.FC = () => {
           }
 
           toast({
-            title: "n8n 처리 실패",
-            description: errorMsg,
-            variant: "destructive"
+            title: "⚠️ n8n 처리 중 문제가 발생했어요",
+            description: `${errorMsg}\n\n일시적인 문제일 수 있습니다. 메모는 저장되었으니 잠시 후 n8n을 다시 시도해 보세요.`,
+            variant: "warning" as any,
           });
         }
       } catch (error: any) {
@@ -345,9 +345,11 @@ export const N8nMemoCreatePage: React.FC = () => {
         }
 
         toast({
-          title: error.name === 'AbortError' ? "시간 초과" : "저장 실패",
-          description: errorMsg,
-          variant: "destructive"
+          title: error.name === 'AbortError' ? "⏱️ 응답 시간이 조금 걸렸어요" : "⚠️ 전송 중 문제가 발생했어요",
+          description: error.name === 'AbortError'
+            ? "네트워크 상태나 n8n 서버 부하에 따라 응답이 는릴 수 있어요. 메모는 저장되었으니 잠시 후 다시 시도해 보세요."
+            : `${errorMsg}\n\n메모는 저장되었습니다. 잠시 후 n8n 전송을 다시 시도해 보세요.`,
+          variant: "warning" as any,
         });
       }
     } catch (error) {
@@ -357,9 +359,9 @@ export const N8nMemoCreatePage: React.FC = () => {
       playSound('error');
 
       toast({
-        title: "저장 실패",
-        description: "메모를 저장하는 중 오류가 발생했습니다.",
-        variant: "destructive"
+        title: "⚠️ 저장 중 문제가 생겼어요",
+        description: "메모를 저장하는 중 예기치 않은 문제가 발생했어요. \n네트워크 연결을 확인하고 다시 시도해 보세요.",
+        variant: "warning" as any,
       });
       setIsUploading(false);
       setProcessingMemoId(null);

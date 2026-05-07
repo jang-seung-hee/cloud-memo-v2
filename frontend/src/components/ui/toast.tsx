@@ -32,6 +32,9 @@ const toastVariants = cva(
         default: "border bg-background text-foreground",
         destructive:
           "destructive border-destructive bg-destructive text-destructive-foreground",
+        /** n8n 처리 실패 등 일시적 오류에 사용 - 연한 주황색으로 사용자 부담 최소화 */
+        warning:
+          "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-500/50 dark:bg-amber-900/20 dark:text-amber-200",
       },
     },
     defaultVariants: {
