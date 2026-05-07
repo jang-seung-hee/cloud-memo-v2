@@ -24,8 +24,8 @@ export const siteConfig = {
   // 사운드 효과 설정
   sounds: {
     success: '/sounds/ksjsbwuil-apple-pay-success-sound-effect-481188.mp3',
-    error: '/sounds/freesound_community-beep-warning-6387.mp3',
-    delete: '/sounds/freesound_community-pulling-tissue-from-box-86881.mp3',
+    error: '/sounds/universfield-error-011-352286.mp3',
+    delete: '/sounds/freesound_community-mag-remove-92075.mp3',
   }
 };
 
