@@ -17,10 +17,10 @@ export type SoundType = 'success' | 'error' | 'delete';
 const soundSettings: Record<SoundType, { volume: number; playbackRate: number }> = {
   /** 메모/n8n 등록 성공 시: 볼륨 80%, 정상 속도 */
   success: { volume: 0.8, playbackRate: 1.0 },
-  /** 메모/n8n 등록 실패 시: 볼륨 50%, 정상 속도 */
-  error: { volume: 0.5, playbackRate: 1.0 },
-  /** 메모 삭제 시: 볼륨 15%, 3배속 */
-  delete: { volume: 0.15, playbackRate: 3.0 },
+  /** 메모/n8n 등록 실패 시: 볼륨 30%, 정상 속도 */
+  error: { volume: 0.3, playbackRate: 1.0 },
+  /** 메모 삭제 시: 볼륨 15%, 2배속 */
+  delete: { volume: 0.15, playbackRate: 2.5 },
 };
 
 /**
