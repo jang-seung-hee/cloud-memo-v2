@@ -21,6 +21,7 @@ import { useTheme } from '../hooks/useTheme';
 import { Loader2 } from 'lucide-react';
 import { useN8nWorkflows } from '../features/n8n/hooks/useN8nWorkflows';
 import { n8nWebhookService } from '../features/n8n/services/n8nWebhookService';
+import { siteConfig } from '@/config/siteConfig';
 
 export const N8nMemoCreatePage: React.FC = () => {
   const navigate = useNavigate();
@@ -271,7 +272,7 @@ export const N8nMemoCreatePage: React.FC = () => {
           setProcessingMemoId(null);
           
           try {
-            new Audio('/sounds/success.wav').play().catch(e => console.log('Audio play failed:', e));
+            new Audio(siteConfig.sounds.success).play().catch(e => console.log('Audio play failed:', e));
           } catch (e) {
             console.log('Audio init failed:', e);
           }
@@ -296,7 +297,7 @@ export const N8nMemoCreatePage: React.FC = () => {
           navigate('/memos');
         } else {
           try {
-            new Audio('/sounds/error.wav').play().catch(e => console.log('Audio play failed:', e));
+            new Audio(siteConfig.sounds.error).play().catch(e => console.log('Audio play failed:', e));
           } catch (e) {
             console.log('Audio init failed:', e);
           }
@@ -331,7 +332,7 @@ export const N8nMemoCreatePage: React.FC = () => {
         clearTimeout(timeoutId);
         
         try {
-          new Audio('/sounds/error.wav').play().catch(e => console.log('Audio play failed:', e));
+          new Audio(siteConfig.sounds.error).play().catch(e => console.log('Audio play failed:', e));
         } catch (e) {
           console.log('Audio init failed:', e);
         }
@@ -362,7 +363,7 @@ export const N8nMemoCreatePage: React.FC = () => {
       console.error('n8n 저장 중 오류:', error);
       
       try {
-        new Audio('/sounds/error.wav').play().catch(e => console.log('Audio play failed:', e));
+        new Audio(siteConfig.sounds.error).play().catch(e => console.log('Audio play failed:', e));
       } catch (e) {
         console.log('Audio init failed:', e);
       }

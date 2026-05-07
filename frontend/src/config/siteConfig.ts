@@ -19,6 +19,12 @@ export const siteConfig = {
   n8n: {
     enabled: true,
     defaultHeaderName: 'X-N8N-TOKEN', // 보안 토큰을 보낼 기본 헤더 이름
+  },
+  
+  // 사운드 효과 설정
+  sounds: {
+    success: '/sounds/ksjsbwuil-apple-pay-success-sound-effect-481188.mp3',
+    error: '/sounds/freesound_community-beep-warning-6387.mp3',
   }
 };
 
