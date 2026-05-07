@@ -25,6 +25,7 @@ import { IFirebaseTemplate } from '../types/firebase';
 import { ShareSettingsBadge } from '../components/ui/share-settings-badge';
 import { ShareSettingsModal } from '../components/memo/ShareSettingsModal';
 import { useMemoForm } from '../hooks/useMemoForm';
+import { siteConfig } from '../config/siteConfig';
 
 export const MemoCreatePage: React.FC = () => {
   const navigate = useNavigate();
@@ -127,11 +128,19 @@ export const MemoCreatePage: React.FC = () => {
       }
 
       console.log('🎉 메모 저장 성공!');
-      toast({
-        title: "메모 저장 완료",
-        description: "새 메모가 성공적으로 저장되었습니다."
-      });
-      navigate('/memos'); // 메모 목록 페이지로 이동
+        toast({
+          title: "메모 저장 완료",
+          description: "새 메모가 성공적으로 저장되었습니다."
+        });
+
+        // 성공 효과음 재생
+        try {
+          new Audio(siteConfig.sounds.success).play().catch(e => console.log('Audio play failed:', e));
+        } catch (e) {
+          console.log('Audio init failed:', e);
+        }
+
+        navigate('/memos'); // 메모 목록 페이지로 이동
     } catch (error) {
       console.error('메모 저장 중 오류:', error);
       toast({

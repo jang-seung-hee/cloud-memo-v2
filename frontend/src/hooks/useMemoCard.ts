@@ -7,6 +7,7 @@ import { useToast } from './use-toast';
 import { firestoreService } from '../services/firebase/firestore';
 import { storageService } from '../services/firebase/storage';
 import { handleFirebaseError } from '../utils/errorHandler';
+import { siteConfig } from '../config/siteConfig';
 
 interface UseMemoCardProps {
   memo: IFirebaseMemo;
@@ -251,6 +252,13 @@ export const useMemoCard = ({ memo, onMemoUpdate }: UseMemoCardProps) => {
         title: "삭제 완료",
         description: "메모가 성공적으로 삭제되었습니다."
       });
+
+      // 삭제 효과음 재생
+      try {
+        new Audio(siteConfig.sounds.delete).play().catch(e => console.log('Audio play failed:', e));
+      } catch (e) {
+        console.log('Audio init failed:', e);
+      }
 
       if (onMemoUpdate) {
         onMemoUpdate();

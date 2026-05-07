@@ -31,6 +31,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { handleFirebaseError } from '../utils/errorHandler';
 import { formatLinksInText } from '../utils/linkFormatter';
+import { siteConfig } from '../config/siteConfig';
 
 export const MemoDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -243,6 +244,14 @@ export const MemoDetailPage: React.FC = () => {
         title: "삭제 완료",
         description: "메모가 성공적으로 삭제되었습니다."
       });
+
+      // 삭제 효과음 재생
+      try {
+        new Audio(siteConfig.sounds.delete).play().catch(e => console.log('Audio play failed:', e));
+      } catch (e) {
+        console.log('Audio init failed:', e);
+      }
+
       navigate('/memos');
     } catch (error) {
       console.error('메모 삭제 중 오류:', error);
