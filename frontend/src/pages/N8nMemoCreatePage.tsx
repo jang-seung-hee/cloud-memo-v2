@@ -33,7 +33,7 @@ export const N8nMemoCreatePage: React.FC = () => {
   const { isDesktop, isMobile } = useDevice();
   const { fontSizeClasses } = useFontSize();
   const { isDark } = useTheme();
-  
+
   const { workflows, isLoading: isWorkflowsLoading } = useN8nWorkflows();
   const workflow = workflows.find(w => w.id === workflowId);
 
@@ -215,7 +215,7 @@ export const N8nMemoCreatePage: React.FC = () => {
       const memoId = await createMemo({
         title,
         content: finalContent,
-        images: [], 
+        images: [],
         category: 'n8n',
         tags: [],
         isProcessing: true, // 비동기 처리 중임을 표시
@@ -236,10 +236,10 @@ export const N8nMemoCreatePage: React.FC = () => {
         const result = await n8nWebhookService.sendMemoToN8n(
           workflow.url,
           workflow.token,
-          { 
-            title, 
+          {
+            title,
             content: formData.content,
-            memoId: memoId 
+            memoId: memoId
           },
           formData.images,
           controller.signal
@@ -248,7 +248,7 @@ export const N8nMemoCreatePage: React.FC = () => {
         clearTimeout(timeoutId); // 요청 완료 시 타이머 해제
 
         const data = result.data || {};
-        
+
         // 에러 필드가 실제로 유의미한 값을 가지는지 확인하는 헬퍼 함수
         const hasActualError = (val: any) => {
           if (!val) return false; // null, undefined, false, ""
@@ -258,7 +258,7 @@ export const N8nMemoCreatePage: React.FC = () => {
         };
 
         // 최종 성공 조건 검증 (빈 객체 예외 처리 완벽 적용)
-        const isLogicalError = 
+        const isLogicalError =
           (data.status && ['error', 'fail', 'failed'].includes(String(data.status).toLowerCase())) ||
           data.success === false ||
           hasActualError(data.error) ||
@@ -270,20 +270,20 @@ export const N8nMemoCreatePage: React.FC = () => {
           // 성공 처리 (생략...)
           setIsUploading(false);
           setProcessingMemoId(null);
-          
+
           // 성공 효과음 재생
           playSound('success');
-          
+
           if (memoId) {
-            const updateData: any = { 
-              isProcessing: false, 
-              n8nStatus: 'success' 
+            const updateData: any = {
+              isProcessing: false,
+              n8nStatus: 'success'
             };
-            
+
             // n8n 응답 데이터 반영 (output/title)
             if (data.output) updateData.content = data.output;
             if (data.title) updateData.title = data.title;
-            
+
             await firestoreService.updateMemo(memoId, updateData);
           }
 
@@ -296,7 +296,7 @@ export const N8nMemoCreatePage: React.FC = () => {
           // 실패 효과음 재생
           playSound('error');
           // 실패 처리 (에러 메시지 우선순위 추출 보완)
-          const errorMsg = 
+          const errorMsg =
             (data.error && typeof data.error === 'object' && data.error.message) ||
             (data.error && typeof data.error === 'string' && data.error) ||
             data.errorMessage || // n8n 표준 에러 메시지 우선 순위 상향
@@ -307,12 +307,12 @@ export const N8nMemoCreatePage: React.FC = () => {
 
           setIsUploading(false);
           setProcessingMemoId(null);
-          
+
           if (memoId) {
-            await firestoreService.updateMemo(memoId, { 
-              isProcessing: false, 
+            await firestoreService.updateMemo(memoId, {
+              isProcessing: false,
               n8nStatus: 'error',
-              n8nError: errorMsg 
+              n8nError: errorMsg
             });
           }
 
@@ -324,10 +324,10 @@ export const N8nMemoCreatePage: React.FC = () => {
         }
       } catch (error: any) {
         clearTimeout(timeoutId);
-        
+
         // 오류 효과음 재생
         playSound('error');
-        
+
         let errorMsg = "메모를 저장하는 중 오류가 발생했습니다.";
         if (error.name === 'AbortError') {
           errorMsg = "n8n 응답 시간이 초과되었습니다.";
@@ -335,26 +335,26 @@ export const N8nMemoCreatePage: React.FC = () => {
 
         setIsUploading(false);
         setProcessingMemoId(null);
-        
+
         if (memoId) {
-          await firestoreService.updateMemo(memoId, { 
-            isProcessing: false, 
+          await firestoreService.updateMemo(memoId, {
+            isProcessing: false,
             n8nStatus: 'error',
-            n8nError: errorMsg 
+            n8nError: errorMsg
           });
         }
 
         toast({
-          title: error.name === 'AbortError' ? "⏱️ 응답 시간이 조금 걸렸어요" : "⚠️ 전송 중 문제가 발생했어요",
+          title: error.name === 'AbortError' ? "⏱️ 응답 시간이 초과되었어요" : "⚠️ 전송 중 문제가 발생했어요",
           description: error.name === 'AbortError'
-            ? "네트워크 상태나 n8n 서버 부하에 따라 응답이 는릴 수 있어요. 메모는 저장되었으니 잠시 후 다시 시도해 보세요."
+            ? "네트워크 상태나 n8n 서버 부하에 따라 응답이 느릴 수 있어요. 메모는 저장되었으니 잠시 후 다시 시도해 보세요."
             : `${errorMsg}\n\n메모는 저장되었습니다. 잠시 후 n8n 전송을 다시 시도해 보세요.`,
           variant: "warning" as any,
         });
       }
     } catch (error) {
       console.error('n8n 저장 중 오류:', error);
-      
+
       // 오류 효과음 재생
       playSound('error');
 
@@ -490,8 +490,8 @@ export const N8nMemoCreatePage: React.FC = () => {
                     {processingMemoId ? 'n8n 처리 중...' : 'n8n 전송 중'}
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 mb-4">
-                    {processingMemoId 
-                      ? '웹훅 처리 결과를 기다리고 있습니다. 최대 120초가 소요될 수 있습니다.' 
+                    {processingMemoId
+                      ? '웹훅 처리 결과를 기다리고 있습니다. 최대 120초가 소요될 수 있습니다.'
                       : '웹훅으로 데이터를 보내고 있습니다...'}
                   </p>
                 </div>
@@ -581,28 +581,28 @@ export const N8nMemoCreatePage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Button type="button" variant="outline" onClick={() => {
-                        const cameraInput = document.createElement('input');
-                        cameraInput.type = 'file'; cameraInput.accept = 'image/*'; cameraInput.capture = 'environment';
-                        cameraInput.onchange = (e) => {
-                          const files = (e.target as HTMLInputElement).files;
-                          if (files && files.length > 0) handleImagesChange([...formData.images, ...Array.from(files)]);
-                        };
-                        cameraInput.click();
-                      }}
+                      const cameraInput = document.createElement('input');
+                      cameraInput.type = 'file'; cameraInput.accept = 'image/*'; cameraInput.capture = 'environment';
+                      cameraInput.onchange = (e) => {
+                        const files = (e.target as HTMLInputElement).files;
+                        if (files && files.length > 0) handleImagesChange([...formData.images, ...Array.from(files)]);
+                      };
+                      cameraInput.click();
+                    }}
                       className={`w-full h-10 flex items-center justify-center transition-all ${isMobileLightMode ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-slate-700 border-slate-500 text-blue-300'}`}
                     >
                       <CameraIcon className="h-4 w-4 mr-1" />
                       <span className="text-xs font-medium">카메라</span>
                     </Button>
                     <Button type="button" variant="outline" onClick={() => {
-                        const fileInput = document.createElement('input');
-                        fileInput.type = 'file'; fileInput.accept = 'image/*'; fileInput.multiple = true;
-                        fileInput.onchange = (e) => {
-                          const files = (e.target as HTMLInputElement).files;
-                          if (files && files.length > 0) handleImagesChange([...formData.images, ...Array.from(files)]);
-                        };
-                        fileInput.click();
-                      }}
+                      const fileInput = document.createElement('input');
+                      fileInput.type = 'file'; fileInput.accept = 'image/*'; fileInput.multiple = true;
+                      fileInput.onchange = (e) => {
+                        const files = (e.target as HTMLInputElement).files;
+                        if (files && files.length > 0) handleImagesChange([...formData.images, ...Array.from(files)]);
+                      };
+                      fileInput.click();
+                    }}
                       className={`w-full h-10 flex items-center justify-center transition-all ${isMobileLightMode ? 'bg-green-50 border-green-200 text-green-700' : 'bg-slate-700 border-slate-500 text-green-300'}`}
                     >
                       <PhotoIcon className="h-4 w-4 mr-1" />
@@ -628,7 +628,7 @@ export const N8nMemoCreatePage: React.FC = () => {
                     ) : (
                       <div className="h-full flex flex-col items-center justify-center text-gray-400">
                         <PhotoIcon className="h-6 w-6 mb-1 opacity-50" />
-                        <span className="text-[10px] text-center">웹훅 전송 전용<br/>(저장안됨)</span>
+                        <span className="text-[10px] text-center">웹훅 전송 전용<br />(저장안됨)</span>
                       </div>
                     )}
                   </div>
@@ -656,8 +656,8 @@ export const N8nMemoCreatePage: React.FC = () => {
                     {processingMemoId ? 'n8n 처리 중...' : 'n8n 전송 중'}
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 mb-4">
-                    {processingMemoId 
-                      ? '웹훅 처리 결과를 기다리고 있습니다. 최대 120초가 소요될 수 있습니다.' 
+                    {processingMemoId
+                      ? '웹훅 처리 결과를 기다리고 있습니다. 최대 120초가 소요될 수 있습니다.'
                       : '웹훅으로 데이터를 보내고 있습니다...'}
                   </p>
                 </div>
