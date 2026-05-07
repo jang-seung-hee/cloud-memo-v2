@@ -21,7 +21,7 @@ import { useTheme } from '../hooks/useTheme';
 import { Loader2 } from 'lucide-react';
 import { useN8nWorkflows } from '../features/n8n/hooks/useN8nWorkflows';
 import { n8nWebhookService } from '../features/n8n/services/n8nWebhookService';
-import { siteConfig } from '@/config/siteConfig';
+import { siteConfig } from '../config/siteConfig';
 
 export const N8nMemoCreatePage: React.FC = () => {
   const navigate = useNavigate();
