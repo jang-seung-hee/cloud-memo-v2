@@ -39,21 +39,21 @@ export const useMemoForm = ({ initialData, initialSharedWith }: UseMemoFormProps
       const screenHeight = window.innerHeight;
       const screenWidth = window.innerWidth;
 
-      let baseHeight = Math.max(230, screenHeight * 0.31);
+      let baseHeight = Math.max(115, screenHeight * 0.155);
 
       if (screenHeight >= 800) {
-        baseHeight = Math.max(280, screenHeight * 0.35);
+        baseHeight = Math.max(140, screenHeight * 0.175);
       } else if (screenHeight >= 700) {
-        baseHeight = Math.max(260, screenHeight * 0.33);
+        baseHeight = Math.max(130, screenHeight * 0.165);
       } else if (screenHeight >= 600) {
-        baseHeight = Math.max(240, screenHeight * 0.32);
+        baseHeight = Math.max(120, screenHeight * 0.16);
       } else {
-        baseHeight = Math.max(230, screenHeight * 0.30);
+        baseHeight = Math.max(115, screenHeight * 0.15);
       }
 
       const aspectRatio = screenWidth / screenHeight;
       if (aspectRatio > 0.5) {
-        baseHeight = Math.min(baseHeight + 20, screenHeight * 0.4);
+        baseHeight = Math.min(baseHeight + 10, screenHeight * 0.2);
       }
 
       setTextareaHeight(baseHeight);

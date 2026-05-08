@@ -146,13 +146,18 @@ export const MemoEditPage: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!formData.content.trim()) {
-      toast({
-        title: "내용을 입력해주세요",
-        description: "메모 내용을 입력한 후 저장해주세요.",
-        variant: "destructive"
-      });
-      return;
+    let contentToSave = formData.content.trim();
+    if (!contentToSave) {
+      if (formData.images.length > 0 || originalImages.length > 0) {
+        contentToSave = '[이미지첨부]';
+      } else {
+        toast({
+          title: "내용을 입력해주세요",
+          description: "메모 내용을 입력한 후 저장해주세요.",
+          variant: "destructive"
+        });
+        return;
+      }
     }
 
     if (!memoId) {
@@ -170,7 +175,7 @@ export const MemoEditPage: React.FC = () => {
       console.log('✅ updateMemo 호출 시작...');
 
       // 본문의 처음 10자를 제목으로 추출 (줄바꿈 제거)
-      const title = extractTitle(formData.content);
+      const title = extractTitle(contentToSave);
 
       // 새로 추가된 이미지들을 업로드
       const uploadedImageUrls: string[] = [];
@@ -200,7 +205,7 @@ export const MemoEditPage: React.FC = () => {
       // Firebase Firestore에 메모 업데이트
       await updateMemo(memoId, {
         title,
-        content: formData.content.trim(),
+        content: contentToSave,
         images: allImages, // 기존 이미지 + 새로 업로드된 이미지
         category: formData.category,
         tags: [], // 향후 태그 기능 추가 시 사용

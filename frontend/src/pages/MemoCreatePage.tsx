@@ -78,13 +78,18 @@ export const MemoCreatePage: React.FC = () => {
   } = useMemoForm();
 
   const handleSave = async () => {
-    if (!formData.content.trim()) {
-      toast({
-        title: "내용을 입력해주세요",
-        description: "메모 내용을 입력한 후 저장해주세요.",
-        variant: "destructive"
-      });
-      return;
+    let contentToSave = formData.content.trim();
+    if (!contentToSave) {
+      if (formData.images.length > 0) {
+        contentToSave = '[이미지첨부]';
+      } else {
+        toast({
+          title: "내용을 입력해주세요",
+          description: "메모 내용을 입력한 후 저장해주세요.",
+          variant: "destructive"
+        });
+        return;
+      }
     }
 
     setIsUploading(true);
@@ -93,12 +98,12 @@ export const MemoCreatePage: React.FC = () => {
       console.log('✅ createMemo 호출 시작...');
 
       // 본문의 처음 10자를 제목으로 추출 (줄바꿈 제거)
-      const title = extractTitle(formData.content);
+      const title = extractTitle(contentToSave);
 
       // Firebase Firestore에 메모 저장 (전체 content 저장)
       const newMemoId = await createMemo({
         title,
-        content: formData.content.trim(), // 전체 content를 그대로 저장
+        content: contentToSave, // 전체 content를 그대로 저장
         images: formData.images,
         category: formData.category,
         tags: [], // 향후 태그 기능 추가 시 사용

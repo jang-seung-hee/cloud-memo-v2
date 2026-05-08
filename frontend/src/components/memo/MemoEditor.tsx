@@ -111,7 +111,7 @@ export const MemoEditor: React.FC<MemoEditorProps> = ({
                 placeholder="메모 내용을 입력하세요..."
                 style={{
                   height: textareaHeight,
-                  minHeight: '230px'
+                  minHeight: '115px'
                 }}
                 className={`h-full resize-none border-0 focus:ring-0 focus:border-0 bg-transparent ${fontSizeClasses.content} ${isMobileLightMode ? 'text-gray-700 placeholder-gray-400' : 'text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500'}`}
               />
@@ -124,54 +124,8 @@ export const MemoEditor: React.FC<MemoEditorProps> = ({
       <Card className={`shadow-sm border-2 mb-2 ${isMobileLightMode ? 'border-gray-200 bg-white' : 'border-gray-200 dark:border-gray-700'}`}>
         <CardContent className="p-4">
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    const cameraInput = document.createElement('input');
-                    cameraInput.type = 'file';
-                    cameraInput.accept = 'image/*';
-                    cameraInput.capture = 'environment';
-                    cameraInput.onchange = (e) => {
-                      const files = (e.target as HTMLInputElement).files;
-                      if (files && files.length > 0) {
-                        onImagesChange([...images, ...Array.from(files)]);
-                      }
-                    };
-                    cameraInput.click();
-                  }}
-                  className={`w-full h-10 flex items-center justify-center transition-all duration-200 ${isMobileLightMode ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 hover:from-blue-100 hover:to-indigo-100' : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 hover:from-blue-100 hover:to-indigo-100 dark:from-slate-700 dark:to-slate-600 dark:border-slate-500 dark:hover:from-slate-600 dark:hover:to-slate-500'}`}
-                >
-                  <CameraIcon className={`h-4 w-4 mr-1 ${isMobileLightMode ? 'text-blue-600' : 'text-blue-600 dark:text-blue-400'}`} />
-                  <span className={`text-xs font-medium ${isMobileLightMode ? 'text-blue-700' : 'text-blue-700 dark:text-blue-300'}`}>카메라</span>
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    const fileInput = document.createElement('input');
-                    fileInput.type = 'file';
-                    fileInput.accept = 'image/*';
-                    fileInput.multiple = true;
-                    fileInput.onchange = (e) => {
-                      const files = (e.target as HTMLInputElement).files;
-                      if (files && files.length > 0) {
-                        onImagesChange([...images, ...Array.from(files)]);
-                      }
-                    };
-                    fileInput.click();
-                  }}
-                  className={`w-full h-10 flex items-center justify-center transition-all duration-200 ${isMobileLightMode ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 hover:from-green-100 hover:to-emerald-100' : 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 hover:from-green-100 hover:to-emerald-100 dark:from-slate-700 dark:to-slate-600 dark:border-slate-500 dark:hover:from-slate-600 dark:hover:to-slate-500'}`}
-                >
-                  <PhotoIcon className={`h-4 w-4 mr-1 ${isMobileLightMode ? 'text-green-600' : 'text-green-600 dark:text-green-400'}`} />
-                  <span className={`text-xs font-medium ${isMobileLightMode ? 'text-green-700' : 'text-green-700 dark:text-green-300'}`}>갤러리</span>
-                </Button>
-              </div>
-
-              <div className={`rounded-lg border-2 border-dashed p-2 min-h-[84px] ${isMobileLightMode ? 'bg-gray-50 border-gray-300' : 'bg-gray-50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600'}`}>
+            <div className="grid grid-cols-2 gap-2">
+              <div className={`rounded-lg border-2 border-dashed p-1.5 min-h-[72px] ${isMobileLightMode ? 'bg-gray-50 border-gray-300' : 'bg-gray-50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600'}`}>
                 {images.length > 0 || (existingImages && existingImages.length > 0) ? (
                   <div className="grid grid-cols-2 gap-1">
                     {/* 기존 이미지 렌더링 */}
@@ -180,7 +134,7 @@ export const MemoEditor: React.FC<MemoEditorProps> = ({
                         <img
                           src={image}
                           alt={`기존 이미지 ${index + 1}`}
-                          className="w-full h-10 object-cover rounded"
+                          className="w-full h-8 object-cover rounded"
                         />
                         <button
                           type="button"
@@ -203,7 +157,7 @@ export const MemoEditor: React.FC<MemoEditorProps> = ({
                         <img
                           src={typeof image === 'string' ? image : URL.createObjectURL(image as File)}
                           alt={`미리보기 ${index + 1}`}
-                          className="w-full h-10 object-cover rounded"
+                          className="w-full h-8 object-cover rounded"
                         />
                         <button
                           type="button"
@@ -217,10 +171,55 @@ export const MemoEditor: React.FC<MemoEditorProps> = ({
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
-                    <PhotoIcon className="h-6 w-6 mb-1 opacity-50" />
-                    <span className="text-[10px] text-center leading-tight">이미지가<br/>없습니다</span>
+                    <PhotoIcon className="h-5 w-5 mb-0.5 opacity-50" />
+                    <span className="text-[9px] text-center leading-tight">이미지가<br/>없습니다</span>
                   </div>
                 )}
+              </div>
+              <div className="space-y-1.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const cameraInput = document.createElement('input');
+                    cameraInput.type = 'file';
+                    cameraInput.accept = 'image/*';
+                    cameraInput.capture = 'environment';
+                    cameraInput.onchange = (e) => {
+                      const files = (e.target as HTMLInputElement).files;
+                      if (files && files.length > 0) {
+                        onImagesChange([...images, ...Array.from(files)]);
+                      }
+                    };
+                    cameraInput.click();
+                  }}
+                  className={`w-full h-8 flex items-center justify-center transition-all duration-200 ${isMobileLightMode ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 hover:from-blue-100 hover:to-indigo-100' : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 hover:from-blue-100 hover:to-indigo-100 dark:from-slate-700 dark:to-slate-600 dark:border-slate-500 dark:hover:from-slate-600 dark:hover:to-slate-500'}`}
+                >
+                  <CameraIcon className={`h-4 w-4 mr-1 ${isMobileLightMode ? 'text-blue-600' : 'text-blue-600 dark:text-blue-400'}`} />
+                  <span className={`text-xs font-medium ${isMobileLightMode ? 'text-blue-700' : 'text-blue-700 dark:text-blue-300'}`}>카메라</span>
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const fileInput = document.createElement('input');
+                    fileInput.type = 'file';
+                    fileInput.accept = 'image/*';
+                    fileInput.multiple = true;
+                    fileInput.onchange = (e) => {
+                      const files = (e.target as HTMLInputElement).files;
+                      if (files && files.length > 0) {
+                        onImagesChange([...images, ...Array.from(files)]);
+                      }
+                    };
+                    fileInput.click();
+                  }}
+                  className={`w-full h-8 flex items-center justify-center transition-all duration-200 ${isMobileLightMode ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 hover:from-green-100 hover:to-emerald-100' : 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 hover:from-green-100 hover:to-emerald-100 dark:from-slate-700 dark:to-slate-600 dark:border-slate-500 dark:hover:from-slate-600 dark:hover:to-slate-500'}`}
+                >
+                  <PhotoIcon className={`h-4 w-4 mr-1 ${isMobileLightMode ? 'text-green-600' : 'text-green-600 dark:text-green-400'}`} />
+                  <span className={`text-xs font-medium ${isMobileLightMode ? 'text-green-700' : 'text-green-700 dark:text-green-300'}`}>갤러리</span>
+                </Button>
               </div>
             </div>
           </div>

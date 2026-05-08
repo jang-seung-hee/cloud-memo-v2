@@ -46,7 +46,7 @@ export const N8nMemoCreatePage: React.FC = () => {
   const [isTemplateSidebarOpen, setIsTemplateSidebarOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [processingMemoId, setProcessingMemoId] = useState<string | null>(null);
-  const [textareaHeight, setTextareaHeight] = useState(230); // 기본 높이
+  const [textareaHeight, setTextareaHeight] = useState(115); // 기본 높이
 
   // 모바일 + 라이트 모드일 때의 스타일 조건
   const isMobileLightMode = !isDesktop && !isDark;
@@ -62,11 +62,11 @@ export const N8nMemoCreatePage: React.FC = () => {
     const calculateTextareaHeight = () => {
       if (!isMobile) return;
       const screenHeight = window.innerHeight;
-      let baseHeight = Math.max(230, screenHeight * 0.31);
-      if (screenHeight >= 800) baseHeight = Math.max(280, screenHeight * 0.35);
-      else if (screenHeight >= 700) baseHeight = Math.max(260, screenHeight * 0.33);
-      else if (screenHeight >= 600) baseHeight = Math.max(240, screenHeight * 0.32);
-      else baseHeight = Math.max(230, screenHeight * 0.30);
+      let baseHeight = Math.max(115, screenHeight * 0.155);
+      if (screenHeight >= 800) baseHeight = Math.max(140, screenHeight * 0.175);
+      else if (screenHeight >= 700) baseHeight = Math.max(130, screenHeight * 0.165);
+      else if (screenHeight >= 600) baseHeight = Math.max(120, screenHeight * 0.16);
+      else baseHeight = Math.max(115, screenHeight * 0.15);
       setTextareaHeight(baseHeight);
     };
     calculateTextareaHeight();
@@ -189,23 +189,28 @@ export const N8nMemoCreatePage: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!formData.content.trim()) {
-      toast({
-        title: "내용을 입력해주세요",
-        description: "메모 내용을 입력한 후 저장해주세요.",
-        variant: "destructive"
-      });
-      return;
+    let finalContentText = formData.content.trim();
+    if (!finalContentText) {
+      if (formData.images.length > 0) {
+        finalContentText = '[이미지첨부]';
+      } else {
+        toast({
+          title: "내용을 입력해주세요",
+          description: "메모 내용을 입력한 후 저장해주세요.",
+          variant: "destructive"
+        });
+        return;
+      }
     }
     if (!workflow) return;
 
     setIsUploading(true);
 
     try {
-      const title = extractTitle(formData.content);
+      const title = extractTitle(finalContentText);
 
       // 1. 파이어베이스 저장용 텍스트 구성 (첨부파일 이름 추가)
-      let finalContent = `n8n : [${workflow.name}]\n\n${formData.content.trim()}`;
+      let finalContent = `n8n : [${workflow.name}]\n\n${finalContentText}`;
       if (formData.images.length > 0) {
         const fileNames = formData.images.map(img => img.name).join(', ');
         finalContent += `\n\n[첨부파일: ${fileNames}]`;
@@ -238,7 +243,7 @@ export const N8nMemoCreatePage: React.FC = () => {
           workflow.token,
           {
             title,
-            content: formData.content,
+            content: finalContentText,
             memoId: memoId
           },
           formData.images,
@@ -553,7 +558,7 @@ export const N8nMemoCreatePage: React.FC = () => {
                     onChange={handleContentChange}
                     onPaste={handlePaste}
                     placeholder="n8n으로 보낼 내용을 입력하세요..."
-                    style={{ height: textareaHeight, minHeight: '230px' }}
+                    style={{ height: textareaHeight, minHeight: '115px' }}
                     className={`h-full resize-none border-0 focus:ring-0 focus:border-0 bg-transparent ${fontSizeClasses.content} ${isMobileLightMode ? 'text-gray-700' : 'text-gray-300'}`}
                   />
                 </div>
@@ -578,8 +583,31 @@ export const N8nMemoCreatePage: React.FC = () => {
           <Card className={`shadow-sm border-2 mt-2 ${isMobileLightMode ? 'border-gray-200 bg-white' : 'border-gray-700'}`}>
             <CardContent className="p-4">
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className={`rounded-lg border-2 border-dashed p-1.5 min-h-[72px] ${isMobileLightMode ? 'bg-gray-50 border-gray-300' : 'bg-gray-800/50 border-gray-600'}`}>
+                    {formData.images.length > 0 ? (
+                      <div className="grid grid-cols-2 gap-1">
+                        {formData.images.map((image, index) => (
+                          <div key={index} className="relative group">
+                            <img src={URL.createObjectURL(image)} alt={`Upload ${index}`} className="w-full h-8 object-cover rounded" />
+                            <button onClick={() => {
+                              const newImages = [...formData.images];
+                              newImages.splice(index, 1);
+                              handleImagesChange(newImages);
+                            }} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-80 hover:opacity-100">
+                              <XMarkIcon className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                        <PhotoIcon className="h-5 w-5 mb-0.5 opacity-50" />
+                        <span className="text-[9px] text-center">웹훅 전용<br />(저장안됨)</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
                     <Button type="button" variant="outline" onClick={() => {
                       const cameraInput = document.createElement('input');
                       cameraInput.type = 'file'; cameraInput.accept = 'image/*'; cameraInput.capture = 'environment';
@@ -589,7 +617,7 @@ export const N8nMemoCreatePage: React.FC = () => {
                       };
                       cameraInput.click();
                     }}
-                      className={`w-full h-10 flex items-center justify-center transition-all ${isMobileLightMode ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-slate-700 border-slate-500 text-blue-300'}`}
+                      className={`w-full h-8 flex items-center justify-center transition-all ${isMobileLightMode ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-slate-700 border-slate-500 text-blue-300'}`}
                     >
                       <CameraIcon className="h-4 w-4 mr-1" />
                       <span className="text-xs font-medium">카메라</span>
@@ -603,34 +631,11 @@ export const N8nMemoCreatePage: React.FC = () => {
                       };
                       fileInput.click();
                     }}
-                      className={`w-full h-10 flex items-center justify-center transition-all ${isMobileLightMode ? 'bg-green-50 border-green-200 text-green-700' : 'bg-slate-700 border-slate-500 text-green-300'}`}
+                      className={`w-full h-8 flex items-center justify-center transition-all ${isMobileLightMode ? 'bg-green-50 border-green-200 text-green-700' : 'bg-slate-700 border-slate-500 text-green-300'}`}
                     >
                       <PhotoIcon className="h-4 w-4 mr-1" />
                       <span className="text-xs font-medium">갤러리</span>
                     </Button>
-                  </div>
-                  <div className={`rounded-lg border-2 border-dashed p-2 min-h-[84px] ${isMobileLightMode ? 'bg-gray-50 border-gray-300' : 'bg-gray-800/50 border-gray-600'}`}>
-                    {formData.images.length > 0 ? (
-                      <div className="grid grid-cols-2 gap-1">
-                        {formData.images.map((image, index) => (
-                          <div key={index} className="relative group">
-                            <img src={URL.createObjectURL(image)} alt={`Upload ${index}`} className="w-full h-10 object-cover rounded" />
-                            <button onClick={() => {
-                              const newImages = [...formData.images];
-                              newImages.splice(index, 1);
-                              handleImagesChange(newImages);
-                            }} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-80 hover:opacity-100">
-                              <XMarkIcon className="h-3 w-3" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                        <PhotoIcon className="h-6 w-6 mb-1 opacity-50" />
-                        <span className="text-[10px] text-center">웹훅 전송 전용<br />(저장안됨)</span>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
