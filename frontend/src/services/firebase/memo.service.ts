@@ -164,8 +164,25 @@ export const updateMemo = async (memoId: string, data: IMemoUpdateData): Promise
 
 export const deleteMemo = async (memoId: string): Promise<void> => {
   try {
+    // 1. 메모 데이터를 가져와서 첨부된 이미지가 있는지 확인
+    const memoData = await getMemo(memoId);
+    
+    if (memoData && memoData.images && memoData.images.length > 0) {
+      logInfo(`메모(${memoId}) 삭제 전 연결된 이미지 ${memoData.images.length}개 삭제 시작`);
+      for (const imageUrl of memoData.images) {
+        try {
+          await storageService.deleteImage(imageUrl);
+        } catch (imgError) {
+          logError(`이미지 삭제 실패 (${imageUrl}):`, imgError);
+          // 개별 이미지 삭제 실패 시에도 메모 자체 삭제는 계속 진행
+        }
+      }
+    }
+
+    // 2. Firestore 문서 삭제
     const docRef = doc(db, COLLECTIONS.MEMOS, memoId);
     await deleteDoc(docRef);
+    logInfo(`메모(${memoId}) 및 관련 데이터 삭제 완료`);
   } catch (error) {
     console.error('메모 삭제 오류:', error);
     throw createFirestoreError(error);

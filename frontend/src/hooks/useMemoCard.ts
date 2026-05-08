@@ -236,16 +236,7 @@ export const useMemoCard = ({ memo, onMemoUpdate }: UseMemoCardProps) => {
   const handleDelete = useCallback(async () => {
     setIsDeleting(true);
     try {
-      if (memo.images && memo.images.length > 0) {
-        for (const imageUrl of memo.images) {
-          try {
-            await storageService.deleteImage(imageUrl);
-          } catch (error) {
-            console.warn('이미지 삭제 실패:', error);
-          }
-        }
-      }
-
+      // 메모 삭제 (첨부된 이미지 삭제는 서비스 레이어에서 자동 처리됨)
       await firestoreService.deleteMemo(memo.id);
 
       toast({
