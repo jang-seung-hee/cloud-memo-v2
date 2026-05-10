@@ -24,6 +24,8 @@ import { useCategories } from '../hooks/useCategories';
 import { CategoryManager } from '../components/memo/CategoryManager';
 import { useDevice } from '../hooks/useDevice';
 import { useTheme } from '../hooks/useTheme';
+import { TemplateDetailPagePopup } from '../components/memo/TemplateDetailPagePopup';
+
 
 // 기본 템플릿 데이터 제거 - 사용자가 직접 생성하도록 변경
 const defaultTemplates: ITemplate[] = [];
@@ -48,6 +50,8 @@ export const TemplateManagePage: React.FC = () => {
     content: '',
     category: ''
   });
+  const [viewingTemplate, setViewingTemplate] = useState<ITemplate | null>(null);
+
 
   // 모바일 + 라이트 모드일 때의 스타일 조건
   const isMobileLightMode = !isDesktop && !isDark;
@@ -199,13 +203,14 @@ export const TemplateManagePage: React.FC = () => {
   };
 
   // 템플릿 삭제 실행
-  const executeDeleteTemplate = async () => {
-    if (!user || !deletingTemplate) return;
+  const executeDeleteTemplate = async (templateToDelete?: ITemplate) => {
+    const target = templateToDelete || deletingTemplate;
+    if (!user || !target) return;
 
     setIsDeleting(true);
     try {
-      await firestoreService.deleteTemplate(deletingTemplate.id);
-      const updatedTemplates = templates.filter(t => t.id !== deletingTemplate.id);
+      await firestoreService.deleteTemplate(target.id);
+      const updatedTemplates = templates.filter(t => t.id !== target.id);
       setTemplates(updatedTemplates);
       toast({
         title: "삭제 완료",
@@ -223,6 +228,7 @@ export const TemplateManagePage: React.FC = () => {
       setDeletingTemplate(null);
     }
   };
+
 
   // 폼 제출 처리
   const handleSubmit = async () => {
@@ -662,84 +668,96 @@ export const TemplateManagePage: React.FC = () => {
             </div>
           ) : (
             filteredTemplates.map((template) => (
-              <Card key={template.id} className={`group ${isMobileLightMode
+              <Card 
+                key={template.id} 
+                className={`group transition-all hover:ring-2 hover:ring-blue-400/50 ${isMobileLightMode
                 ? 'bg-white border-gray-200 shadow-sm hover:shadow-md'
                 : ''
-                }`}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className={`text-lg font-semibold line-clamp-2 ${isMobileLightMode
-                        ? 'text-gray-800'
-                        : 'text-foreground'
-                        }`}>
-                        {template.title}
-                      </CardTitle>
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <span className={getCategoryBadgeStyle(template.category)}>
-                          {getCategoryStatusText(template.category)}
-                        </span>
+                }`}
+              >
+                <div onClick={() => setViewingTemplate(template)} className="cursor-pointer h-full flex flex-col">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className={`text-lg font-semibold line-clamp-2 ${isMobileLightMode
+                          ? 'text-gray-800'
+                          : 'text-foreground'
+                          }`}>
+                          {template.title}
+                        </CardTitle>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <span className={getCategoryBadgeStyle(template.category)}>
+                            {getCategoryStatusText(template.category)}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCopy(template.content);
+                            }}
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                            title="복사"
+                          >
+                            <DocumentDuplicateIcon className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button
+                          type="button"
                           variant="ghost"
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleCopy(template.content);
+                            handleEditTemplate(template);
                           }}
-                          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-                          title="복사"
+                          className={`h-8 w-8 p-0 ${isMobileLightMode
+                            ? 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                            : ''
+                            }`}
                         >
-                          <DocumentDuplicateIcon className="h-4 w-4" />
+                          <PencilIcon className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteTemplate(template);
+                          }}
+
+                          className={`h-8 w-8 p-0 text-red-600 hover:text-red-700 ${isMobileLightMode
+                            ? 'hover:bg-red-50'
+                            : ''
+                            }`}
+                        >
+                          <TrashIcon className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditTemplate(template)}
-                        className={`h-8 w-8 p-0 ${isMobileLightMode
-                          ? 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                          : ''
-                          }`}
-                      >
-                        <PencilIcon className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteTemplate(template)}
-                        className={`h-8 w-8 p-0 text-red-600 hover:text-red-700 ${isMobileLightMode
-                          ? 'hover:bg-red-50'
-                          : ''
-                          }`}
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </Button>
+                  </CardHeader>
+                  <CardContent className="pt-0 flex-1">
+                    <p className={`text-sm line-clamp-3 mb-3 ${isMobileLightMode
+                      ? 'text-gray-600'
+                      : 'text-muted-foreground'
+                      }`}>
+                      {template.content}
+                    </p>
+                    <div className={`flex items-center justify-between text-xs ${isMobileLightMode
+                      ? 'text-gray-500'
+                      : 'text-muted-foreground'
+                      }`}>
+                      <span>
+                        {template.updatedAt.getTime() > template.createdAt.getTime()
+                          ? `수정: ${template.updatedAt.toLocaleDateString('ko-KR')} ${template.updatedAt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })}`
+                          : `작성: ${template.createdAt.toLocaleDateString('ko-KR')} ${template.createdAt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })}`
+                        }
+                      </span>
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className={`text-sm line-clamp-3 mb-3 ${isMobileLightMode
-                    ? 'text-gray-600'
-                    : 'text-muted-foreground'
-                    }`}>
-                    {template.content}
-                  </p>
-                  <div className={`flex items-center justify-between text-xs ${isMobileLightMode
-                    ? 'text-gray-500'
-                    : 'text-muted-foreground'
-                    }`}>
-                    <span>
-                      {template.updatedAt.getTime() > template.createdAt.getTime()
-                        ? `수정: ${template.updatedAt.toLocaleDateString('ko-KR')} ${template.updatedAt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })}`
-                        : `작성: ${template.createdAt.toLocaleDateString('ko-KR')} ${template.createdAt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })}`
-                      }
-                    </span>
-                  </div>
-                </CardContent>
+                  </CardContent>
+                </div>
               </Card>
             ))
           )}
@@ -776,7 +794,7 @@ export const TemplateManagePage: React.FC = () => {
                 : ''
               }>취소</AlertDialogCancel>
               <AlertDialogAction
-                onClick={executeDeleteTemplate}
+                onClick={() => executeDeleteTemplate()}
                 className={isMobileLightMode
                   ? 'bg-red-600 text-white hover:bg-red-700'
                   : 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
@@ -789,6 +807,15 @@ export const TemplateManagePage: React.FC = () => {
           </AlertDialogContent>
         </AlertDialog>
 
+        {/* 상용구 상세 팝업 */}
+        <TemplateDetailPagePopup
+          isOpen={!!viewingTemplate}
+          template={viewingTemplate}
+          onClose={() => setViewingTemplate(null)}
+          onEdit={handleEditTemplate}
+          onDelete={executeDeleteTemplate}
+        />
+
         {/* 카테고리 관리 컴포넌트 */}
         <CategoryManager
           isOpen={isCategoryManagerOpen}
@@ -798,4 +825,5 @@ export const TemplateManagePage: React.FC = () => {
       </div>
     </Layout>
   );
-}; 
+};
+ 
