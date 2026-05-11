@@ -10,7 +10,7 @@ export const formatLinksInText = (text: string): React.ReactNode[] => {
     if (urlRegex.test(part)) {
       // 링크인 경우
       const url = part.startsWith('www.') ? `https://${part}` : part;
-      const displayUrl = part.length > 25 ? part.substring(0, 25) + '...' : part;
+      const displayUrl = part;
       return (
         <a
           key={index}
