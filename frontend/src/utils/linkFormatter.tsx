@@ -10,8 +10,8 @@ export const formatLinksInText = (text: string): React.ReactNode[] => {
     if (urlRegex.test(part)) {
       // 링크인 경우
       const url = part.startsWith('www.') ? `https://${part}` : part;
-      // 25자 이상의 링크인 경우 "[Link Click Here]"로 변경
-      const displayUrl = part.length >= 25 ? '[Link Click Here]' : part;
+      // 25자 이상의 링크인 경우 "[Open Link]"로 변경
+      const displayUrl = part.length >= 25 ? '[Open Link]' : part;
       return (
         <a
           key={index}
