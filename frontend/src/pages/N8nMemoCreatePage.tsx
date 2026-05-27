@@ -266,9 +266,9 @@ export const N8nMemoCreatePage: React.FC = () => {
         setProcessingMemoId(memoId);
       }
 
-      // 3. n8n 웹훅 전송 (120초 타임아웃 적용)
+      // 3. n8n 웹훅 전송 (180초 타임아웃 적용)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120000); // 120초 타임아웃 설정
+      const timeoutId = setTimeout(() => controller.abort(), 180000); // 180초 타임아웃 설정
 
       // 이미지 파일들과 음성 파일을 하나로 병합
       const filesToSend = [...formData.images];
@@ -518,7 +518,8 @@ export const N8nMemoCreatePage: React.FC = () => {
                   <VoiceRecorderUI 
                     isMobileLightMode={isMobileLightMode} 
                     onAudioChange={setVoiceFile} 
-                    onRecordingStateChange={setIsRecording} 
+                    onRecordingStateChange={setIsRecording}
+                    onAttachConfirm={handleSave}
                   />
                 </div>
                 <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-purple-400 dark:hover:border-purple-500 transition-colors duration-200" style={{ minHeight: 'calc(8rem - 30px)' }}>
@@ -548,7 +549,7 @@ export const N8nMemoCreatePage: React.FC = () => {
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 mb-4">
                     {processingMemoId
-                      ? '웹훅 처리 결과를 기다리고 있습니다. 최대 120초가 소요될 수 있습니다.'
+                      ? '웹훅 처리 결과를 기다리고 있습니다. 최대 180초가 소요될 수 있습니다.'
                       : '웹훅으로 데이터를 보내고 있습니다...'}
                   </p>
                 </div>
@@ -678,6 +679,7 @@ export const N8nMemoCreatePage: React.FC = () => {
                       isMobileLightMode={isMobileLightMode} 
                       onAudioChange={setVoiceFile} 
                       onRecordingStateChange={setIsRecording}
+                      onAttachConfirm={handleSave}
                       className={`w-full h-8 flex items-center justify-center transition-all ${isMobileLightMode ? 'bg-purple-50 border-purple-200 text-purple-700' : 'bg-slate-700 border-slate-500 text-purple-300'}`}
                     />
                     <Button type="button" variant="outline" onClick={() => {
@@ -734,7 +736,7 @@ export const N8nMemoCreatePage: React.FC = () => {
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 mb-4">
                     {processingMemoId
-                      ? '웹훅 처리 결과를 기다리고 있습니다. 최대 120초가 소요될 수 있습니다.'
+                      ? '웹훅 처리 결과를 기다리고 있습니다. 최대 180초가 소요될 수 있습니다.'
                       : '웹훅으로 데이터를 보내고 있습니다...'}
                   </p>
                 </div>

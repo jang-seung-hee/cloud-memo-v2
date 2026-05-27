@@ -8,6 +8,7 @@ interface VoiceRecorderUIProps {
   isMobileLightMode: boolean;
   onAudioChange: (file: File | null) => void;
   onRecordingStateChange?: (isRecordingOrPaused: boolean) => void;
+  onAttachConfirm?: () => void;
   className?: string;
 }
 
@@ -18,6 +19,7 @@ export const VoiceRecorderUI: React.FC<VoiceRecorderUIProps> = ({
   isMobileLightMode,
   onAudioChange,
   onRecordingStateChange,
+  onAttachConfirm,
   className,
 }) => {
   const {
@@ -33,6 +35,19 @@ export const VoiceRecorderUI: React.FC<VoiceRecorderUIProps> = ({
   } = useVoiceRecorder();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // 모달을 열면서 동시에 녹음을 시작하는 함수
+  const handleOpenAndRecord = () => {
+    // 기존 녹음 데이터가 있으면 삭제 (초기화)
+    if (audioFile || audioUrl) {
+      clearRecording();
+    }
+    setIsModalOpen(true);
+    // 모달 애니메이션이 렌더링될 시간을 확보한 후 녹음 시작
+    setTimeout(() => {
+      startRecording();
+    }, 150);
+  };
 
   // 오디오 파일 상태 변경 시 부모 컴포넌트에 파일 정보 전달
   useEffect(() => {
@@ -78,7 +93,7 @@ export const VoiceRecorderUI: React.FC<VoiceRecorderUIProps> = ({
           type="button"
           size="sm"
           variant="outline"
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleOpenAndRecord}
           className={`h-8 rounded-lg border-purple-200 text-purple-700 hover:bg-purple-50 dark:border-purple-800 dark:text-purple-400 dark:hover:bg-purple-950/20 px-3 flex items-center gap-1.5 transition-all duration-200 active:scale-[0.97] ${className || ''}`}
         >
           <Mic className="h-4 w-4" />
@@ -88,7 +103,7 @@ export const VoiceRecorderUI: React.FC<VoiceRecorderUIProps> = ({
         <Button
           type="button"
           size="sm"
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleOpenAndRecord}
           className={`h-8 rounded-lg bg-purple-600 hover:bg-purple-700 text-white px-3 flex items-center gap-1.5 transition-all duration-200 active:scale-[0.97] shadow-sm animate-pulse ${className || ''}`}
         >
           <CheckCircle2 className="h-4 w-4" />
@@ -238,7 +253,13 @@ export const VoiceRecorderUI: React.FC<VoiceRecorderUIProps> = ({
 
                 <Button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => {
+                    const shouldSend = window.confirm("녹음을 전송하시겠습니까?");
+                    setIsModalOpen(false);
+                    if (shouldSend && onAttachConfirm) {
+                      onAttachConfirm();
+                    }
+                  }}
                   className="w-full h-10 mt-2 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white rounded-xl shadow-sm text-xs font-bold"
                 >
                   음성 메모 첨부 완료
