@@ -22,6 +22,7 @@ import { Loader2 } from 'lucide-react';
 import { useN8nWorkflows } from '../features/n8n/hooks/useN8nWorkflows';
 import { n8nWebhookService } from '../features/n8n/services/n8nWebhookService';
 import { playSound } from '../utils/soundPlayer';
+import { VoiceRecorderUI } from '../features/n8n/components/VoiceRecorderUI';
 
 export const N8nMemoCreatePage: React.FC = () => {
   const navigate = useNavigate();
@@ -47,6 +48,19 @@ export const N8nMemoCreatePage: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [processingMemoId, setProcessingMemoId] = useState<string | null>(null);
   const [textareaHeight, setTextareaHeight] = useState(115); // 기본 높이
+  const [voiceFile, setVoiceFile] = useState<File | null>(null);
+  const [isRecording, setIsRecording] = useState<boolean>(false);
+
+  // 녹음 도중 새로고침이나 탭 닫기 방어 로직
+  useEffect(() => {
+    if (!isRecording) return;
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isRecording]);
 
   // 모바일 + 라이트 모드일 때의 스타일 조건
   const isMobileLightMode = !isDesktop && !isDark;
@@ -190,13 +204,14 @@ export const N8nMemoCreatePage: React.FC = () => {
 
   const handleSave = async () => {
     let finalContentText = formData.content.trim();
+    // 유효성 검사 완화: 텍스트가 없더라도 이미지 첨부나 음성 녹음 파일이 있으면 허용
     if (!finalContentText) {
-      if (formData.images.length > 0) {
-        finalContentText = '[이미지첨부]';
+      if (formData.images.length > 0 || voiceFile) {
+        finalContentText = '';
       } else {
         toast({
-          title: "내용을 입력해주세요",
-          description: "메모 내용을 입력한 후 저장해주세요.",
+          title: "내용을 입력하거나 파일을 추가해주세요",
+          description: "메모 내용을 입력하거나 이미지 첨부 또는 음성 녹음을 완료한 후 저장해주세요.",
           variant: "destructive"
         });
         return;
@@ -207,13 +222,31 @@ export const N8nMemoCreatePage: React.FC = () => {
     setIsUploading(true);
 
     try {
-      const title = extractTitle(finalContentText);
+      // 제목 자동 생성: 텍스트가 비어 있는 경우 적절한 자동 타이틀 생성
+      let title = '';
+      if (finalContentText) {
+        title = extractTitle(finalContentText);
+      } else if (voiceFile) {
+        const now = new Date();
+        const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        title = `${workflow.name} 음성 메모 ${formattedDate}`;
+      } else if (formData.images.length > 0) {
+        title = `${workflow.name} 이미지 메모`;
+      } else {
+        title = '제목 없음';
+      }
 
-      // 1. 파이어베이스 저장용 텍스트 구성 (첨부파일 이름 추가)
+      // 1. 파이어베이스 저장용 텍스트 구성 (첨부파일 이름 정보 텍스트화하여 보관)
       let finalContent = `n8n : [${workflow.name}]\n\n${finalContentText}`;
+      const attachmentNames: string[] = [];
       if (formData.images.length > 0) {
-        const fileNames = formData.images.map(img => img.name).join(', ');
-        finalContent += `\n\n[첨부파일: ${fileNames}]`;
+        attachmentNames.push(...formData.images.map(img => img.name));
+      }
+      if (voiceFile) {
+        attachmentNames.push(voiceFile.name);
+      }
+      if (attachmentNames.length > 0) {
+        finalContent += `\n\n[첨부파일: ${attachmentNames.join(', ')}]`;
       }
 
       // 2. Firestore에 먼저 저장하여 ID 확보 (isProcessing: true 설정)
@@ -237,16 +270,22 @@ export const N8nMemoCreatePage: React.FC = () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 120000); // 120초 타임아웃 설정
 
+      // 이미지 파일들과 음성 파일을 하나로 병합
+      const filesToSend = [...formData.images];
+      if (voiceFile) {
+        filesToSend.push(voiceFile);
+      }
+
       try {
         const result = await n8nWebhookService.sendMemoToN8n(
           workflow.url,
           workflow.token,
           {
             title,
-            content: finalContentText,
+            content: finalContentText || (voiceFile ? '[음성 메모 전송]' : '[이미지 전송]'),
             memoId: memoId
           },
-          formData.images,
+          filesToSend,
           controller.signal
         );
 
@@ -374,6 +413,11 @@ export const N8nMemoCreatePage: React.FC = () => {
   };
 
   const handleCancel = () => {
+    if (isRecording) {
+      if (!window.confirm('음성 녹음이 활성화되어 있습니다. 지금 취소하시면 녹음된 데이터가 영구 유실됩니다. 정말 취소하시겠습니까?')) {
+        return;
+      }
+    }
     navigate('/memos');
   };
 
@@ -430,7 +474,7 @@ export const N8nMemoCreatePage: React.FC = () => {
                     <XMarkIcon className="h-4 w-4 mr-2" />
                     취소
                   </Button>
-                  <Button size="sm" onClick={handleSave} disabled={isUploading} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white">
+                  <Button size="sm" onClick={handleSave} disabled={isUploading || isRecording} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white">
                     {isUploading ? (
                       <><Loader2 className="h-4 w-4 mr-2 animate-spin" />전송 중...</>
                     ) : (
@@ -463,11 +507,19 @@ export const N8nMemoCreatePage: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <PhotoIcon className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    첨부파일 (n8n 웹훅으로만 전송되며 Storage에는 저장되지 않습니다)
-                  </span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <PhotoIcon className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      이미지 첨부 (n8n 웹훅으로만 전송되며 Storage에는 저장되지 않습니다)
+                    </span>
+                  </div>
+                  {/* 🎙️ 녹음 액션 버튼을 이미지 첨부 줄 우측에 컴팩트 병합 배치 */}
+                  <VoiceRecorderUI 
+                    isMobileLightMode={isMobileLightMode} 
+                    onAudioChange={setVoiceFile} 
+                    onRecordingStateChange={setIsRecording} 
+                  />
                 </div>
                 <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-purple-400 dark:hover:border-purple-500 transition-colors duration-200" style={{ minHeight: 'calc(8rem - 30px)' }}>
                   <ImageUpload images={formData.images} onImagesChange={handleImagesChange} />
@@ -571,7 +623,7 @@ export const N8nMemoCreatePage: React.FC = () => {
               <XMarkIcon className="h-5 w-5 mr-2" />
               취소
             </Button>
-            <Button size="lg" onClick={handleSave} disabled={isUploading} className={`flex-1 h-12 ${isMobileLightMode ? 'bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white shadow-sm' : 'bg-purple-600 hover:bg-purple-700'}`}>
+            <Button size="lg" onClick={handleSave} disabled={isUploading || isRecording} className={`flex-1 h-12 ${isMobileLightMode ? 'bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white shadow-sm' : 'bg-purple-600 hover:bg-purple-700'}`}>
               {isUploading ? (
                 <><Loader2 className="h-5 w-5 mr-2 animate-spin" />전송 중...</>
               ) : (
@@ -580,13 +632,19 @@ export const N8nMemoCreatePage: React.FC = () => {
             </Button>
           </div>
 
-          <Card className={`shadow-sm border-2 mt-2 ${isMobileLightMode ? 'border-gray-200 bg-white' : 'border-gray-700'}`}>
+          <div className="flex items-center justify-between px-1.5 mt-2">
+            <span className={`text-xs font-bold ${isMobileLightMode ? 'text-gray-700' : 'text-gray-300'}`}>
+              멀티미디어 첨부 (웹훅 전용)
+            </span>
+          </div>
+
+          <Card className={`shadow-sm border-2 mt-1.5 ${isMobileLightMode ? 'border-gray-200 bg-white' : 'border-gray-700'}`}>
             <CardContent className="p-4">
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
                   <div className={`rounded-lg border-2 border-dashed p-1.5 min-h-[72px] ${isMobileLightMode ? 'bg-gray-50 border-gray-300' : 'bg-gray-800/50 border-gray-600'}`}>
-                    {formData.images.length > 0 ? (
-                      <div className="grid grid-cols-2 gap-1">
+                    {formData.images.length > 0 || voiceFile ? (
+                      <div className="grid grid-cols-2 gap-1.5 max-h-[120px] overflow-y-auto custom-scrollbar">
                         {formData.images.map((image, index) => (
                           <div key={index} className="relative group">
                             <img src={URL.createObjectURL(image)} alt={`Upload ${index}`} className="w-full h-8 object-cover rounded" />
@@ -594,11 +652,18 @@ export const N8nMemoCreatePage: React.FC = () => {
                               const newImages = [...formData.images];
                               newImages.splice(index, 1);
                               handleImagesChange(newImages);
-                            }} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-80 hover:opacity-100">
+                            }} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-80 hover:opacity-100 z-10">
                               <XMarkIcon className="h-3 w-3" />
                             </button>
                           </div>
                         ))}
+                        {voiceFile && (
+                          <div className="relative group h-8 rounded border border-purple-200 dark:border-purple-800/60 bg-purple-50/50 dark:bg-purple-950/20 flex flex-col items-center justify-center p-0.5 overflow-hidden">
+                            <span className="text-[7.5px] font-bold text-purple-700 dark:text-purple-400 text-center truncate w-full block px-0.5">
+                              🎙️ 음성메모
+                            </span>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="h-full flex flex-col items-center justify-center text-gray-400">
@@ -608,6 +673,13 @@ export const N8nMemoCreatePage: React.FC = () => {
                     )}
                   </div>
                   <div className="space-y-1.5">
+                    {/* 🎙️ 1번째 음성녹음 버튼 세로 나열식 병합 (카메라/갤러리와 동일한 폼팩터 스타일 부여) */}
+                    <VoiceRecorderUI 
+                      isMobileLightMode={isMobileLightMode} 
+                      onAudioChange={setVoiceFile} 
+                      onRecordingStateChange={setIsRecording}
+                      className={`w-full h-8 flex items-center justify-center transition-all ${isMobileLightMode ? 'bg-purple-50 border-purple-200 text-purple-700' : 'bg-slate-700 border-slate-500 text-purple-300'}`}
+                    />
                     <Button type="button" variant="outline" onClick={() => {
                       const cameraInput = document.createElement('input');
                       cameraInput.type = 'file'; cameraInput.accept = 'image/*'; cameraInput.capture = 'environment';

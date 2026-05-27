@@ -33,19 +33,28 @@ export const n8nWebhookService = {
         formData.append('memoId', payload.memoId);
       }
       
-      // 파일 데이터 추가: 전송 전 이미지 압축 적용
+      // 파일 데이터 추가: 전송 전 이미지 압축 적용 (이미지만 압축, 음성 등 기타 파일은 원본 전송)
       if (files && files.length > 0) {
         for (let index = 0; index < files.length; index++) {
           const file = files[index];
-          // 압축 수행 (실패 시 원본 fallback)
-          const compressedFile = await compressImageForUpload(file, {
-            maxWidth: 1600,
-            maxHeight: 1600,
-            quality: 0.75,
-            maxSizeMB: 1.5,
-          });
-          // 기존 field name(file_0, file_1, ...) 유지
-          formData.append(`file_${index}`, compressedFile, compressedFile.name);
+          let fileToSend = file;
+          
+          // 이미지 파일일 때만 압축 수행 (오디오 파일 등은 원본 그대로 전송)
+          if (file.type.startsWith('image/')) {
+            try {
+              fileToSend = await compressImageForUpload(file, {
+                maxWidth: 1600,
+                maxHeight: 1600,
+                quality: 0.75,
+                maxSizeMB: 1.5,
+              });
+            } catch (error) {
+              console.warn(`[n8n 전송] ${file.name} 이미지 압축 실패, 원본 파일로 전송합니다.`, error);
+            }
+          }
+          
+          // 기존 field name(file_0, file_1, ...) 및 규칙 유지
+          formData.append(`file_${index}`, fileToSend, fileToSend.name);
         }
         formData.append('fileCount', files.length.toString());
       }
