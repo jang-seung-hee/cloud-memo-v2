@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeftIcon, BookmarkIcon, XMarkIcon, CheckIcon, PhotoIcon, CameraIcon, BoltIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, BookmarkIcon, XMarkIcon, PhotoIcon, CameraIcon, BoltIcon } from '@heroicons/react/24/outline';
 import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -10,8 +10,6 @@ import { TemplateSidebar } from '../components/ui/sidebar';
 import { IMemoFormData } from '../types/memo';
 import { useMemos, useTemplates } from '../hooks/useFirestore';
 import { firestoreService } from '../services/firebase/firestore';
-import { db } from '../services/firebase/config';
-import { doc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/use-toast';
 import { useDevice } from '../hooks/useDevice';
@@ -23,13 +21,14 @@ import { useN8nWorkflows } from '../features/n8n/hooks/useN8nWorkflows';
 import { n8nWebhookService } from '../features/n8n/services/n8nWebhookService';
 import { playSound } from '../utils/soundPlayer';
 import { VoiceRecorderUI } from '../features/n8n/components/VoiceRecorderUI';
+import { useN8nBackupRestore } from '../features/n8n/hooks/useN8nBackupRestore';
 
 export const N8nMemoCreatePage: React.FC = () => {
   const navigate = useNavigate();
   const { workflowId } = useParams<{ workflowId: string }>();
-  const { user, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
   const { toast } = useToast();
-  const { createMemo, loading: isSaving } = useMemos();
+  const { createMemo } = useMemos();
   const { data: templates } = useTemplates();
   const { isDesktop, isMobile } = useDevice();
   const { fontSizeClasses } = useFontSize();
@@ -50,6 +49,21 @@ export const N8nMemoCreatePage: React.FC = () => {
   const [textareaHeight, setTextareaHeight] = useState(115); // 기본 높이
   const [voiceFile, setVoiceFile] = useState<File | null>(null);
   const [isRecording, setIsRecording] = useState<boolean>(false);
+
+  // n8n 로컬 음성 백업 및 복구, 웹훅 전송용 Wake Lock 훅 통합
+  const {
+    pendingVoiceBackup,
+    restoreBackup,
+    discardBackup,
+    cleanupOnSuccess,
+    acquirePageWakeLock,
+    releasePageWakeLock
+  } = useN8nBackupRestore({
+    workflowId,
+    workflowName: workflow?.name,
+    voiceFile,
+    setVoiceFile
+  });
 
   // 녹음 도중 새로고침이나 탭 닫기 방어 로직
   useEffect(() => {
@@ -220,6 +234,7 @@ export const N8nMemoCreatePage: React.FC = () => {
     if (!workflow) return;
 
     setIsUploading(true);
+    await acquirePageWakeLock(); // 대용량 업로드 시작 시 화면 절전 방지 활성화
 
     try {
       // 제목 자동 생성: 텍스트가 비어 있는 경우 적절한 자동 타이틀 생성
@@ -311,6 +326,9 @@ export const N8nMemoCreatePage: React.FC = () => {
         const isFinalSuccess = result.success && !isLogicalError;
 
         if (isFinalSuccess) {
+          // 전송 완전 성공 시 로컬에 저장했던 예비 음성 백업 영구 삭제 (클린업)
+          await cleanupOnSuccess();
+
           // 성공 처리 (생략...)
           setIsUploading(false);
           setProcessingMemoId(null);
@@ -362,7 +380,7 @@ export const N8nMemoCreatePage: React.FC = () => {
 
           toast({
             title: "⚠️ n8n 처리 중 문제가 발생했어요",
-            description: `${errorMsg}\n\n일시적인 문제일 수 있습니다. 메모는 저장되었으니 잠시 후 n8n을 다시 시도해 보세요.`,
+            description: `${errorMsg}\n\n임시 보관된 오디오 파일은 안전하게 유지됩니다. 잠시 후 재시도를 하거나 n8n을 다시 검토해 주세요.`,
             variant: "warning" as any,
           });
         }
@@ -391,8 +409,8 @@ export const N8nMemoCreatePage: React.FC = () => {
         toast({
           title: error.name === 'AbortError' ? "⏱️ 응답 시간이 초과되었어요" : "⚠️ 전송 중 문제가 발생했어요",
           description: error.name === 'AbortError'
-            ? "네트워크 상태나 n8n 서버 부하에 따라 응답이 느릴 수 있어요. 메모는 저장되었으니 잠시 후 다시 시도해 보세요."
-            : `${errorMsg}\n\n메모는 저장되었습니다. 잠시 후 n8n 전송을 다시 시도해 보세요.`,
+            ? "네트워크 상태나 n8n 서버 부하에 따라 응답이 느릴 수 있어요. 임시 저장된 파일은 유지되니 잠시 후 다시 시도해 보세요."
+            : `${errorMsg}\n\n음성 파일은 유실되지 않도록 로컬에 임시 백업 보관되었습니다.`,
           variant: "warning" as any,
         });
       }
@@ -409,6 +427,8 @@ export const N8nMemoCreatePage: React.FC = () => {
       });
       setIsUploading(false);
       setProcessingMemoId(null);
+    } finally {
+      await releasePageWakeLock(); // 모든 상황에서 기기 절전 차단 기능 비활성화
     }
   };
 
@@ -462,6 +482,44 @@ export const N8nMemoCreatePage: React.FC = () => {
             </CardHeader>
 
             <CardContent className="space-y-6">
+              {/* ⚠️ 로컬 예비 음성 백업 복구 안내 배너 */}
+              {pendingVoiceBackup && (
+                <div className="p-4 bg-amber-50/80 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-800 rounded-xl flex items-center justify-between gap-4 shadow-sm animate-pulse">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg shrink-0">
+                      <span className="text-xl">🎙️</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold text-amber-800 dark:text-amber-300">
+                        전송 실패된 음성 복구 가능
+                      </span>
+                      <span className="text-xs text-amber-700/80 dark:text-amber-400/80 mt-0.5">
+                        이전 전송에 실패하여 로컬 기기에 임시 보존된 음성 파일이 있습니다. (파일명: {pendingVoiceBackup.fileName})
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={restoreBackup}
+                      className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg px-3 py-1.5 shadow-sm active:scale-[0.98] transition-all"
+                    >
+                      지금 복구하기
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={discardBackup}
+                      className="text-amber-700 hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-900/30 font-semibold text-xs rounded-lg px-2.5 py-1.5 active:scale-[0.98] transition-all"
+                    >
+                      영구 삭제
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center justify-between p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium text-purple-800 dark:text-purple-300">선택된 워크플로우:</span>
@@ -591,6 +649,43 @@ export const N8nMemoCreatePage: React.FC = () => {
               </Button>
             </div>
           </div>
+
+          {/* ⚠️ 모바일용 로컬 예비 음성 백업 복구 안내 배너 */}
+          {pendingVoiceBackup && (
+            <div className="mt-2 p-3 bg-amber-50/90 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-800 rounded-xl flex flex-col gap-2 shadow-sm animate-pulse">
+              <div className="flex gap-2">
+                <span className="text-base shrink-0">🎙️</span>
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-amber-800 dark:text-amber-300">
+                    전송 실패 음성 복구 가능
+                  </span>
+                  <span className="text-[10px] text-amber-700/80 dark:text-amber-400/80 mt-0.5 leading-tight">
+                    임시 보존된 음성 파일이 있습니다.<br />
+                    파일명: {pendingVoiceBackup.fileName}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-amber-200/50 dark:border-amber-800/30">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={restoreBackup}
+                  className="h-7 bg-amber-600 hover:bg-amber-700 text-white font-bold text-[10px] rounded-lg px-2.5 active:scale-[0.98] transition-all"
+                >
+                  복구하기
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={discardBackup}
+                  className="h-7 text-amber-700 hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-900/30 font-semibold text-[10px] rounded-lg px-2 active:scale-[0.98] transition-all"
+                >
+                  삭제
+                </Button>
+              </div>
+            </div>
+          )}
 
           <Card className={`flex-1 shadow-sm border-2 mt-2 ${isMobileLightMode ? 'border-purple-100 bg-white' : 'border-gray-700'}`}>
             <CardContent className="p-4 h-full">
