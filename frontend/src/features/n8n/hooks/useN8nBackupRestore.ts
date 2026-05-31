@@ -115,12 +115,20 @@ export const useN8nBackupRestore = ({
 
   // 6. 전송 성공 시 최종 클린업 함수
   const cleanupOnSuccess = useCallback(async () => {
+    // A. 현재 세션에서 생성된 로컬 백업 ID 삭제
     if (localBackupId) {
       await n8nVoiceDb.deleteVoice(localBackupId);
       setLocalBackupId(null);
-      console.log('✨ [로컬 백업 완료 클린업] 전송 성공으로 백업 완전 파기 완료');
+      console.log('✨ [로컬 백업 완료 클린업] 방금 전송된 백업 파기 완료:', localBackupId);
     }
-  }, [localBackupId]);
+    
+    // B. 이전에 실패하여 불러왔던 복구 대상 백업 ID 삭제 (이 부분이 누락되어 재진입 시 복구 배너가 계속 뜨던 버그 해결)
+    if (pendingVoiceBackup) {
+      await n8nVoiceDb.deleteVoice(pendingVoiceBackup.id);
+      setPendingVoiceBackup(null);
+      console.log('✨ [로컬 백업 완료 클린업] 이전 복구 대상 백업 파기 완료:', pendingVoiceBackup.id);
+    }
+  }, [localBackupId, pendingVoiceBackup]);
 
   // 7. 업로드 웹훅 동작 중 Wake Lock 관리
   const acquirePageWakeLock = useCallback(async () => {
